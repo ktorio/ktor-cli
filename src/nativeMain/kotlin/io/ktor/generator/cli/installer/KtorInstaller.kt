@@ -1,16 +1,14 @@
 package io.ktor.generator.cli.installer
 
-import io.ktor.client.*
-import io.ktor.client.request.*
+import io.ktor.generator.api.*
 import io.ktor.generator.bundle.*
 import io.ktor.generator.cli.utils.*
 import io.ktor.generator.configuration.json.*
-import io.ktor.http.*
-import kotlinx.cinterop.toKString
 import kotlinx.coroutines.runBlocking
-import platform.posix.*
+import platform.posix.chdir
+import platform.posix.setenv
 
-class KtorInstaller(private val client: HttpClient, private val ktorBackendHost: String) {
+class KtorInstaller(private val service: KtorGeneratorWeb) {
     private val ktorRootDir: Directory by lazy { Directory.home().createDirIfNeeded(rootKtorDirName) }
     private val ktorRcFile: File by lazy { ktorRootDir.createFileIfNeeded(KTOR_RC_FILENAME) }
 
@@ -71,7 +69,7 @@ class KtorInstaller(private val client: HttpClient, private val ktorBackendHost:
 
         PropertiesBundle.writeMessage("jdk.11.not.found", jdkDownloadUrl)
         runBlocking {
-            client.downloadZip(jdkDownloadUrl, jdkArchiveFile)
+            jdkArchiveFile.writeContent(service.downloadJdkArchive())
         }
         PropertiesBundle.writeMessage("jdk.installed.success")
 
@@ -97,27 +95,20 @@ class KtorInstaller(private val client: HttpClient, private val ktorBackendHost:
 
         PropertiesBundle.writeMessage("generating.project")
         runBlocking {
-            val defaultKtorVersion =
-                client.get<ProjectSettingsTemplate>("$ktorBackendHost/project/settings").ktorVersion.default
+            val defaultKtorVersion = service.genProjectSettings().ktorVersion.default
 
-            client.downloadZip(
-                "$ktorBackendHost/project/generate",
-                projectZip,
-                httpMethod = HttpMethod.Post
-            ) {
-                contentType(ContentType.Application.Json)
+            val projectConfiguration = SelectedProjectConfiguration(
+                settings = ProjectSettings(
+                    name = projectName,
+                    companyWebsite = "example.com",
+                    ktorEngine = "NETTY",
+                    buildSystemType = "GRADLE_KTS",
+                    ktorVersion = defaultKtorVersion,
+                    kotlinVersion = "LAST_KOTLIN_VERSION",
+                ), features = emptyList(), addWrapper = true
+            )
 
-                body = SelectedProjectConfiguration(
-                    settings = ProjectSettings(
-                        name = projectName,
-                        companyWebsite = "example.com",
-                        ktorEngine = "NETTY",
-                        buildSystemType = "GRADLE_KTS",
-                        ktorVersion = defaultKtorVersion,
-                        kotlinVersion = "LAST_KOTLIN_VERSION",
-                    ), features = emptyList(), addWrapper = true
-                )
-            }
+            projectZip.writeContent(service.generateKtorProject(projectConfiguration))
         }
 
         val projectDir = currentDir.createDirIfNeeded(projectName)
@@ -132,6 +123,7 @@ class KtorInstaller(private val client: HttpClient, private val ktorBackendHost:
 
         chdir(projectDir.path)
         runGradle(gradleFile, GRADLE_BUILD, ktorJavaHome)
+        chdir(currentDir.path)
 
         PropertiesBundle.writeMessage("project.generated", projectName)
     }
@@ -140,15 +132,17 @@ class KtorInstaller(private val client: HttpClient, private val ktorBackendHost:
         installJdkIfAbsent()
         val ktorJavaHome = getRcProperty(JAVA_HOME)!!
 
-        val projectDir = Directory.current().subdir(path)
+        val currentDir = Directory.current()
+        val projectDir = currentDir.subdir(path)
         if (!projectDir.exists()) {
-            PropertiesBundle.writeMessage("project.not.exists")
+            PropertiesBundle.writeMessage("project.not.exists", path)
             return
         }
 
         val gradleFile = projectDir.gradleWrapper() ?: return
         chdir(projectDir.path)
         runGradle(gradleFile, GRADLE_RUN, ktorJavaHome, args)
+        chdir(currentDir.path)
     }
 
     companion object {

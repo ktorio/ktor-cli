@@ -34,7 +34,7 @@ object PropertiesBundle {
 
                 assertNotNull(argId, "Bad argument format in $property")
                 assert(argId >= 0) { "Negative argument index in $property: $argId. Must be non-negative" }
-                assert(argId < args.size) { "Insufficient number of arguments provided for $property. Required at least $argId but only ${args.size} found" }
+                assert(argId < args.size) { "Insufficient number of arguments provided for $property. Required at least ${argId + 1} but only ${args.size} found" }
 
                 return@replace args[argId]
             }
