@@ -42,13 +42,18 @@ data class Directory(override val path: String) : FsUnit {
         }
     }
 
-    fun createFileIfNeeded(name: String): File {
+    fun file(name: String): File {
         val filePath = calcEntryPath(name)
-        if (!FileSystem.SYSTEM.exists(filePath.toPath())) {
-            FileSystem.SYSTEM.sink(filePath.toPath())
+        return File(filePath)
+    }
+
+    fun createFileIfNeeded(name: String): File {
+        val newFile = file(name)
+        if (!newFile.exists()) {
+            FileSystem.SYSTEM.sink(newFile.path.toPath())
         }
 
-        return File(filePath)
+        return newFile
     }
 
     fun subdir(name: String): Directory {
@@ -67,6 +72,10 @@ data class Directory(override val path: String) : FsUnit {
             }
         }
         return dir
+    }
+
+    fun delete() {
+        FileSystem.SYSTEM.deleteRecursively(path.toPath(), false)
     }
 
     companion object {

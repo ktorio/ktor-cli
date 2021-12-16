@@ -8,18 +8,14 @@ import io.ktor.http.*
 import io.ktor.util.*
 import io.ktor.utils.io.*
 
-suspend fun HttpClient.downloadZip(
+suspend fun HttpClient.fetchZipContent(
     urlString: String,
-    zipFile: File,
     httpMethod: HttpMethod = HttpMethod.Get,
     block: HttpRequestBuilder.() -> Unit = {}
-) {
-    val zipBytes =
-        request<HttpStatement> {
-            url.takeFrom(urlString)
-            method = httpMethod
-            apply(block)
-        }
-            .receive<ByteArray>()
-    zipFile.writeContent(zipBytes)
-}
+): ByteArray =
+    request<HttpStatement> {
+        url.takeFrom(urlString)
+        method = httpMethod
+        apply(block)
+    }
+        .receive()
