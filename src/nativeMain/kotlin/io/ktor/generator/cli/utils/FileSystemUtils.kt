@@ -9,7 +9,7 @@ import okio.Path.Companion.toPath
 import okio.buffer
 import platform.posix.FILE
 import platform.posix.fgets
-import platform.posix.getcwd
+import kotlinx.cinterop.allocArray
 
 
 private const val READ_MODE = "r"
@@ -21,6 +21,18 @@ expect fun unzip(zipFile: File, outputDir: Directory)
 expect fun addExecutablePermissions(file: File)
 
 expect fun homePath(): String
+
+expect fun realPath(path: String, buffer: CPointer<ByteVar>): String?
+
+expect fun getCwd(buffer: CPointer<ByteVar>, size: Int): CPointer<ByteVar>?
+
+internal fun pwd(): String = memScoped {
+    val pathBufferSize = 1024
+    val pathBuffer: CArrayPointer<ByteVar> = allocArray<ByteVar>(pathBufferSize)
+    getCwd(pathBuffer, pathBufferSize) ?: throw Exception("Failed to locate working dir")
+
+    return@memScoped pathBuffer.toKString()
+}
 
 interface FsUnit {
     val path: String
@@ -81,13 +93,7 @@ data class Directory(override val path: String) : FsUnit {
     companion object {
         fun home(): Directory = Directory(homePath())
 
-        fun current(): Directory = memScoped {
-            val pathBufferSize = 1024
-            val pathBuffer = allocArray<ByteVar>(pathBufferSize)
-            getcwd(pathBuffer, pathBufferSize.toULong()) ?: throw Exception("Failed to locate working dir")
-
-            Directory(pathBuffer.toKString())
-        }
+        fun current(): Directory = memScoped { Directory(pwd()) }
     }
 }
 

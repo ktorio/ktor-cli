@@ -19,7 +19,8 @@ object PropertiesBundle {
         "generating.project" to "Generating your ktor project",
         "project.downloaded" to "Project \"{0}\" was downloaded. Running gradle setup...",
         "project.generated" to "Project \"{0}\" was successfully generated.\nYou can execute `ktor run {0}` to run it",
-        "project.not.exists" to "Project {0} does not exist"
+        "project.not.exists" to "Project {0} does not exist",
+        "project.not.have.gradlew" to "Invalid project. Project \"{0}\" does not have gradlew file"
     )
 
     private val argumentRegex = "\\{\\d+}".toRegex()

@@ -15,3 +15,12 @@ actual fun unpackJdk(archive: File, outputDir: Directory) {
 }
 
 actual fun isGradleWrapper(file: File): Boolean = file.name.contains("gradlew")
+
+actual fun setEnv(varName: String, value: String) {
+    platform.posix.setenv(varName, value, 1)
+}
+
+actual fun getJdkContentsHome(directory: Directory?): Directory? =
+    directory
+        ?.subdir(KtorInstaller.JAVA_CONTENTS)
+        ?.subdir(KtorInstaller.JAVA_CONTENTS_HOME)

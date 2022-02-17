@@ -6,14 +6,13 @@ import io.ktor.generator.cli.utils.*
 import io.ktor.generator.configuration.json.*
 import kotlinx.coroutines.runBlocking
 import platform.posix.chdir
-import platform.posix.setenv
 
 class KtorInstaller(private val service: KtorGeneratorWeb) {
     private val ktorRootDir: Directory by lazy { Directory.home().createDirIfNeeded(rootKtorDirName) }
     private val ktorRcFile: File by lazy { ktorRootDir.createFileIfNeeded(KTOR_RC_FILENAME) }
 
     private fun runGradle(gradleFile: File, task: String, javaHome: String, args: List<String> = emptyList()) {
-        setenv(JAVA_HOME, javaHome, 1)
+        setEnv(JAVA_HOME, javaHome)
         addExecutablePermissions(gradleFile)
         runProcess("${gradleFile.path} $task ${args.joinToString(" ")}")
     }
@@ -41,8 +40,7 @@ class KtorInstaller(private val service: KtorGeneratorWeb) {
             .content()
             .filterIsInstance<Directory>()
             .find { it.name == JDK_INSTALLED_DIR_PATH }
-            ?.subdir(JAVA_CONTENTS)
-            ?.subdir(JAVA_CONTENTS_HOME)
+            ?.let(::getJdkContentsHome)
 
     private fun customJdkIsInstalled(): Boolean = findCustomJdk() != null
 
@@ -139,7 +137,11 @@ class KtorInstaller(private val service: KtorGeneratorWeb) {
             return
         }
 
-        val gradleFile = projectDir.gradleWrapper() ?: return
+        val gradleFile = projectDir.gradleWrapper()
+        if (gradleFile == null) {
+            PropertiesBundle.writeMessage("project.not.have.gradlew", path)
+            return
+        }
         chdir(projectDir.path)
         runGradle(gradleFile, GRADLE_RUN, ktorJavaHome, args)
         chdir(currentDir.path)

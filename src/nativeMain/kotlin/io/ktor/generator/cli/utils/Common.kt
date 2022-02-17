@@ -4,7 +4,6 @@ import kotlinx.cinterop.addressOf
 import kotlinx.cinterop.toKString
 import kotlinx.cinterop.usePinned
 import platform.posix.PATH_MAX
-import platform.posix.realpath
 
 expect val RESOURCES_PATH: String
 
@@ -13,7 +12,7 @@ fun getResourcePath(path: String): String {
     // Remove all '..' and '.'
     val buffer = ByteArray(PATH_MAX)
     val standardized = buffer.usePinned {
-        realpath(filePath, it.addressOf(0))?.toKString()
+        realPath(filePath, it.addressOf(0))
     }
     return standardized ?: filePath
 }

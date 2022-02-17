@@ -37,7 +37,7 @@ class RunProject(client: HttpClient) : KtorCommand(
 ) {
     private val args: List<String> by argument(
         ArgType.String, fullName = "args", description = PropertiesBundle.message("run.arguments.description")
-    ).vararg()
+    ).optional().vararg()
 
     override fun execute() {
         ktorInstaller.runKtorProject(projectName, args)

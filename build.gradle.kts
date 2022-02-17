@@ -1,5 +1,3 @@
-import org.jetbrains.kotlin.gradle.plugin.KotlinSourceSet
-
 val ktor_version: String by project
 val kotlinx_cli_version: String by project
 
@@ -26,12 +24,13 @@ kotlin {
         compilations["main"].enableEndorsedLibs = true
     }
     mingwX64 {
+        compilations["main"].enableEndorsedLibs = true
+
         binaries {
             executable {
                 entryPoint = "main"
             }
         }
-        compilations["main"].enableEndorsedLibs = true
     }
     macosX64("macosX64") {
         binaries {
@@ -41,6 +40,7 @@ kotlin {
         }
         compilations["main"].enableEndorsedLibs = true
     }
+
     sourceSets {
         val nativeMain by creating {
             dependencies {

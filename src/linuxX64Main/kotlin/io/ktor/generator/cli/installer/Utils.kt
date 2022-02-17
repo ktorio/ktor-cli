@@ -11,7 +11,13 @@ actual val jdkArchiveName: String = "openjdk-11.tar.gz"
 actual fun unpackJdk(archive: File, outputDir: Directory) {
     val tempPath = Directory.current().path
     runProcess("tar -xvf ${archive.path} -C $tempPath")
-    FileSystem.SYSTEM.atomicMove("$tempPath/jdk-11.jdk".toPath(), outputDir.path.toPath())
+    FileSystem.SYSTEM.atomicMove("$tempPath/jdk-11".toPath(), outputDir.path.toPath())
 }
 
 actual fun isGradleWrapper(file: File): Boolean = file.name.contains("gradlew")
+
+actual fun setEnv(varName: String, value: String) {
+    platform.posix.setenv(varName, value, 1)
+}
+
+actual fun getJdkContentsHome(directory: Directory?): Directory? = directory
