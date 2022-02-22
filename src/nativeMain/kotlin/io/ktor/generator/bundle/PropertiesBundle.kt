@@ -1,5 +1,8 @@
 package io.ktor.generator.bundle
 
+import com.github.ajalt.mordant.rendering.TextColors.green
+import com.github.ajalt.mordant.rendering.TextColors.red
+import com.github.ajalt.mordant.terminal.Terminal
 import kotlin.test.assertNotNull
 
 // TODO: figure out how to read properties from resources and deploy with project in Kotlin/Native
@@ -45,4 +48,12 @@ object PropertiesBundle {
     }
 
     fun writeMessage(property: String, vararg args: String) = println(message(property, *args))
+    fun writeErrorMessage(property: String, vararg args: String) {
+        println()
+        Terminal().println(red(message(property, *args)))
+    }
+    fun writeSuccessMessage(property: String, vararg args: String) {
+        println()
+        Terminal().println(green(message(property, *args)))
+    }
 }

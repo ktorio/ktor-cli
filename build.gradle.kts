@@ -1,5 +1,6 @@
 val ktor_version: String by project
 val kotlinx_cli_version: String by project
+val mordant_version: String by project
 
 plugins {
     kotlin("multiplatform") version "1.5.31"
@@ -50,6 +51,7 @@ kotlin {
                 implementation("com.squareup.okio:okio:3.0.0")
                 implementation("io.ktor:ktor-client-curl:$ktor_version")
                 implementation("org.jetbrains.kotlinx:kotlinx-cli:$kotlinx_cli_version")
+                implementation("com.github.ajalt.mordant:mordant:$mordant_version")
             }
         }
         val nativeTest by creating {

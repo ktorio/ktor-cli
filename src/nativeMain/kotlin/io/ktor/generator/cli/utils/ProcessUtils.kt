@@ -11,7 +11,7 @@ expect fun closePipe(filePtr: CPointer<FILE>): Int
 internal fun runProcess(command: String) {
     val filePtr = openPipe(command, "r")
     if (filePtr == null) {
-        PropertiesBundle.writeMessage("unable.to.run.command", command)
+        PropertiesBundle.writeErrorMessage("unable.to.run.command", command)
         return
     }
 
@@ -21,6 +21,6 @@ internal fun runProcess(command: String) {
 
     val status = closePipe(filePtr)
     if (status == -1) {
-        PropertiesBundle.writeMessage("error.running.command", command)
+        PropertiesBundle.writeErrorMessage("error.running.command", command)
     }
 }
