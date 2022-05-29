@@ -33,7 +33,7 @@ class GenerateProject(client: HttpClient) : KtorCommand(
 }
 
 class RunProject(client: HttpClient) : KtorCommand(
-    "run", description = PropertiesBundle.message("run.command.description"), client = client
+    "start", description = PropertiesBundle.message("run.command.description"), client = client
 ) {
     private val args: List<String> by argument(
         ArgType.String, fullName = "args", description = PropertiesBundle.message("run.arguments.description")

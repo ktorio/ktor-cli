@@ -22,7 +22,7 @@ class BundleParsingTest {
         )
         assertEquals(
             PropertiesBundle.message("project.generated", "project-name"),
-            "Project \"project-name\" was successfully generated.\nYou can execute `ktor run project-name` to run it"
+            "Project \"project-name\" was successfully generated.\nYou can execute `ktor start project-name` to run it"
         )
         assertEquals(PropertiesBundle.message("project.not.exists", "p0"), "Project p0 does not exist")
     }
