@@ -1,5 +1,8 @@
 package io.ktor.generator.bundle
 
+import com.github.ajalt.mordant.rendering.TextColors.green
+import com.github.ajalt.mordant.rendering.TextColors.red
+import com.github.ajalt.mordant.terminal.Terminal
 import kotlin.test.assertNotNull
 
 // TODO: figure out how to read properties from resources and deploy with project in Kotlin/Native
@@ -18,8 +21,9 @@ object PropertiesBundle {
         "project.already.exists" to "Project with name {0} already exists",
         "generating.project" to "Generating your ktor project",
         "project.downloaded" to "Project \"{0}\" was downloaded. Running gradle setup...",
-        "project.generated" to "Project \"{0}\" was successfully generated.\nYou can execute `ktor run {0}` to run it",
-        "project.not.exists" to "Project {0} does not exist"
+        "project.generated" to "Project \"{0}\" was successfully generated.\nYou can execute `ktor start {0}` to start it",
+        "project.not.exists" to "Project {0} does not exist",
+        "project.not.have.gradlew" to "Invalid project. Project \"{0}\" does not have gradlew file"
     )
 
     private val argumentRegex = "\\{\\d+}".toRegex()
@@ -44,4 +48,12 @@ object PropertiesBundle {
     }
 
     fun writeMessage(property: String, vararg args: String) = println(message(property, *args))
+    fun writeErrorMessage(property: String, vararg args: String) {
+        println()
+        Terminal().println(red(message(property, *args)))
+    }
+    fun writeSuccessMessage(property: String, vararg args: String) {
+        println()
+        Terminal().println(green(message(property, *args)))
+    }
 }

@@ -6,12 +6,10 @@ import io.ktor.generator.api.*
 import io.ktor.generator.cli.installer.*
 import io.ktor.generator.cli.utils.*
 import io.ktor.generator.configuration.json.*
-import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.withTimeout
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertFailsWith
+import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 private fun nativeResource(name: String): File = File("src/nativeTest/resources/$name")
@@ -25,7 +23,8 @@ class GeneratorIntegrationTests {
 
     @Test
     fun testUnzipWorks() {
-        unzip(nativeResource("file.zip"), Directory.current())
+        val zip = nativeResource("file.zip")
+        unzip(zip, Directory.current())
         val unzippedFile = Directory.current().file("file.txt")
         assertEquals(unzippedFile.readText(), nativeResource("file.txt").readText())
         unzippedFile.delete()
@@ -48,7 +47,8 @@ class GeneratorIntegrationTests {
         jdkFile.delete()
         assertTrue(outputDir.content().isNotEmpty(), "Directory with JDK should be not empty after unpack")
 
-        val contentsHome = outputDir.subdir(KtorInstaller.JAVA_CONTENTS).subdir(KtorInstaller.JAVA_CONTENTS_HOME)
+        val contentsHome = outputDir.let(::getJdkContentsHome)
+        assertNotNull(contentsHome, "JDK contents home must not be null")
         assertTrue(contentsHome.exists(), "JDK contains /Contents/Home dir")
         assertTrue(contentsHome.content().isNotEmpty(), "JDK Contents/Home must be not empty")
         outputDir.delete()

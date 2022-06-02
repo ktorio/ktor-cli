@@ -1,14 +1,17 @@
 package io.ktor.generator.cli.utils
 
 import io.ktor.generator.bundle.*
+import kotlinx.cinterop.CPointer
 import kotlinx.cinterop.memScoped
-import platform.posix.pclose
-import platform.posix.popen
+import platform.posix.FILE
+
+expect fun openPipe(command: String, access: String): CPointer<FILE>?
+expect fun closePipe(filePtr: CPointer<FILE>): Int
 
 internal fun runProcess(command: String) {
-    val filePtr = popen(command, "r")
+    val filePtr = openPipe(command, "r")
     if (filePtr == null) {
-        PropertiesBundle.writeMessage("unable.to.run.command", command)
+        PropertiesBundle.writeErrorMessage("unable.to.run.command", command)
         return
     }
 
@@ -16,8 +19,8 @@ internal fun runProcess(command: String) {
         handleOutput(filePtr, ::print)
     }
 
-    val status = pclose(filePtr)
+    val status = closePipe(filePtr)
     if (status == -1) {
-        PropertiesBundle.writeMessage("error.running.command", command)
+        PropertiesBundle.writeErrorMessage("error.running.command", command)
     }
 }

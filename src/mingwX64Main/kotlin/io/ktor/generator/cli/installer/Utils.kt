@@ -3,6 +3,7 @@ package io.ktor.generator.cli.installer
 import io.ktor.generator.cli.utils.*
 import okio.FileSystem
 import okio.Path.Companion.toPath
+import platform.windows.*
 
 actual val rootKtorDirName: String = ".ktor."
 actual val jdkDownloadUrl: String = "https://download.java.net/java/ga/jdk11/openjdk-11_windows-x64_bin.zip"
@@ -15,3 +16,9 @@ actual fun unpackJdk(archive: File, outputDir: Directory) {
 }
 
 actual fun isGradleWrapper(file: File): Boolean = file.name.contains("gradlew")
+
+actual fun setEnv(varName: String, value: String) {
+    SetEnvironmentVariableA(varName, value)
+}
+
+actual fun getJdkContentsHome(directory: Directory?): Directory? = directory

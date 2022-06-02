@@ -6,14 +6,13 @@ import io.ktor.generator.cli.utils.*
 import io.ktor.generator.configuration.json.*
 import kotlinx.coroutines.runBlocking
 import platform.posix.chdir
-import platform.posix.setenv
 
 class KtorInstaller(private val service: KtorGeneratorWeb) {
     private val ktorRootDir: Directory by lazy { Directory.home().createDirIfNeeded(rootKtorDirName) }
     private val ktorRcFile: File by lazy { ktorRootDir.createFileIfNeeded(KTOR_RC_FILENAME) }
 
     private fun runGradle(gradleFile: File, task: String, javaHome: String, args: List<String> = emptyList()) {
-        setenv(JAVA_HOME, javaHome, 1)
+        setEnv(JAVA_HOME, javaHome)
         addExecutablePermissions(gradleFile)
         runProcess("${gradleFile.path} $task ${args.joinToString(" ")}")
     }
@@ -41,8 +40,7 @@ class KtorInstaller(private val service: KtorGeneratorWeb) {
             .content()
             .filterIsInstance<Directory>()
             .find { it.name == JDK_INSTALLED_DIR_PATH }
-            ?.subdir(JAVA_CONTENTS)
-            ?.subdir(JAVA_CONTENTS_HOME)
+            ?.let(::getJdkContentsHome)
 
     private fun customJdkIsInstalled(): Boolean = findCustomJdk() != null
 
@@ -87,7 +85,7 @@ class KtorInstaller(private val service: KtorGeneratorWeb) {
 
         val currentDir = Directory.current()
         if (currentDir.subdir(projectName).exists()) {
-            PropertiesBundle.writeMessage("project.already.exists", projectName)
+            PropertiesBundle.writeErrorMessage("project.already.exists", projectName)
             return
         }
 
@@ -119,13 +117,17 @@ class KtorInstaller(private val service: KtorGeneratorWeb) {
         PropertiesBundle.writeMessage("project.downloaded", projectName)
 
         val ktorJavaHome = getRcProperty(JAVA_HOME)!!
-        val gradleFile = projectDir.gradleWrapper() ?: return
+        val gradleFile = projectDir.gradleWrapper()
+        if (gradleFile == null) {
+            PropertiesBundle.writeErrorMessage("project.not.have.gradlew", projectDir.name)
+            return
+        }
 
         chdir(projectDir.path)
         runGradle(gradleFile, GRADLE_BUILD, ktorJavaHome)
         chdir(currentDir.path)
 
-        PropertiesBundle.writeMessage("project.generated", projectName)
+        PropertiesBundle.writeSuccessMessage("project.generated", projectName)
     }
 
     fun runKtorProject(path: String, args: List<String>) {
@@ -135,11 +137,15 @@ class KtorInstaller(private val service: KtorGeneratorWeb) {
         val currentDir = Directory.current()
         val projectDir = currentDir.subdir(path)
         if (!projectDir.exists()) {
-            PropertiesBundle.writeMessage("project.not.exists", path)
+            PropertiesBundle.writeErrorMessage("project.not.exists", path)
             return
         }
 
-        val gradleFile = projectDir.gradleWrapper() ?: return
+        val gradleFile = projectDir.gradleWrapper()
+        if (gradleFile == null) {
+            PropertiesBundle.writeErrorMessage("project.not.have.gradlew", projectDir.name)
+            return
+        }
         chdir(projectDir.path)
         runGradle(gradleFile, GRADLE_RUN, ktorJavaHome, args)
         chdir(currentDir.path)

@@ -12,3 +12,5 @@ expect val jdkDownloadUrl: String
 expect val jdkArchiveName: String
 expect fun unpackJdk(archive: File, outputDir: Directory)
 expect fun isGradleWrapper(file: File): Boolean
+expect fun setEnv(varName: String, value: String)
+expect fun getJdkContentsHome(directory: Directory?): Directory?
