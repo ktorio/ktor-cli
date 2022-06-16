@@ -1,5 +1,7 @@
 package io.ktor.generator.cli.utils
 
+import io.ktor.generator.cli.installer.*
+import io.ktor.generator.cli.installer.getEnv
 import kotlinx.cinterop.ByteVar
 import kotlinx.cinterop.CPointer
 import kotlinx.cinterop.pointed
@@ -10,6 +12,8 @@ import platform.posix.realpath
 import kotlinx.cinterop.allocArray
 import platform.posix.getcwd
 
+private const val HOME_VAR: String = "HOME"
+
 actual val FS_DELIMETER: String = "/"
 
 actual fun unzip(zipFile: File, outputDir: Directory) {
@@ -17,7 +21,7 @@ actual fun unzip(zipFile: File, outputDir: Directory) {
 }
 
 actual fun homePath(): String =
-    getpwuid(getuid())?.pointed?.pw_dir?.toKString() ?: throw Exception("Failed to locate home dir")
+    getEnv(HOME_VAR) ?: getpwuid(getuid())?.pointed?.pw_dir?.toKString() ?: throw Exception("Failed to locate home dir")
 
 actual fun addExecutablePermissions(file: File) {
     runProcess("chmod +x ${file.path}")
