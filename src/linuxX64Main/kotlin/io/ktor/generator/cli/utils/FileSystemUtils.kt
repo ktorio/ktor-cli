@@ -5,12 +5,9 @@ import io.ktor.client.features.json.*
 import io.ktor.client.features.json.serializer.*
 import io.ktor.generator.cli.installer.*
 import kotlinx.cinterop.*
-import platform.posix.getcwd
-import platform.posix.getpwuid
-import platform.posix.getuid
-import platform.posix.realpath
 import kotlin.text.*
 import kotlinx.cinterop.allocArray
+import platform.posix.*
 
 actual val FS_DELIMETER: String = "/"
 
@@ -30,3 +27,11 @@ actual fun realPath(path: String, buffer: CPointer<ByteVar>): String? {
 }
 
 actual fun getCwd(buffer: CPointer<ByteVar>, size: Int) = getcwd(buffer, size.toULong())
+
+actual fun makeDir(path: String) {
+    mkdir(path, (S_IWOTH or S_IROTH or S_IRUSR or S_IWUSR or S_IRGRP or S_IWGRP or S_IEXEC).toUInt())
+}
+
+actual fun createFile(path: String) {
+    creat(path, (S_IWOTH or S_IROTH or S_IRUSR or S_IWUSR or S_IRGRP or S_IWGRP or S_IEXEC).toUInt())
+}

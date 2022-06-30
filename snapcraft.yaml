@@ -1,0 +1,30 @@
+name: ktor
+summary: Creates porjects with ktor framework setup
+version: '2.0.0-eap-5'
+base: core18
+grade: stable
+confinement: classic
+description: |
+  Ktor is a web application framework for creating connected systems.
+  You can use it to create server-side as well as client-side applications.
+  It supports multiple platforms, including JVM, JavaScript, and Kotlin/Native.
+  This CLI tool provides functionality to create new Ktor projects.
+apps:
+  ktor:
+    command: ktor
+parts:
+  ktor:
+    plugin: nil
+    build-packages:
+      - wget
+    stage-packages:
+      - libcurl4
+      - libcurl4-gnutls-dev
+    override-pull: |
+      snapcraftctl pull
+      wget https://files.pkg.jetbrains.space/public/p/ktor-cli-tool/linux-release/ktor-cli-generator-3.kexe
+      cp ktor-cli-generator-3.kexe $SNAPCRAFT_PART_SRC/ktor
+    override-build: |
+      snapcraftctl build
+      chmod +x ktor
+      cp ktor $SNAPCRAFT_PART_INSTALL/ktor

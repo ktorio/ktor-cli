@@ -9,7 +9,6 @@ import okio.Path.Companion.toPath
 import okio.buffer
 import platform.posix.FILE
 import platform.posix.fgets
-import kotlinx.cinterop.allocArray
 
 
 private const val READ_MODE = "r"
@@ -25,6 +24,10 @@ expect fun homePath(): String
 expect fun realPath(path: String, buffer: CPointer<ByteVar>): String?
 
 expect fun getCwd(buffer: CPointer<ByteVar>, size: Int): CPointer<ByteVar>?
+
+expect fun makeDir(path: String)
+
+expect fun createFile(path: String)
 
 internal fun pwd(): String = memScoped {
     val pathBufferSize = 1024
@@ -62,7 +65,7 @@ data class Directory(override val path: String) : FsUnit {
     fun createFileIfNeeded(name: String): File {
         val newFile = file(name)
         if (!newFile.exists()) {
-            FileSystem.SYSTEM.sink(newFile.path.toPath())
+            createFile(newFile.path)
         }
 
         return newFile
@@ -78,7 +81,7 @@ data class Directory(override val path: String) : FsUnit {
         val dirPath = dir.path.toPath()
         if (!dir.exists()) {
             try {
-                FileSystem.SYSTEM.createDirectory(dirPath, true)
+                makeDir(dirPath.toString())
             } catch (cause: Throwable) {
                 throw Exception("Failed to find/create directory $dirPath")
             }

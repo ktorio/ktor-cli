@@ -52,6 +52,7 @@ kotlin {
                 implementation("io.ktor:ktor-client-curl:$ktor_version")
                 implementation("org.jetbrains.kotlinx:kotlinx-cli:$kotlinx_cli_version")
                 implementation("com.github.ajalt.mordant:mordant:$mordant_version")
+                implementation(fileTree(mapOf("dir" to "libs", "include" to listOf("*.jar"))))
             }
         }
         val nativeTest by creating {
