@@ -20,5 +20,7 @@ parts:
     build-packages:
       - curl
       - unzip
+      - libcurl4
+      - libcurl4-gnutls-dev
     stage-packages:
       - git
