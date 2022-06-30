@@ -86,3 +86,7 @@ kotlin {
         }
     }
 }
+
+// Is required for snapcraft build because it runs "jar" task by default, and it is impossible to avoid it.
+// Note: Snapcraft is a tool for publication binaries for Linux via Snap package manager.
+task("jar") {}
