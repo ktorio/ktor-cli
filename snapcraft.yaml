@@ -1,7 +1,6 @@
 name: ktor
 summary: Creates porjects with ktor framework setup.
 version: '2.1.0-eap-1'
-icon: gui/ktorPlugin.svg
 base: core18
 grade: stable
 confinement: strict
