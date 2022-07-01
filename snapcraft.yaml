@@ -22,8 +22,8 @@ parts:
       curl --connect-timeout 5 --retry 5 -L https://services.gradle.org/distributions/gradle-7.3.1-bin.zip -o gradle-7.3.1-bin.zip
       mv $SNAPCRAFT_PART_SRC/gradle-7.3.1-bin.zip $SNAPCRAFT_STAGE
       
-      curl --connect-timeout 5 --retry 5 -L https://repo1.maven.org/maven2/org/jetbrains/kotlin/kotlin-gradle-plugin/1.7.0/kotlin-gradle-plugin-1.7.0.jar -o kotlin-gradle-plugin-1.7.0.jar
-      mv $SNAPCRAFT_PART_SRC/kotlin-gradle-plugin-1.7.0.jar $SNAPCRAFT_STAGE
+      curl --connect-timeout 5 --retry 5 -L https://repo1.maven.org/maven2/org/jetbrains/kotlin/kotlin-gradle-plugin/1.5.31/kotlin-gradle-plugin-1.5.31.jar -o kotlin-gradle-plugin-1.5.31.jar
+      mv $SNAPCRAFT_PART_SRC/kotlin-gradle-plugin-1.5.31.jar $SNAPCRAFT_STAGE
     build-packages:
       - curl
   ktor:
@@ -42,7 +42,7 @@ parts:
       snapcraftctl pull
       cp $SNAPCRAFT_STAGE/gradle-7.3.1-bin.zip $SNAPCRAFT_PART_SRC/gradle/wrapper/gradle-7.3.1-bin.zip
       mkdir $SNAPCRAFT_PART_SRC/buildSrc
-      cp $SNAPCRAFT_STAGE/kotlin-gradle-plugin-1.7.0.jar $SNAPCRAFT_PART_SRC/buildSrc/kotlin-gradle-plugin-1.7.0.jar
+      cp $SNAPCRAFT_STAGE/kotlin-gradle-plugin-1.5.31.jar $SNAPCRAFT_PART_SRC/buildSrc/kotlin-gradle-plugin-1.5.31.jar
     override-build: |
       snapcraftctl build
       java -version
