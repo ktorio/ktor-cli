@@ -3,8 +3,8 @@ val kotlinx_cli_version: String by project
 val mordant_version: String by project
 
 plugins {
-    kotlin("multiplatform") version "1.5.31"
-    kotlin("plugin.serialization") version "1.5.31"
+    kotlin("multiplatform") version "1.7.0"
+    kotlin("plugin.serialization") version "1.7.0"
 }
 
 group = "me.user"
