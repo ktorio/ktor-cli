@@ -52,6 +52,8 @@ kotlin {
                 implementation("io.ktor:ktor-client-curl:$ktor_version")
                 implementation("org.jetbrains.kotlinx:kotlinx-cli:$kotlinx_cli_version")
                 implementation("com.github.ajalt.mordant:mordant:$mordant_version")
+                classpath fileTree(include: ['*.jar'], dir: 'buildSrc')
+                classpath files('buildSrc/kotlin-gradle-plugin-1.7.0.jar')
             }
         }
         val nativeTest by creating {
