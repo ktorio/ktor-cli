@@ -41,9 +41,10 @@ parts:
     override-pull: |
       snapcraftctl pull
       cp $SNAPCRAFT_STAGE/gradle-7.3.1-bin.zip $SNAPCRAFT_PART_SRC/gradle/wrapper/gradle-7.3.1-bin.zip
-      mkdir $SNAPCRAFT_PART_SRC/buildSrc
-      cp $SNAPCRAFT_STAGE/kotlin-gradle-plugin-1.5.31.jar $SNAPCRAFT_PART_SRC/buildSrc/kotlin-gradle-plugin-1.5.31.jar
-    override-build: |
+      mkdir $SNAPCRAFT_PART_SRC/libs
+      cp $SNAPCRAFT_STAGE/kotlin-gradle-plugin-1.5.31.jar $SNAPCRAFT_PART_SRC/libs/kotlin-gradle-plugin-1.5.31.jar
+    override-
+    : |
       snapcraftctl build
       java -version
       pwd
