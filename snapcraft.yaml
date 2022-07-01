@@ -47,7 +47,6 @@ parts:
       cat gradle/wrapper/gradle-wrapper.properties
       sed -i -e 's/https\\:\/\/services.gradle.org\/distributions\///' gradle/wrapper/gradle-wrapper.properties
       cat gradle/wrapper/gradle-wrapper.properties
-      ./gradlew wrapper --gradle-distribution-url=gradle-7.3.1-bin.zip
       ./gradlew linkReleaseExecutableLinuxX64
     override-stage: |
       snapcraftctl stage
