@@ -16,7 +16,15 @@ apps:
       JAVA_HOME: $SNAP/usr/lib/jvm/java-11-openjdk-amd64
       PATH: $JAVA_HOME/jre/bin:$PATH
 parts:
+  gradle:
+    plugin: nil
+    override-pull: |
+      curl --connect-timeout 5 --retry 5 -L https://services.gradle.org/distributions/gradle-7.3.1-bin.zip -o gradle-7.3.1-bin.zip
+      mv $SNAPCRAFT_PART_SRC/gradle-7.3.1-bin.zip $SNAPCRAFT_STAGE
+    build-packages:
+      - curl
   ktor:
+    after: [ gradle ]
     plugin: dump
     source: https://github.com/ktorio/ktor-cli/archive/refs/tags/0.0.1-tmp-3.tar.gz
     build-packages:
@@ -27,6 +35,9 @@ parts:
       - openjdk-11-jre
     stage-packages:
       - git
+    override-pull: |
+      snapcraftctl pull
+      cp $SNAPCRAFT_STAGE/gradle-7.3.1-bin.zip $SNAPCRAFT_PART_SRC/gradle/wrapper/gradle-7.3.1-bin.zip
     override-build: |
       snapcraftctl build
       java -version
