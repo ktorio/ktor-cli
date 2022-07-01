@@ -21,11 +21,11 @@ parts:
       - unzip
       - libcurl4
       - libcurl4-gnutls-dev
-      - openjdk
     stage-packages:
       - git
     override-build: |
       snapcraftctl build
+      java -version
       JAVA_HOME=${SNAP}/usr/lib/jvm/java-8-openjdk-${SNAP_ARCH}/bin/java
       ./gradlew linkReleaseExecutableLinuxX64
     override-stage: |
