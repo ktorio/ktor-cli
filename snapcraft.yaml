@@ -29,7 +29,7 @@ parts:
   ktor:
     after: [ gradle ]
     plugin: dump
-    source: https://github.com/ktorio/ktor-cli/archive/refs/tags/0.0.1-tmp-3.tar.gz
+    source: https://github.com/ktorio/ktor-cli.git
     build-packages:
       - curl
       - unzip
