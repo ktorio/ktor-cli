@@ -38,6 +38,7 @@ parts:
     override-pull: |
       snapcraftctl pull
       cp $SNAPCRAFT_STAGE/gradle-7.3.1-bin.zip $SNAPCRAFT_PART_SRC/gradle/wrapper/gradle-7.3.1-bin.zip
+      cp $SNAPCRAFT_STAGE/gradle-7.3.1-bin.zip $SNAPCRAFT_PART_SRC/gradle-7.3.1-bin.zip
     override-build: |
       snapcraftctl build
       java -version
