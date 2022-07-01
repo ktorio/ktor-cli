@@ -12,6 +12,9 @@ description: |
 apps:
   ktor:
     command: ktor
+    environment:
+      JAVA_HOME: $SNAP/usr/lib/jvm/java-11-openjdk-amd64
+      PATH: $JAVA_HOME/jre/bin:$PATH
 parts:
   ktor:
     plugin: dump
@@ -26,7 +29,6 @@ parts:
     override-build: |
       snapcraftctl build
       java -version
-      JAVA_HOME=${SNAP}/usr/lib/jvm/java-8-openjdk-${SNAP_ARCH}/bin/java
       ./gradlew linkReleaseExecutableLinuxX64
     override-stage: |
       snapcraftctl stage
