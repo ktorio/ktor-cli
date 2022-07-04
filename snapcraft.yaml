@@ -12,47 +12,12 @@ description: |
 apps:
   ktor:
     command: ktor
-    environment:
-      JAVA_HOME: $SNAP/usr/lib/jvm/java-11-openjdk-amd64
-      PATH: $JAVA_HOME/jre/bin:$PATH
 parts:
-  gradle:
-    plugin: nil
-    override-pull: |
-      curl --connect-timeout 5 --retry 5 -L https://services.gradle.org/distributions/gradle-7.3.1-bin.zip -o gradle-7.3.1-bin.zip
-      mv $SNAPCRAFT_PART_SRC/gradle-7.3.1-bin.zip $SNAPCRAFT_STAGE
-      
-      curl --connect-timeout 5 --retry 5 -L https://repo1.maven.org/maven2/org/jetbrains/kotlin/kotlin-gradle-plugin/1.5.31/kotlin-gradle-plugin-1.5.31.jar -o kotlin-gradle-plugin-1.5.31.jar
-      mv $SNAPCRAFT_PART_SRC/kotlin-gradle-plugin-1.5.31.jar $SNAPCRAFT_STAGE
-    build-packages:
-      - curl
   ktor:
-    after: [ gradle ]
-    plugin: dump
-    source: https://github.com/ktorio/ktor-cli.git
+    plugin: nil
     build-packages:
-      - curl
-      - unzip
-      - libcurl4
-      - libcurl4-gnutls-dev
-      - openjdk-11-jre
-    stage-packages:
-      - git
-    override-pull: |
-      snapcraftctl pull
-      cp $SNAPCRAFT_STAGE/gradle-7.3.1-bin.zip $SNAPCRAFT_PART_SRC/gradle/wrapper/gradle-7.3.1-bin.zip
-      mkdir $SNAPCRAFT_PART_SRC/libs
-      cp $SNAPCRAFT_STAGE/kotlin-gradle-plugin-1.5.31.jar $SNAPCRAFT_PART_SRC/libs/kotlin-gradle-plugin-1.5.31.jar
-    override-build: |
-      snapcraftctl build
-      java -version
-      pwd
-      ls
-      ls gradle/wrapper
-      cat gradle/wrapper/gradle-wrapper.properties
-      sed -i -e 's/https\\:\/\/services.gradle.org\/distributions\///' gradle/wrapper/gradle-wrapper.properties
-      cat gradle/wrapper/gradle-wrapper.properties
-      ./gradlew linkReleaseExecutableLinuxX64
-    override-stage: |
-      snapcraftctl stage
-      cp $SNAPCRAFT_PART_BUILD/build/bin/linuxX64/releaseExecutable/ktor-cli-generator.kexe $SNAPCRAFT_PART_STAGE/ktor
+      - wget
+    prepare: |
+      wget https://files.pkg.jetbrains.space/public/p/ktor-cli-tool/linux-release/ktor-cli-generator.kexe
+    install: |
+      cp ktor-cli-generator.kexe $SNAPCRAFT_PART_INSTALL/ktor
