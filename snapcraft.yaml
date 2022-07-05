@@ -17,7 +17,9 @@ parts:
     plugin: nil
     build-packages:
       - wget
-    prepare: |
+    override-pull: |
+      snapcraftctl pull
       wget https://files.pkg.jetbrains.space/public/p/ktor-cli-tool/linux-release/ktor-cli-generator.kexe
-    install: |
+    override-install: |
+      snapcraftctl install
       cp ktor-cli-generator.kexe $SNAPCRAFT_PART_INSTALL/ktor
