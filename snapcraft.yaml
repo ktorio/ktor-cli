@@ -17,10 +17,14 @@ parts:
     plugin: nil
     build-packages:
       - wget
+    stage-packages:
+      - libcurl4
+      - libcurl4-gnutls-dev
     override-pull: |
       snapcraftctl pull
       wget https://files.pkg.jetbrains.space/public/p/ktor-cli-tool/linux-release/ktor-cli-generator.kexe
       cp ktor-cli-generator.kexe $SNAPCRAFT_PART_SRC/ktor
     override-build: |
       snapcraftctl build
+      chmod +x ktor
       cp ktor $SNAPCRAFT_PART_INSTALL/ktor
