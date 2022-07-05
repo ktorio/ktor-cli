@@ -21,5 +21,5 @@ parts:
       snapcraftctl pull
       wget https://files.pkg.jetbrains.space/public/p/ktor-cli-tool/linux-release/ktor-cli-generator.kexe
     override-stage: |
-      snapcraftctl install
+      snapcraftctl stage
       cp ktor-cli-generator.kexe $SNAPCRAFT_PART_STAGE/ktor
