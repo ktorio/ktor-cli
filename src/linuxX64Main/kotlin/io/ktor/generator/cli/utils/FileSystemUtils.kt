@@ -4,7 +4,6 @@ import io.ktor.client.*
 import io.ktor.client.features.json.*
 import io.ktor.client.features.json.serializer.*
 import io.ktor.generator.cli.installer.*
-import io.ktor.generator.cli.utils.mkdir
 import kotlinx.cinterop.*
 import kotlin.text.*
 import kotlinx.cinterop.allocArray
