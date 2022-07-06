@@ -24,3 +24,6 @@ actual fun realPath(path: String, buffer: CPointer<ByteVar>): String? {
 }
 
 actual fun getCwd(buffer: CPointer<ByteVar>, size: Int) = _getcwd(buffer, size)
+actual fun makeDir(path: String) {
+    mkdir(path)
+}

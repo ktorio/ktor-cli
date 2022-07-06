@@ -6,11 +6,8 @@ import kotlinx.cinterop.ByteVar
 import kotlinx.cinterop.CPointer
 import kotlinx.cinterop.pointed
 import kotlinx.cinterop.toKString
-import platform.posix.getpwuid
-import platform.posix.getuid
-import platform.posix.realpath
 import kotlinx.cinterop.allocArray
-import platform.posix.getcwd
+import platform.posix.*
 
 private const val HOME_VAR: String = "HOME"
 
@@ -32,3 +29,7 @@ actual fun realPath(path: String, buffer: CPointer<ByteVar>): String? {
 }
 
 actual fun getCwd(buffer: CPointer<ByteVar>, size: Int) = getcwd(buffer, size.toULong())
+
+actual fun makeDir(path: String) {
+    mkdir(path, (S_IWOTH or S_IROTH).toUShort())
+}
