@@ -1,6 +1,6 @@
 name: ktor
 summary: Creates porjects with ktor framework setup
-version: '2.0.0-eap-2'
+version: '2.0.0-eap-3'
 base: core18
 grade: stable
 confinement: strict
@@ -22,8 +22,8 @@ parts:
       - libcurl4-gnutls-dev
     override-pull: |
       snapcraftctl pull
-      wget https://files.pkg.jetbrains.space/public/p/ktor-cli-tool/linux-release/ktor-cli-generator-2.kexe
-      cp ktor-cli-generator-2.kexe $SNAPCRAFT_PART_SRC/ktor
+      wget https://files.pkg.jetbrains.space/public/p/ktor-cli-tool/linux-release/ktor-cli-generator-3.kexe
+      cp ktor-cli-generator-3.kexe $SNAPCRAFT_PART_SRC/ktor
     override-build: |
       snapcraftctl build
       chmod +x ktor
