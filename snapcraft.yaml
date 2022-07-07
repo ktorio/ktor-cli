@@ -9,6 +9,13 @@ description: |
   You can use it to create server-side as well as client-side applications.
   It supports multiple platforms, including JVM, JavaScript, and Kotlin/Native.
   This CLI tool provides functionality to create new Ktor projects.
+plugs:
+  config-ktor:
+    interface: system-files
+    read:
+    - ~/.ktor
+    write:
+    - ~/.ktor    
 apps:
   ktor:
     command: ktor
