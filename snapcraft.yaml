@@ -19,7 +19,7 @@ plugs:
       - $HOME/.ktor
       - $HOME/.ktor.rc
   http-ktor:
-      - network
+    interface: network
 apps:
   ktor:
     command: ktor
