@@ -10,12 +10,16 @@ description: |
   It supports multiple platforms, including JVM, JavaScript, and Kotlin/Native.
   This CLI tool provides functionality to create new Ktor projects.
 plugs:
-  config-ktor:
-    interface: system-files
+  io-ktor:
+    interface: personal-files
     read:
-    - ~/.ktor
+      - $HOME/.ktor
+      - $HOME/.ktor.rc
     write:
-    - ~/.ktor    
+      - $HOME/.ktor
+      - $HOME/.ktor.rc
+  http-ktor:
+      - network
 apps:
   ktor:
     command: ktor
