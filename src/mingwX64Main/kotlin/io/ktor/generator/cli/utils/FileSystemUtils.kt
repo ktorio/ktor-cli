@@ -27,3 +27,7 @@ actual fun getCwd(buffer: CPointer<ByteVar>, size: Int) = _getcwd(buffer, size)
 actual fun makeDir(path: String) {
     mkdir(path)
 }
+
+actual fun createFile(path: String) {
+    _creat(path, (S_IWOTH or S_IROTH or S_IRUSR or S_IWUSR or S_IRGRP or S_IWGRP or S_IEXEC))
+}

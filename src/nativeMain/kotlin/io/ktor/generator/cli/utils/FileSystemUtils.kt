@@ -27,6 +27,8 @@ expect fun getCwd(buffer: CPointer<ByteVar>, size: Int): CPointer<ByteVar>?
 
 expect fun makeDir(path: String)
 
+expect fun createFile(path: String)
+
 internal fun pwd(): String = memScoped {
     val pathBufferSize = 1024
     val pathBuffer: CArrayPointer<ByteVar> = allocArray<ByteVar>(pathBufferSize)
@@ -63,7 +65,7 @@ data class Directory(override val path: String) : FsUnit {
     fun createFileIfNeeded(name: String): File {
         val newFile = file(name)
         if (!newFile.exists()) {
-            FileSystem.SYSTEM.sink(newFile.path.toPath())
+            createFile(newFile.path)
         }
 
         return newFile
