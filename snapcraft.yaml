@@ -14,10 +14,10 @@ plugs:
     interface: personal-files
     read:
       - $HOME/.ktor
-      - $HOME/.ktor.rc
+      - $HOME/.ktor/ktor.rc
     write:
       - $HOME/.ktor
-      - $HOME/.ktor.rc
+      - $HOME/.ktor/ktor.rc
   http-ktor:
     interface: network
 apps:
