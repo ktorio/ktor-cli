@@ -3,23 +3,12 @@ summary: Creates porjects with ktor framework setup
 version: '2.0.0-eap-4'
 base: core18
 grade: stable
-confinement: strict
+confinement: classic
 description: |
   Ktor is a web application framework for creating connected systems.
   You can use it to create server-side as well as client-side applications.
   It supports multiple platforms, including JVM, JavaScript, and Kotlin/Native.
   This CLI tool provides functionality to create new Ktor projects.
-plugs:
-  io-ktor:
-    interface: personal-files
-    read:
-      - $HOME/.ktor
-      - $HOME/.ktor/ktor.rc
-    write:
-      - $HOME/.ktor
-      - $HOME/.ktor/ktor.rc
-  http-ktor:
-    interface: network
 apps:
   ktor:
     command: ktor
