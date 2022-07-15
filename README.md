@@ -1,23 +1,23 @@
 # Ktor CLI
-Ktor CLI is a command-line tool that brings the capability to create, run, and interact with your [Ktor](https://ktor.io/) application from the command line.
+Ktor CLI is a command-line tool that brings the capability to create and run [Ktor](https://ktor.io/) applications from the command line.
 
 ## Install CLI tools
 
 ### macOS
 
-You can install Ktor CLI on macOS using [Homebrew](https://brew.sh/) as follows:
+You can install Ktor CLI tools on macOS using [Homebrew](https://brew.sh/) as follows:
 1. Add a Ktor repository using the `brew tap` command:
    ```
-   brew tap ktorio/ktor\
+   brew tap ktorio/ktor
    ```
-2. Install Ktor CLI using `brew install`:
+2. Install Ktor CLI tools using `brew install`:
    ```
    brew install --build-from-source ktor\
    ```
 
 ### Linux
 
-On Linux, you can install Ktor CLI using [snaps](https://snapcraft.io/):
+On Linux, you can install Ktor CLI tools using [snap](https://snapcraft.io/):
 
 ```
 snap install --beta --classic ktor
