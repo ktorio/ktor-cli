@@ -34,7 +34,7 @@ internal fun pwd(): String = memScoped {
     val pathBuffer: CArrayPointer<ByteVar> = allocArray<ByteVar>(pathBufferSize)
     getCwd(pathBuffer, pathBufferSize) ?: throw Exception("Failed to locate working dir")
 
-    return@memScoped pathBuffer.toKString()
+    return@memScoped pathBuffer.toKString().replace(" ", "\\ ")
 }
 
 interface FsUnit {

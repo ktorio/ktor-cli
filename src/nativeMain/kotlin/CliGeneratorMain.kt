@@ -7,27 +7,29 @@ import io.ktor.generator.bundle.*
 import io.ktor.generator.cli.installer.*
 import kotlinx.cli.*
 
-const val DEFAULT_KTOR_URL = "https://ktor-plugin.europe-north1-gke.intellij.net"
+private fun executeCatching(action: () -> Unit) {
+    try {
+        action()
+    } catch (e: Exception) {
+        PropertiesBundle.writeMessage("error.happened", e.message ?: e.stackTraceToString())
+    }
+}
 
 @OptIn(ExperimentalCli::class)
 abstract class KtorCommand(
     name: String, description: String, client: HttpClient
 ) : Subcommand(name, description) {
-    private val host: String by option(
-        ArgType.String, fullName = "host", description = PropertiesBundle.message("ktor.backend.url.description")
-    ).default(DEFAULT_KTOR_URL)
-
     protected val projectName: String by argument(
         ArgType.String, description = PropertiesBundle.message("project.name.description")
     )
 
-    protected val ktorInstaller: KtorInstaller by lazy { KtorInstaller(KtorGeneratorWebImpl(client, host)) }
+    protected val ktorInstaller: KtorInstaller by lazy { KtorInstaller(KtorGeneratorWebImpl(client)) }
 }
 
 class GenerateProject(client: HttpClient) : KtorCommand(
     "generate", description = PropertiesBundle.message("generate.command.description"), client = client
 ) {
-    override fun execute() {
+    override fun execute() = executeCatching {
         ktorInstaller.downloadKtorProject(projectName)
     }
 }
@@ -35,12 +37,8 @@ class GenerateProject(client: HttpClient) : KtorCommand(
 class RunProject(client: HttpClient) : KtorCommand(
     "start", description = PropertiesBundle.message("run.command.description"), client = client
 ) {
-    private val args: List<String> by argument(
-        ArgType.String, fullName = "args", description = PropertiesBundle.message("run.arguments.description")
-    ).optional().vararg()
-
-    override fun execute() {
-        ktorInstaller.runKtorProject(projectName, args)
+    override fun execute() = executeCatching {
+        ktorInstaller.runKtorProject(projectName)
     }
 }
 

@@ -60,11 +60,9 @@ class BundleParsingTest {
     @Test
     fun testSimpleMessagesNoError() {
         assertNoErrorInBundle("program.name")
-        assertNoErrorInBundle("ktor.backend.url.description")
         assertNoErrorInBundle("generate.command.description")
         assertNoErrorInBundle("run.command.description")
         assertNoErrorInBundle("project.name.description")
-        assertNoErrorInBundle("run.arguments.description")
         assertNoErrorInBundle("jdk.installed.success")
         assertNoErrorInBundle("generating.project")
     }
