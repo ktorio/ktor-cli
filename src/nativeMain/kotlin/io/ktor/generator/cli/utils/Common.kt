@@ -5,6 +5,8 @@ import kotlinx.cinterop.toKString
 import kotlinx.cinterop.usePinned
 import platform.posix.PATH_MAX
 
+const val DEFAULT_KTOR_URL = "https://ktor-plugin.europe-north1-gke.intellij.net"
+
 expect val RESOURCES_PATH: String
 
 fun getResourcePath(path: String): String {

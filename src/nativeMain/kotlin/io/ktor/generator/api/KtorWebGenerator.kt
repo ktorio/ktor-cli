@@ -1,5 +1,6 @@
 package io.ktor.generator.api
 
+import io.ktor.generator.cli.utils.DEFAULT_KTOR_URL
 import io.ktor.client.*
 import io.ktor.client.request.*
 import io.ktor.generator.cli.installer.*
@@ -24,7 +25,7 @@ interface KtorGeneratorWeb {
     suspend fun genProjectSettings(): ProjectSettingsTemplate
 }
 
-class KtorGeneratorWebImpl(val client: HttpClient, private val ktorBackendHost: String) : KtorGeneratorWeb {
+class KtorGeneratorWebImpl(val client: HttpClient, private val ktorBackendHost: String = DEFAULT_KTOR_URL) : KtorGeneratorWeb {
     override suspend fun downloadJdkArchive(): ByteArray = client.fetchZipContent(jdkDownloadUrl)
 
     override suspend fun generateKtorProject(configuration: SelectedProjectConfiguration): ByteArray =

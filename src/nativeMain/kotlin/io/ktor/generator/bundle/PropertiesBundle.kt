@@ -5,15 +5,17 @@ import com.github.ajalt.mordant.rendering.TextColors.red
 import com.github.ajalt.mordant.terminal.Terminal
 import kotlin.test.assertNotNull
 
+private const val JDK_LICENSE_LINK = "https://www.oracle.com/a/tech/docs/jdk11-lium.pdf"
+
+const val ANSWER_YES = "Y"
+
 // TODO: figure out how to read properties from resources and deploy with project in Kotlin/Native
 object PropertiesBundle {
     private val propToValue: Map<String, String> = mapOf(
         "program.name" to "Ktor CLI generator",
-        "ktor.backend.url.description" to "Ktor generator backend url. It is recommended to leave this property as default",
         "generate.command.description" to "Generate new ktor project",
         "run.command.description" to "Run existing ktor project",
         "project.name.description" to "Name of the ktor project",
-        "run.arguments.description" to "Arguments that will be passed to your project",
         "unable.to.run.command" to "Unable to run: {0}",
         "error.running.command" to "Error running process: {0}",
         "jdk.11.not.found" to "JDK 11 not found.\nJdk download path: {0}\nDownloading JDK 11 from server, please wait...",
@@ -23,7 +25,14 @@ object PropertiesBundle {
         "project.downloaded" to "Project \"{0}\" was downloaded. Running gradle setup...",
         "project.generated" to "Project \"{0}\" was successfully generated.\nYou can execute `ktor start {0}` to start it",
         "project.not.exists" to "Project {0} does not exist",
-        "project.not.have.gradlew" to "Invalid project. Project \"{0}\" does not have gradlew file"
+        "project.not.have.gradlew" to "Invalid project. Project \"{0}\" does not have gradlew file",
+        "download.jdk.legal.message" to "JDK not found\n" +
+                "JDK is a software licensed by Oracle, Inc. under the terms available at $JDK_LICENSE_LINK.\n" +
+                "JDK download path: {0}.\n" +
+                "By typing \"$ANSWER_YES\" you agree with these terms and completion of installation [Y/n]: ",
+        "jdk.legal.rejected" to "JDK is required to proceed. JDK not found. Quitting...",
+        "jdk.setup.failed" to "Failed to setup JDK",
+        "error.happened" to "Error happened: {0}"
     )
 
     private val argumentRegex = "\\{\\d+}".toRegex()
@@ -48,6 +57,11 @@ object PropertiesBundle {
     }
 
     fun writeMessage(property: String, vararg args: String) = println(message(property, *args))
+
+    fun askQuestion(property: String, vararg args: String): Boolean {
+        print(message(property, *args))
+        return readLine() == ANSWER_YES
+    }
     fun writeErrorMessage(property: String, vararg args: String) {
         println()
         Terminal().println(red(message(property, *args)))

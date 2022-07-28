@@ -54,14 +54,19 @@ class KtorInstaller(private val service: KtorGeneratorWeb) {
     private fun jdkIsInstalled(): Boolean =
         getRcProperty(JAVA_HOME) != null || customJdkIsInstalled() || hasJavaHome11()
 
-    private fun installJdkIfAbsent() {
+    private fun installJdkIfAbsent(): Boolean {
         initKtorRootIfAbsent()
         if (jdkIsInstalled()) {
             if (getRcProperty(JAVA_HOME) == null) {
                 addRcProperty(JAVA_HOME, findCustomJdk()?.path ?: getJavaHome()!!)
             }
-            return
+            return true
         }
+        if (!PropertiesBundle.askQuestion("download.jdk.legal.message", jdkDownloadUrl)) {
+            PropertiesBundle.writeMessage("jdk.legal.rejected")
+            return false
+        }
+
 
         val jdkArchiveFile = Directory.home().createFileIfNeeded(jdkArchiveName)
 
@@ -76,12 +81,19 @@ class KtorInstaller(private val service: KtorGeneratorWeb) {
         unpackJdk(archive = jdkArchiveFile, outputDir = jdkDir)
         jdkArchiveFile.delete()
 
-        val newJdkPath = findCustomJdk()?.path ?: throw Exception("Failed to setup JDK")
+        val newJdkPath = findCustomJdk()?.path
+        if (newJdkPath == null) {
+            PropertiesBundle.writeMessage("jdk.setup.failed")
+            return false
+        }
+
         addRcProperty(JAVA_HOME, newJdkPath)
+
+        return true
     }
 
     fun downloadKtorProject(projectName: String) {
-        installJdkIfAbsent()
+        if (!installJdkIfAbsent()) return
 
         val currentDir = Directory.current()
         if (currentDir.subdir(projectName).exists()) {
@@ -130,8 +142,9 @@ class KtorInstaller(private val service: KtorGeneratorWeb) {
         PropertiesBundle.writeSuccessMessage("project.generated", projectName)
     }
 
-    fun runKtorProject(path: String, args: List<String>) {
-        installJdkIfAbsent()
+    fun runKtorProject(path: String, args: List<String> = emptyList()) {
+        if (!installJdkIfAbsent()) return
+
         val ktorJavaHome = getRcProperty(JAVA_HOME)!!
 
         val currentDir = Directory.current()

@@ -1,6 +1,6 @@
 package io.ktor.generator
 
-import DEFAULT_KTOR_URL
+import io.ktor.generator.cli.utils.DEFAULT_KTOR_URL
 import createHttpClient
 import io.ktor.generator.api.*
 import io.ktor.generator.cli.installer.*
