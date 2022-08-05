@@ -14,6 +14,8 @@ import platform.posix.fgets
 private const val READ_MODE = "r"
 private const val WRITE_MODE = "w"
 
+internal const val HOME_VAR: String = "HOME"
+
 expect val FS_DELIMETER: String
 expect fun unzip(zipFile: File, outputDir: Directory)
 

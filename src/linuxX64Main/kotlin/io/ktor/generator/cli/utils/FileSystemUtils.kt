@@ -16,7 +16,7 @@ actual fun unzip(zipFile: File, outputDir: Directory) {
 }
 
 actual fun homePath(): String =
-    getpwuid(getuid())?.pointed?.pw_dir?.toKString() ?: throw Exception("Failed to locate home dir")
+    getEnv(HOME_VAR) ?: getpwuid(getuid())?.pointed?.pw_dir?.toKString() ?: throw Exception("Failed to locate home dir")
 
 actual fun addExecutablePermissions(file: File) {
     runProcess("chmod +x ${file.path}")

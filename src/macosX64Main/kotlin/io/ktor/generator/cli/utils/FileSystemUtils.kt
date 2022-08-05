@@ -9,8 +9,6 @@ import kotlinx.cinterop.toKString
 import kotlinx.cinterop.allocArray
 import platform.posix.*
 
-private const val HOME_VAR: String = "HOME"
-
 actual val FS_DELIMETER: String = "/"
 
 actual fun unzip(zipFile: File, outputDir: Directory) {
