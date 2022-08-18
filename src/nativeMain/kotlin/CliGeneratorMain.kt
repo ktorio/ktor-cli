@@ -6,6 +6,7 @@ import io.ktor.generator.api.*
 import io.ktor.generator.bundle.*
 import io.ktor.generator.cli.installer.*
 import kotlinx.cli.*
+import platform.posix.exit
 
 private fun executeCatching(action: () -> Unit) {
     try {
@@ -63,6 +64,7 @@ fun main(args: Array<String>) {
     val parser = KtorParser(client)
     if (args.isEmpty()) {
         parser.parse(arrayOf("--help"))
+        exit(1)
         return
     }
     parser.parse(args)
