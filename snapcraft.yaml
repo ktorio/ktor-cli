@@ -1,17 +1,42 @@
 name: ktor
 summary: Creates porjects with ktor framework setup
-version: '2.0.0-eap-5'
+version: '2.1.0-beta-1'
 base: core18
 grade: stable
-confinement: classic
+confinement: strict
 description: |
   Ktor is a web application framework for creating connected systems.
   You can use it to create server-side as well as client-side applications.
   It supports multiple platforms, including JVM, JavaScript, and Kotlin/Native.
   This CLI tool provides functionality to create new Ktor projects.
+plugs:
+  io-ktor:
+    interface: personal-files
+    write:
+      - $HOME/.ktor
+      - $HOME/.ktor/ktor.rc
+      - $HOME/jdk11/bin/java
+      - $HOME/.gradle
+      - $HOME/.gradle/wrapper
+      - $HOME/.gradle/wrapper/dists/gradle-7.4-bin/c0gwcg53nkjbqw7r0h0umtfvt/gradle-7.4-bin.zip.lck
+      - $HOME/.gradle/wrapper/dists/gradle-7.4-bin/c0gwcg53nkjbqw7r0h0umtfvt/gradle-7.4-bin.zip.ok
+      - $HOME/.gradle/wrapper/dists/gradle-7.4-bin/c0gwcg53nkjbqw7r0h0umtfvt/gradle-7.4-bin.zip
+      - $HOME/.gradle/wrapper/dists/gradle-7.4-bin/c0gwcg53nkjbqw7r0h0umtfvt/gradle-7.4/LICENSE
+      - $HOME/.gradle/wrapper/dists/gradle-7.4-bin/c0gwcg53nkjbqw7r0h0umtfvt/gradle-7.4/README
+      - $HOME/.gradle/wrapper/dists/gradle-7.4-bin/c0gwcg53nkjbqw7r0h0umtfvt/gradle-7.4/NOTICE
+      - $HOME/.gradle/wrapper/dists/gradle-7.4-bin/c0gwcg53nkjbqw7r0h0umtfvt/gradle-7.4/bin
+      - $HOME/.gradle/wrapper/dists/gradle-7.4-bin/c0gwcg53nkjbqw7r0h0umtfvt/gradle-7.4/init.d
+      - $HOME/.gradle/wrapper/dists/gradle-7.4-bin/c0gwcg53nkjbqw7r0h0umtfvt/gradle-7.4/init.d
+      - $HOME/.gradle/wrapper/dists/gradle-7.4-bin/c0gwcg53nkjbqw7r0h0umtfvt/gradle-7.4/lib
+      - $HOME/.gradle/wrapper/dists/gradle-7.4-bin/c0gwcg53nkjbqw7r0h0umtfvt/gradle-7.4/lib/plugins
 apps:
   ktor:
     command: ktor
+    plugs:
+      - home
+      - network
+      - network-bind
+      - io-ktor
 parts:
   ktor:
     plugin: nil
@@ -20,10 +45,13 @@ parts:
     stage-packages:
       - libcurl4
       - libcurl4-gnutls-dev
+      - unzip
+      - openjdk-11-jdk
+      - gradle
     override-pull: |
       snapcraftctl pull
-      wget https://files.pkg.jetbrains.space/public/p/ktor-cli-tool/linux-release/ktor-cli-generator-3.kexe
-      cp ktor-cli-generator-3.kexe $SNAPCRAFT_PART_SRC/ktor
+      wget https://packages.jetbrains.team/files/p/ktor/ktor-cli-tool/linux-releases/2.1.0-beta-1
+      cp 2.1.0-beta-1 $SNAPCRAFT_PART_SRC/ktor
     override-build: |
       snapcraftctl build
       chmod +x ktor

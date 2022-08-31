@@ -1,9 +1,10 @@
 package io.ktor.generator.cli.utils
 
 import kotlinx.cinterop.addressOf
-import kotlinx.cinterop.toKString
 import kotlinx.cinterop.usePinned
 import platform.posix.PATH_MAX
+
+const val APP_VERSION = "2.1.0-beta-1"
 
 const val DEFAULT_KTOR_URL = "https://ktor-plugin.europe-north1-gke.intellij.net"
 

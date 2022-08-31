@@ -1,5 +1,6 @@
 package io.ktor.generator.cli.utils
 
+import io.ktor.generator.bundle.*
 import io.ktor.utils.io.core.*
 import kotlinx.cinterop.*
 import okio.BufferedSink
@@ -8,6 +9,7 @@ import okio.FileSystem
 import okio.Path.Companion.toPath
 import okio.buffer
 import platform.posix.FILE
+import platform.posix.exit
 import platform.posix.fgets
 
 
@@ -19,7 +21,7 @@ internal const val HOME_VAR: String = "HOME"
 expect val FS_DELIMETER: String
 expect fun unzip(zipFile: File, outputDir: Directory)
 
-expect fun addExecutablePermissions(file: File)
+expect fun addExecutablePermissions(file: File): Boolean
 
 expect fun homePath(): String
 
@@ -27,9 +29,9 @@ expect fun realPath(path: String, buffer: CPointer<ByteVar>): String?
 
 expect fun getCwd(buffer: CPointer<ByteVar>, size: Int): CPointer<ByteVar>?
 
-expect fun makeDir(path: String)
+expect fun makeDir(path: String): Boolean
 
-expect fun createFile(path: String)
+expect fun createFile(path: String): Boolean
 
 internal fun pwd(): String = memScoped {
     val pathBufferSize = 1024
@@ -67,7 +69,10 @@ data class Directory(override val path: String) : FsUnit {
     fun createFileIfNeeded(name: String): File {
         val newFile = file(name)
         if (!newFile.exists()) {
-            createFile(newFile.path)
+            if (!createFile(newFile.path)) {
+                PropertiesBundle.writeErrorMessage("cannot.create.in", "file $name", path)
+                exit(1)
+            }
         }
 
         return newFile
@@ -82,10 +87,9 @@ data class Directory(override val path: String) : FsUnit {
         val dir = subdir(name)
         val dirPath = dir.path.toPath()
         if (!dir.exists()) {
-            try {
-                makeDir(dirPath.toString())
-            } catch (cause: Throwable) {
-                throw Exception("Failed to find/create directory $dirPath")
+            if (!makeDir(dirPath.toString())) {
+                PropertiesBundle.writeErrorMessage("cannot.create.in", "directory $name", path)
+                exit(1)
             }
         }
         return dir

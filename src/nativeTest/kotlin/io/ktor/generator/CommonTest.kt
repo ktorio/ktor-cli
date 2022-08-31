@@ -7,10 +7,7 @@ import io.ktor.generator.cli.installer.*
 import io.ktor.generator.cli.utils.*
 import io.ktor.generator.configuration.json.*
 import kotlinx.coroutines.runBlocking
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertNotNull
-import kotlin.test.assertTrue
+import kotlin.test.*
 
 private fun nativeResource(name: String): File = File("src/nativeTest/resources/$name")
 
@@ -20,6 +17,17 @@ private fun createService(): KtorGeneratorWeb {
 }
 
 class GeneratorIntegrationTests {
+
+    @Test
+    fun testCommandExists() {
+        assertTrue(commandExists("cd"), "CD command must exist")
+        assertFalse(commandExists("abracadabra"), "abracadabra command must not exist")
+    }
+
+    @Test
+    fun testLibcurlExists() {
+        assertTrue(libcurlExists(), "libcurl must exist")
+    }
 
     @Test
     fun testUnzipWorks() {

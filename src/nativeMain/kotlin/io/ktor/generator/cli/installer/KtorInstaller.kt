@@ -6,6 +6,7 @@ import io.ktor.generator.cli.utils.*
 import io.ktor.generator.configuration.json.*
 import kotlinx.coroutines.runBlocking
 import platform.posix.chdir
+import platform.posix.exit
 
 class KtorInstaller(private val service: KtorGeneratorWeb) {
     private val ktorRootDir: Directory by lazy { Directory.home().createDirIfNeeded(rootKtorDirName) }
@@ -13,7 +14,10 @@ class KtorInstaller(private val service: KtorGeneratorWeb) {
 
     private fun runGradle(gradleFile: File, task: String, javaHome: String, args: List<String> = emptyList()) {
         setEnv(JAVA_HOME, javaHome)
-        addExecutablePermissions(gradleFile)
+        if (!addExecutablePermissions(gradleFile)) {
+            PropertiesBundle.writeErrorMessage("no.exec.permissions", gradleFile.path)
+            exit(1)
+        }
         runProcess("${gradleFile.path} $task ${args.joinToString(" ")}")
     }
 
@@ -48,6 +52,7 @@ class KtorInstaller(private val service: KtorGeneratorWeb) {
 
     private fun hasJavaHome11(): Boolean {
         val javaHome = getJavaHome() ?: return false
+        runProcess("$javaHome/bin/java --version")
         return javaHome.contains("11")
     }
 

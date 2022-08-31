@@ -4,10 +4,11 @@ import com.github.ajalt.mordant.rendering.TextColors.green
 import com.github.ajalt.mordant.rendering.TextColors.red
 import com.github.ajalt.mordant.terminal.Terminal
 import kotlin.test.assertNotNull
+import io.ktor.generator.cli.utils.APP_VERSION
 
 private const val JDK_LICENSE_LINK = "https://www.oracle.com/a/tech/docs/jdk11-lium.pdf"
 
-const val ANSWER_YES = "Y"
+const val ANSWER_YES = "y"
 
 // TODO: figure out how to read properties from resources and deploy with project in Kotlin/Native
 object PropertiesBundle {
@@ -15,6 +16,8 @@ object PropertiesBundle {
         "program.name" to "Ktor CLI generator",
         "generate.command.description" to "Generate new ktor project",
         "run.command.description" to "Run existing ktor project",
+        "version.command.description" to "Version of the CLI generator",
+        "version.command" to "ktor version {0}",
         "project.name.description" to "Name of the ktor project",
         "unable.to.run.command" to "Unable to run: {0}",
         "error.running.command" to "Error running process: {0}",
@@ -32,7 +35,12 @@ object PropertiesBundle {
                 "By typing \"$ANSWER_YES\" you agree with these terms and completion of installation [Y/n]: ",
         "jdk.legal.rejected" to "JDK is required to proceed. JDK not found. Quitting...",
         "jdk.setup.failed" to "Failed to setup JDK",
-        "error.happened" to "Error happened: {0}"
+        "error.happened" to "Error happened: {0}",
+        "no.write.permissions" to "No write permissions in {0}",
+        "no.exec.permissions" to "Failed to obtain execute permissions for {0}",
+        "cannot.create.in" to "Unable to create {0} in {1}.\nPossible solution: please, try to set write permissions for {1}",
+        "command.does.not.exist" to "{0} is required in order to run this software. Please, make sure it is installed (see https://github.com/ktorio/ktor-cli/releases/tag/$APP_VERSION for more information)",
+        "project.name.invalid" to "Project name must start with a letter and consist of alphanumerical characters"
     )
 
     private val argumentRegex = "\\{\\d+}".toRegex()
@@ -60,7 +68,7 @@ object PropertiesBundle {
 
     fun askQuestion(property: String, vararg args: String): Boolean {
         print(message(property, *args))
-        return readLine() == ANSWER_YES
+        return readLine()?.lowercase() == ANSWER_YES
     }
     fun writeErrorMessage(property: String, vararg args: String) {
         println()

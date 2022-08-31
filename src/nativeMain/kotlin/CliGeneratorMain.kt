@@ -5,8 +5,11 @@ import io.ktor.client.features.json.serializer.*
 import io.ktor.generator.api.*
 import io.ktor.generator.bundle.*
 import io.ktor.generator.cli.installer.*
+import io.ktor.generator.cli.utils.*
 import kotlinx.cli.*
 import platform.posix.exit
+
+private val ALLOWED_PROJECT_NAME = "[a-zA-Z]\\w+".toRegex()
 
 private fun executeCatching(action: () -> Unit) {
     try {
@@ -31,7 +34,11 @@ class GenerateProject(client: HttpClient) : KtorCommand(
     "generate", description = PropertiesBundle.message("generate.command.description"), client = client
 ) {
     override fun execute() = executeCatching {
-        ktorInstaller.downloadKtorProject(projectName)
+        if (!projectName.matches(ALLOWED_PROJECT_NAME)) {
+            PropertiesBundle.writeErrorMessage("project.name.invalid")
+        } else {
+            ktorInstaller.downloadKtorProject(projectName)
+        }
     }
 }
 
@@ -43,10 +50,20 @@ class RunProject(client: HttpClient) : KtorCommand(
     }
 }
 
+class Version(client: HttpClient) : KtorCommand(
+    "version",
+    description = PropertiesBundle.message("version.command.description"),
+    client = client
+) {
+    override fun execute() = executeCatching {
+        PropertiesBundle.writeMessage("version.command", APP_VERSION)
+    }
+}
+
 @OptIn(ExperimentalCli::class)
 class KtorParser(client: HttpClient) : ArgParser(PropertiesBundle.message("program.name")) {
     init {
-        subcommands(GenerateProject(client), RunProject(client))
+        subcommands(GenerateProject(client), RunProject(client), Version(client))
     }
 }
 
@@ -59,6 +76,7 @@ fun createHttpClient(): HttpClient = HttpClient {
 
 @OptIn(ExperimentalCli::class)
 fun main(args: Array<String>) {
+    assertLibcurlExists()
     val client = createHttpClient()
 
     val parser = KtorParser(client)
