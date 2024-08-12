@@ -1,9 +1,7 @@
 package main
 
 import (
-	"errors"
 	"fmt"
-	"github.com/ktorio/ktor-cli/internal/app"
 	"github.com/ktorio/ktor-cli/internal/app/cli"
 	"github.com/ktorio/ktor-cli/internal/app/config"
 	"github.com/ktorio/ktor-cli/internal/app/generate"
@@ -13,7 +11,6 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"runtime"
 	"time"
 )
 
@@ -26,20 +23,7 @@ func main() {
 	}
 
 	if err := cli.ValidateArgs(args); err != nil {
-		switch err {
-		case cli.NoCommandError:
-			fmt.Fprintln(os.Stderr, "Expected a command")
-		case cli.CommandNotFoundError:
-			fmt.Fprintf(os.Stderr, "Command %s not found\n", *args.Command)
-		case cli.WrongNumberOfArgumentsError:
-			if *args.Command == "new" {
-				fmt.Fprintln(os.Stderr, "Expected one argument (project name) for the new command")
-			}
-		default:
-			// do nothing
-		}
-
-		cli.WriteUsage(os.Stderr)
+		cli.HandleArgsValidation(err, args.Command)
 		os.Exit(1)
 	}
 
@@ -71,7 +55,7 @@ func main() {
 	}
 
 	switch *args.Command {
-	case "new":
+	case string(cli.NewCommand):
 		client := &http.Client{
 			Timeout: 5 * time.Second,
 		}
@@ -86,55 +70,15 @@ func main() {
 
 		err = generate.Project(client, verboseLogger, projectDir, projectName)
 		if err != nil {
-			reportLog := true
-			var e *app.Error
-			if ok := errors.As(err, &e); ok {
-				switch e.Kind {
-				case app.ServerError:
-					fmt.Fprintf(os.Stderr, "Unexpected error occurred while connecting to the generation server. Please try again later.\n")
-				case app.NetworkError:
-					fmt.Fprintf(os.Stderr, "Unexpected network error occurred while connecting to the generation server. Please check your Internet connection.\n")
-				case app.InternalError:
-					fmt.Fprintf(os.Stderr, "An intenal error occurred. Please file an issue on https://youtrack.jetbrains.com/newIssue?project=ktor\n")
-				case app.ProjectDirError:
-					reportLog = false
-					var pe *os.PathError
-					errors.As(e.Err, &pe)
+			reportLog := cli.HandleAppError(projectDir, err)
 
-					switch {
-					case errors.Is(pe.Err, os.ErrExist):
-						fmt.Fprintf(os.Stderr, "The project directory %s already exists.\n", pe.Path)
-					case errors.Is(pe.Err, os.ErrPermission):
-						fmt.Fprintf(os.Stderr, "Not enough permissions to create project directory %s.\n", pe.Path)
-					}
-				case app.ExtractError:
-					fmt.Fprintf(os.Stderr, "Unable to extract downloaded archive to the directory %s.\n", projectDir)
-				case app.GradlewChmod:
-					var pe *os.PathError
-					errors.As(e.Err, &pe)
-					fmt.Fprintf(os.Stderr, "Unable to make %s file executable.\n", pe.Path)
-				case app.UnknownError:
-					fmt.Fprintf(os.Stderr, "Unexpected error occurred.\n")
-				}
-
-				if hasGlobalLog && reportLog {
-					fmt.Fprintf(os.Stderr, "You can find more information in the log: %s\n", config.LogPath(homeDir))
-				}
+			if hasGlobalLog && reportLog {
+				fmt.Fprintf(os.Stderr, "You can find more information in the log: %s\n", config.LogPath(homeDir))
 			}
 
 			log.Fatal(err)
 		}
 
-		initialProjectDir := projectName
-		fmt.Printf("Project \"%s\" has been created in the directory %s.\n", projectName, projectDir)
-		fmt.Print("To run the project use the following commands:\n\n")
-
-		if runtime.GOOS == "windows" {
-			fmt.Printf("cd %s\n", initialProjectDir)
-			fmt.Println(".\\gradlew.bat run")
-		} else {
-			fmt.Printf("cd %s\n", initialProjectDir)
-			fmt.Println("./gradlew run")
-		}
+		cli.PrintSuccessGen(projectDir, projectName)
 	}
 }
