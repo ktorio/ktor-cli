@@ -1,5 +1,5 @@
 # Ktor CLI
-The tool allows generating [Ktor](https://ktor.io/) applications through the command line interface.
+The `ktor` tool allows generating [Ktor](https://ktor.io/) applications through the command line interface.
 
 ## Prerequisites
 To build the tool, the `go` compiler needs to be installed first. You can find the [installation guide](https://go.dev/doc/install) on the official website.
