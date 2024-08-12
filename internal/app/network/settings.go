@@ -2,6 +2,7 @@ package network
 
 import (
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -25,8 +26,13 @@ func FetchSettings(client *http.Client) (*DefaultSettings, error) {
 			return nil, &app.Error{Err: err, Kind: app.NetworkError}
 		}
 
-		if errors.As(err, &context.DeadlineExceeded) {
+		if errors.Is(err, context.DeadlineExceeded) {
 			return nil, &app.Error{Err: err, Kind: app.NetworkError}
+		}
+
+		var certErr *tls.CertificateVerificationError
+		if errors.As(err, &certErr) {
+			return nil, &app.Error{Err: err, Kind: app.ServerError}
 		}
 
 		return nil, &app.Error{Err: err, Kind: app.UnknownError}
