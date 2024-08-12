@@ -1,56 +1,40 @@
 # Ktor CLI
-Ktor CLI is a command-line tool that brings the capability to create and run [Ktor](https://ktor.io/) applications from the command line.
+The `ktor` tool allows generating [Ktor](https://ktor.io/) applications through the command line interface.
 
-## Install CLI tools
+## Prerequisites
+To build the tool, the `go` compiler needs to be installed first. You can find the [installation guide](https://go.dev/doc/install) on the official website.
 
-### macOS
 
-You can install Ktor CLI tools on macOS using [Homebrew](https://brew.sh/) as follows:
-1. Add a Ktor repository using the `brew tap` command:
-   ```
-   brew tap ktorio/ktor
-   ```
-2. Install Ktor CLI tools using `brew install`:
-   ```
-   brew install --build-from-source ktor\
-   ```
-
-### Linux
-
-On Linux, you can install Ktor CLI tools using [snap](https://snapcraft.io/):
-
-```
-snap install --beta --classic ktor
+## Building
+To build an executable, issue the following command in the root directory of the repository:
+```shell
+go build github.com/ktorio/ktor-cli/cmd/ktor
 ```
 
-### Available commands
-You can get a list of Ktor commands available to you by typing `ktor --help`.
+If the build is successful, the `ktor` executable should appear in the current directory.
+Also, the `go` command can be issued through Docker using an [official Go image](https://hub.docker.com/_/golang):
+```shell
+docker run --rm -v "$PWD":/usr/src/myapp -w /usr/src/myapp golang:1.21 go build -buildvcs=false -v github.com/ktorio/ktor-cli/cmd/ktor
+```
+
+## Running
+To run the tool without making an intermediate build, execute the following command:
+```shell
+go run github.com/ktorio/ktor-cli/cmd/ktor # followed by CLI args
+```
+
+Effectively, the `go run github.com/ktorio/ktor-cli/cmd/ktor` line can replace the `ktor` executable in the below commands.
 
 
 ## Create a project
 
-To create a new Ktor project, pass a project name to the `ktor generate` command:
+To create a new Ktor project, pass a project name to the `ktor new` command:
 
 ```
-ktor generate ktor-sample
+ktor new ktor-sample
 ```
 
-This command generates a simple Ktor project that uses the Gradle build system with Kotlin DSL.
-
-
-## Run a project
-
-To run the existing Ktor application, use the `ktor start` command.
-This command accepts the name of the directory where the project is placed:
-
+The `-v` option can be used to enable verbose output:
+```shell
+ktor -v new ktor-sample
 ```
-ktor start ktor-sample
-```
-
-With the default configuration, the terminal should show the following message:
-
-```
-[main] INFO  ktor.application - Responding at http://0.0.0.0:8080
-```
-
-This means that the server is ready to accept requests at the http://0.0.0.0:8080 address. 
