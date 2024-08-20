@@ -10,11 +10,17 @@ import (
 const (
 	NetworkError ErrorKind = iota
 	InternalError
-	ServerError
+	GenServerError
 	UnknownError
 	ProjectDirError
-	ExtractError
-	GradlewChmod
+	JdksDirError
+	ProjectExtractError
+	JdkExtractError
+	GradlewChmodError
+	ExtractRootDirExistError
+	UnableLocateJdkError
+	JdkServerError
+	JdkVerificationFailed
 )
 
 type ErrorKind int

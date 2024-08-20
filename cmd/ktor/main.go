@@ -3,8 +3,8 @@ package main
 import (
 	"fmt"
 	"github.com/ktorio/ktor-cli/internal/app/cli"
+	"github.com/ktorio/ktor-cli/internal/app/cli/command"
 	"github.com/ktorio/ktor-cli/internal/app/config"
-	"github.com/ktorio/ktor-cli/internal/app/generate"
 	"github.com/ktorio/ktor-cli/internal/app/utils"
 	"io"
 	"log"
@@ -18,13 +18,12 @@ func main() {
 	args, err := cli.ParseArgs(os.Args)
 
 	if err != nil {
-		cli.WriteUsage(os.Stderr)
+		cli.UsageTerminate(os.Stderr)
 		os.Exit(1)
 	}
 
 	if err := cli.ValidateArgs(args); err != nil {
 		cli.HandleArgsValidation(err, args.Command)
-		os.Exit(1)
 	}
 
 	homeDir, err := os.UserHomeDir()
@@ -57,7 +56,7 @@ func main() {
 	switch *args.Command {
 	case string(cli.NewCommand):
 		client := &http.Client{
-			Timeout: 5 * time.Second,
+			Timeout: 30 * time.Second,
 		}
 
 		projectName := utils.CleanProjectName(args.CommandArgs[0])
@@ -68,17 +67,6 @@ func main() {
 			os.Exit(1)
 		}
 
-		err = generate.Project(client, verboseLogger, projectDir, projectName)
-		if err != nil {
-			reportLog := cli.HandleAppError(projectDir, err)
-
-			if hasGlobalLog && reportLog {
-				fmt.Fprintf(os.Stderr, "You can find more information in the log: %s\n", config.LogPath(homeDir))
-			}
-
-			log.Fatal(err)
-		}
-
-		cli.PrintSuccessGen(projectDir, projectName)
+		command.Generate(client, projectDir, projectName, verboseLogger, hasGlobalLog)
 	}
 }

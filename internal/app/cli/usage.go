@@ -6,7 +6,7 @@ import (
 	"os"
 )
 
-func WriteUsage(w io.Writer) {
+func UsageTerminate(w io.Writer) {
 	fmt.Fprintf(w, "Ktor is a tool mainly for generating Ktor projects.\n\n")
 	fmt.Fprintf(w, "Usage: ktor [options] <command> [arguments]\n\n")
 	fmt.Fprintln(w, "The options are:")

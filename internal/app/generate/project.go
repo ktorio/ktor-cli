@@ -1,6 +1,7 @@
 package generate
 
 import (
+	"bytes"
 	"errors"
 	"github.com/ktorio/ktor-cli/internal/app"
 	"github.com/ktorio/ktor-cli/internal/app/archive"
@@ -13,8 +14,6 @@ import (
 
 // Project Returns *app.Error on error
 func Project(client *http.Client, logger *log.Logger, projectDir, project string) error {
-	logger.Printf("Creating directory %s\n", projectDir)
-
 	err := os.Mkdir(projectDir, 0755)
 	if err != nil {
 		var pe *os.PathError
@@ -26,6 +25,8 @@ func Project(client *http.Client, logger *log.Logger, projectDir, project string
 
 		return &app.Error{Err: err, Kind: app.UnknownError}
 	}
+
+	logger.Printf("Creating directory %s\n", projectDir)
 
 	settings, err := network.FetchSettings(client)
 
@@ -59,10 +60,10 @@ func Project(client *http.Client, logger *log.Logger, projectDir, project string
 	}
 
 	logger.Printf("Extracting downloaded archive to directory %s\n", projectDir)
-	err = archive.ExtractZip(zipBytes, projectDir, logger)
+	_, err = archive.ExtractZip(bytes.NewReader(zipBytes), int64(len(zipBytes)), projectDir, logger)
 
 	if err != nil {
-		return &app.Error{Err: err, Kind: app.ExtractError}
+		return &app.Error{Err: err, Kind: app.ProjectExtractError}
 	}
 
 	gradlewPath := path.Join(projectDir, "gradlew")
@@ -70,7 +71,7 @@ func Project(client *http.Client, logger *log.Logger, projectDir, project string
 	err = os.Chmod(gradlewPath, 0764)
 
 	if err != nil {
-		return &app.Error{Err: err, Kind: app.GradlewChmod}
+		return &app.Error{Err: err, Kind: app.GradlewChmodError}
 	}
 
 	return nil

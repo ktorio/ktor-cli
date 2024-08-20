@@ -2,19 +2,21 @@ package archive
 
 import (
 	"archive/zip"
-	"bytes"
 	"errors"
+	"github.com/ktorio/ktor-cli/internal/app/utils"
 	"io"
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
-func ExtractZip(archive []byte, outDir string, logger *log.Logger) error {
-	zr, err := zip.NewReader(bytes.NewReader(archive), int64(len(archive)))
+func ExtractZip(rt io.ReaderAt, size int64, outDir string, logger *log.Logger) (rootDirs utils.StringSet, err error) {
+	rootDirs = utils.NewStringSet()
+	zr, err := zip.NewReader(rt, size)
 
 	if err != nil {
-		return err
+		return
 	}
 
 	var zipErrors []error
@@ -31,9 +33,15 @@ func ExtractZip(archive []byte, outDir string, logger *log.Logger) error {
 
 			outPath := filepath.Join(outDir, zf.Name)
 
-			if filepath.Dir(outPath) != outDir {
-				logger.Printf("Creating directory %s\n", filepath.Dir(outPath))
-				err := os.MkdirAll(filepath.Dir(outPath), 0755)
+			if filepath.Dir(zf.Name) != "." {
+				dir := filepath.Dir(outPath)
+				logger.Printf("Creating directory %s\n", dir)
+
+				if i := strings.Index(zf.Name, "/"); i != -1 {
+					rootDirs.Add(filepath.Join(outDir, zf.Name[:i]))
+				}
+
+				err := os.MkdirAll(dir, 0755)
 
 				if err != nil {
 					return err
@@ -59,5 +67,6 @@ func ExtractZip(archive []byte, outDir string, logger *log.Logger) error {
 		}
 	}
 
-	return errors.Join(zipErrors...)
+	err = errors.Join(zipErrors...)
+	return
 }

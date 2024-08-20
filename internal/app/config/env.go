@@ -2,7 +2,7 @@ package config
 
 import (
 	"os"
-	"path"
+	"path/filepath"
 )
 
 func GenBaseUrl() string {
@@ -16,9 +16,17 @@ func GenBaseUrl() string {
 }
 
 func KtorDir(homeDir string) string {
-	return path.Join(homeDir, ".ktor")
+	return filepath.Join(homeDir, ".ktor")
 }
 
 func LogPath(homeDir string) string {
-	return path.Join(KtorDir(homeDir), "run.log")
+	return filepath.Join(KtorDir(homeDir), "run.log")
+}
+
+func JdksDir(homeDir string) string {
+	return filepath.Join(KtorDir(homeDir), "jdks")
+}
+
+func persistentPath(homeDir string) string {
+	return filepath.Join(KtorDir(homeDir), "config.json")
 }

@@ -3,57 +3,62 @@ package jdk
 import (
 	"errors"
 	"fmt"
+	"github.com/ktorio/ktor-cli/internal/app"
 	"io"
+	"log"
 	"net/http"
 )
 
-func DownloadJdk(client *http.Client, platform, arch, version string, w io.Writer) error {
-	if !hasJdkBuild(platform, arch, version) {
-		return errors.New(fmt.Sprintf("cannot download JDK for the platform %s and architecture %s", platform, arch))
+func DownloadJdk(client *http.Client, d *Descriptor, logger *log.Logger) ([]byte, error) {
+	if !hasJdkBuild(d) {
+		return nil, &app.Error{Err: Error{d}, Kind: app.UnableLocateJdkError}
 	}
 
 	ext := "tar.gz"
-	if platform == "windows" {
+	if d.Platform == "windows" {
 		ext = "zip"
 	}
 
-	url := fmt.Sprintf("https://corretto.aws/downloads/latest/amazon-corretto-%s-%s-%s-jdk.%s", version, arch, platform, ext)
+	url := fmt.Sprintf("https://corretto.aws/downloads/latest/amazon-corretto-%s-%s-%s-jdk.%s", d.Version, d.Arch, d.Platform, ext)
+	logger.Printf("Downloading %s from %s\n", d, url)
 
 	resp, err := client.Get(url)
 	if err != nil {
-		return err
+		return nil, &app.Error{Err: err, Kind: app.JdkServerError}
 	}
 
 	defer resp.Body.Close()
 
-	_, err = io.Copy(w, resp.Body)
-	if err != nil {
-		return err
+	if resp.StatusCode != http.StatusOK {
+		return nil, &app.Error{
+			Err:  errors.New(fmt.Sprintf("download jdk: bad status code %d", resp.StatusCode)),
+			Kind: app.JdkServerError,
+		}
 	}
 
-	return nil
+	return io.ReadAll(resp.Body)
 }
 
-func hasJdkBuild(platform, arch, version string) bool {
-	if version != "11" && version != "17" && version != "21" {
+func hasJdkBuild(d *Descriptor) bool {
+	if d.Version != "11" && d.Version != "17" && d.Version != "21" {
 		return false
 	}
 
-	switch platform {
+	switch d.Platform {
 	case "linux":
-		if arch == "x64" || arch == "aarch64" {
+		if d.Arch == "x64" || d.Arch == "aarch64" {
 			return true
 		}
 	case "windows":
-		if arch == "x64" {
+		if d.Arch == "x64" {
 			return true
 		}
 	case "macos":
-		if arch == "x64" || arch == "aarch64" {
+		if d.Arch == "x64" || d.Arch == "aarch64" {
 			return true
 		}
 	case "alpine":
-		if arch == "x64" || arch == "aarch64" {
+		if d.Arch == "x64" || d.Arch == "aarch64" {
 			return true
 		}
 	}
