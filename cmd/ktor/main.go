@@ -18,7 +18,7 @@ func main() {
 	args, err := cli.ParseArgs(os.Args)
 
 	if err != nil {
-		cli.UsageTerminate(os.Stderr)
+		cli.WriteUsage(os.Stderr)
 		os.Exit(1)
 	}
 

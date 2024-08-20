@@ -93,7 +93,8 @@ func HandleArgsValidation(err error, command *string) {
 
 	fmt.Fprintln(os.Stderr)
 
-	UsageTerminate(os.Stderr)
+	WriteUsage(os.Stderr)
+	os.Exit(1)
 }
 
 func PrintCommands(projectName string, javaHomeSet bool, jdkPath string) {
