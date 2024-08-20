@@ -27,6 +27,6 @@ func JdksDir(homeDir string) string {
 	return filepath.Join(KtorDir(homeDir), "jdks")
 }
 
-func persistentPath(homeDir string) string {
+func ktorConfigPath(homeDir string) string {
 	return filepath.Join(KtorDir(homeDir), "config.json")
 }

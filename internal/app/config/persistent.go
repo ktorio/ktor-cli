@@ -16,7 +16,7 @@ func init() {
 		return
 	}
 
-	f, err := os.Open(persistentPath(homeDir))
+	f, err := os.Open(ktorConfigPath(homeDir))
 	if err != nil {
 		return
 	}
@@ -51,7 +51,7 @@ func Commit() error {
 		return err
 	}
 
-	err = os.WriteFile(persistentPath(homeDir), b, 0755)
+	err = os.WriteFile(ktorConfigPath(homeDir), b, 0755)
 	if err != nil {
 		return err
 	}
