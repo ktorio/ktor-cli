@@ -131,6 +131,13 @@ func getWindowsCandidates() (paths []string) {
 		paths = append(paths, getChildDirs(fmt.Sprintf("%s:\\Program Files\\Common Files\\Oracle\\Java", drive))...)
 	}
 
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return
+	}
+
+	paths = append(paths, getChildDirs(filepath.Join(homeDir, ".jdks"))...)
+
 	return
 }
 

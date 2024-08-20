@@ -103,12 +103,11 @@ func PrintCommands(projectName string, javaHomeSet bool, jdkPath string) {
 
 	if runtime.GOOS == "windows" {
 		fmt.Printf("cd %s\n", initialProjectDir)
-		fmt.Println(".\\gradlew.bat run")
 
 		if javaHomeSet {
 			fmt.Println(".\\gradlew.bat run")
 		} else {
-			fmt.Printf("set \"JAVA_HOME=%s\" && .\\gradlew.bat run", jdkPath)
+			fmt.Printf("cmd /C \"set JAVA_HOME=%s&& .\\gradlew.bat run\"\n\n", jdkPath)
 			fmt.Printf("You can also set the JAVA_HOME environment variable permanently or add this JDK in the IntelliJ IDEA\n")
 		}
 	} else {

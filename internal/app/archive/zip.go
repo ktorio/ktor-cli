@@ -21,6 +21,18 @@ func ExtractZip(rt io.ReaderAt, size int64, outDir string, logger *log.Logger) (
 
 	var zipErrors []error
 	for _, zf := range zr.File {
+		outPath := filepath.Join(outDir, zf.Name)
+
+		if strings.HasSuffix(zf.Name, "/") {
+			err := os.MkdirAll(outPath, zf.Mode())
+
+			if err != nil {
+				zipErrors = append(zipErrors, err)
+			}
+
+			continue
+		}
+
 		zipFile, err := zr.Open(zf.Name)
 
 		if err != nil {
@@ -31,8 +43,6 @@ func ExtractZip(rt io.ReaderAt, size int64, outDir string, logger *log.Logger) (
 		err = func() error {
 			defer zipFile.Close()
 
-			outPath := filepath.Join(outDir, zf.Name)
-
 			if filepath.Dir(zf.Name) != "." {
 				dir := filepath.Dir(outPath)
 				logger.Printf("Creating directory %s\n", dir)
@@ -41,7 +51,7 @@ func ExtractZip(rt io.ReaderAt, size int64, outDir string, logger *log.Logger) (
 					rootDirs.Add(filepath.Join(outDir, zf.Name[:i]))
 				}
 
-				err := os.MkdirAll(dir, 0755)
+				err := os.MkdirAll(dir, zf.Mode())
 
 				if err != nil {
 					return err
