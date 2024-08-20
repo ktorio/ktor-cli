@@ -56,6 +56,10 @@ func fetch(client *http.Client, d *Descriptor, outDir string, logger *log.Logger
 
 	wg.Wait()
 	if verifyErr != nil {
+		if extractErr == nil {
+			os.RemoveAll(extractDir)
+		}
+
 		return "", &app.Error{Err: verifyErr, Kind: app.JdkVerificationFailed}
 	}
 
