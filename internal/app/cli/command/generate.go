@@ -38,7 +38,7 @@ func Generate(client *http.Client, projectDir, projectName string, verboseLogger
 
 	if jh, ok := jdk.JavaHome(); ok {
 		if v, err := jdk.GetJavaMajorVersion(jh); err == nil && v >= jdk.MinJavaVersion {
-			fmt.Printf("Detected JDK from JAVA_HOME=%s\n", jh)
+			fmt.Printf("JDK is detected in JAVA_HOME=%s\n", jh)
 			cli.PrintCommands(projectName, true, "")
 			os.Exit(0)
 		}

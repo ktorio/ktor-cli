@@ -108,7 +108,8 @@ func PrintCommands(projectName string, javaHomeSet bool, jdkPath string) {
 			fmt.Println(".\\gradlew.bat run")
 		} else {
 			fmt.Printf("cmd /C \"set JAVA_HOME=%s&& .\\gradlew.bat run\"\n\n", jdkPath)
-			fmt.Printf("You can also set the JAVA_HOME environment variable permanently or add this JDK in the IntelliJ IDEA\n")
+			fmt.Printf("You can also set the JAVA_HOME environment variable permanently or add the following JDK in the IntelliJ IDEA: \n")
+			fmt.Println(jdkPath)
 		}
 	} else {
 		fmt.Printf("cd %s\n", initialProjectDir)
@@ -117,7 +118,8 @@ func PrintCommands(projectName string, javaHomeSet bool, jdkPath string) {
 			fmt.Println("./gradlew run")
 		} else {
 			fmt.Printf("JAVA_HOME=%s ./gradlew run\n\n", jdkPath)
-			fmt.Printf("You can also set the JAVA_HOME environment variable permanently or add this JDK in the IntelliJ IDEA\n")
+			fmt.Printf("You can also set the JAVA_HOME environment variable permanently or add the following JDK in the IntelliJ IDEA: \n")
+			fmt.Println(jdkPath)
 		}
 	}
 }

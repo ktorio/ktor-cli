@@ -40,7 +40,7 @@ func getRecommendedJdk() *Descriptor {
 	switch runtime.GOARCH {
 	case "amd64":
 		arch = "x64"
-	case "arm":
+	case "arm64":
 		arch = "aarch64"
 	}
 

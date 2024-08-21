@@ -51,7 +51,7 @@ func ExtractZip(rt io.ReaderAt, size int64, outDir string, logger *log.Logger) (
 					rootDirs.Add(filepath.Join(outDir, zf.Name[:i]))
 				}
 
-				err := os.MkdirAll(dir, zf.Mode())
+				err := os.MkdirAll(dir, 0755)
 
 				if err != nil {
 					return err
