@@ -3,7 +3,6 @@ package cli
 import (
 	"fmt"
 	"io"
-	"os"
 )
 
 func WriteUsage(w io.Writer) {
@@ -13,5 +12,4 @@ func WriteUsage(w io.Writer) {
 	fmt.Fprintln(w, "\t-v\tenable verbose mode")
 	fmt.Fprintln(w, "The commands are:")
 	fmt.Fprintln(w, "\tnew <project-name>\tgenerate new Ktor project")
-	os.Exit(1)
 }

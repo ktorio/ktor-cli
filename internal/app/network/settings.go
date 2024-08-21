@@ -32,7 +32,7 @@ func FetchSettings(client *http.Client) (*DefaultSettings, error) {
 
 		var certErr *tls.CertificateVerificationError
 		if errors.As(err, &certErr) {
-			return nil, &app.Error{Err: err, Kind: app.ServerError}
+			return nil, &app.Error{Err: err, Kind: app.GenServerError}
 		}
 
 		return nil, &app.Error{Err: err, Kind: app.UnknownError}
@@ -43,14 +43,14 @@ func FetchSettings(client *http.Client) (*DefaultSettings, error) {
 	if resp.StatusCode != http.StatusOK {
 		statusErr := app.StatusError(resp, "fetch settings")
 		if resp.StatusCode == http.StatusNotFound || resp.StatusCode >= 500 {
-			return nil, &app.Error{Err: statusErr, Kind: app.ServerError}
+			return nil, &app.Error{Err: statusErr, Kind: app.GenServerError}
 		}
 
 		if resp.StatusCode == http.StatusBadRequest {
 			return nil, &app.Error{Err: statusErr, Kind: app.InternalError}
 		}
 
-		return nil, &app.Error{Err: statusErr, Kind: app.ServerError}
+		return nil, &app.Error{Err: statusErr, Kind: app.GenServerError}
 	}
 
 	dec := json.NewDecoder(resp.Body)
@@ -59,7 +59,7 @@ func FetchSettings(client *http.Client) (*DefaultSettings, error) {
 	err = dec.Decode(&settings)
 
 	if err != nil {
-		return nil, app.Error{Err: errors.New("fetch settings: " + err.Error()), Kind: app.ServerError}
+		return nil, app.Error{Err: errors.New("fetch settings: " + err.Error()), Kind: app.GenServerError}
 	}
 
 	return &settings, nil
