@@ -5,45 +5,40 @@ import (
 )
 
 type Args struct {
-	Options     Options
-	Command     *string
+	Flags       []string
+	Command     string
 	CommandArgs []string
 }
 
 type Options struct {
-	Verbose *bool
+	Verbose bool
 }
 
-func ParseArgs(args []string) (*Args, error) {
-	if len(args) < 2 {
-		return nil, NotEnoughArgsError
-	}
-
-	verbose := false
+// ParseArgs returns *Error on error
+func ParseArgs(args []string) *Args {
 	i := 1
+	var flags []string
 	for ; i < len(args); i++ {
 		arg := args[i]
 		if !strings.HasPrefix(arg, "-") {
 			break
 		}
 
-		if arg == "-v" {
-			verbose = true
-		}
+		flags = append(flags, arg)
 	}
 
-	var command *string
+	command := ""
 	if i < len(args) {
-		command = &args[i]
+		command = args[i]
 	}
 	var commandArgs []string
-	if i < len(args) {
+	if i+1 < len(args) {
 		commandArgs = args[i+1:]
 	}
 
 	return &Args{
-		Options:     Options{Verbose: &verbose},
+		Flags:       flags,
 		Command:     command,
 		CommandArgs: commandArgs,
-	}, nil
+	}
 }
