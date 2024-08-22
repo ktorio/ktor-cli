@@ -98,8 +98,15 @@ func HandleArgsValidation(err error) {
 	case WrongNumberOfArgumentsError:
 		var ce CommandError
 		errors.As(e.Err, &ce)
-		if ce.Command == NewCommand {
-			fmt.Fprintln(os.Stderr, "Expected one argument (project name) for the new command")
+
+		if spec, ok := allCommandsSpec[ce.Command]; ok {
+			fmt.Fprintf(
+				os.Stderr,
+				"Expected %d argument[s]: %s for the %s command\n",
+				len(spec.args),
+				strings.Join(spec.args, " "),
+				ce.Command,
+			)
 		}
 	default:
 		// do nothing

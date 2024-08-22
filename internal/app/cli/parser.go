@@ -14,7 +14,6 @@ type Options struct {
 	Verbose bool
 }
 
-// ParseArgs returns *Error on error
 func ParseArgs(args []string) *Args {
 	i := 1
 	var flags []string
