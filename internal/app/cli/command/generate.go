@@ -6,6 +6,7 @@ import (
 	"github.com/ktorio/ktor-cli/internal/app/config"
 	"github.com/ktorio/ktor-cli/internal/app/generate"
 	"github.com/ktorio/ktor-cli/internal/app/jdk"
+	"github.com/ktorio/ktor-cli/internal/app/utils"
 	"log"
 	"net/http"
 	"os"
@@ -21,6 +22,10 @@ func Generate(client *http.Client, projectDir, projectName string, verboseLogger
 	err = generate.Project(client, verboseLogger, projectDir, projectName)
 
 	if err != nil {
+		if _, err := os.Stat(projectDir); err == nil && utils.IsDirEmpty(projectDir) {
+			_ = os.Remove(projectDir)
+		}
+
 		reportLog := cli.HandleAppError(projectDir, err)
 
 		if hasGlobalLog && reportLog {
