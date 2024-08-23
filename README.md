@@ -36,7 +36,7 @@ ktor new ktor-sample
 
 The `-v` option can be used to enable verbose output:
 ```shell
-ktor -v new ktor-sample
+ktor -v new ktor-project
 ```
 
 ## Get the version
@@ -53,4 +53,11 @@ To get the help page about the tool usage, use the `--help` flag or the `help` c
 ```shell
 ktor --help
 ktor help
+```
+
+## HTTP proxy
+
+To use a proxy server while making requests to the generation server, set the `HTTPS_PROXY` environment variable. Here is an example:
+```shell
+HTTPS_PROXY=http://localhost:3128 ktor new ktor-project
 ```
