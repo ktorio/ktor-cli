@@ -57,7 +57,7 @@ ktor help
 
 ## HTTP proxy
 
-To use a proxy server while making requests to the generation server, set up the `HTTPS_PROXY` environment variable. Here is an example:
+To use a proxy server while making requests to the generation server, set the `HTTPS_PROXY` environment variable. Here is an example:
 ```shell
 HTTPS_PROXY=http://localhost:3128 ktor new ktor-project
 ```
