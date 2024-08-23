@@ -4,6 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"github.com/ktorio/ktor-cli/internal/app"
+	"github.com/ktorio/ktor-cli/internal/app/progress"
+	"github.com/ktorio/ktor-cli/internal/app/utils"
 	"io"
 	"log"
 	"net/http"
@@ -36,7 +38,9 @@ func DownloadJdk(client *http.Client, d *Descriptor, logger *log.Logger) ([]byte
 		}
 	}
 
-	return io.ReadAll(resp.Body)
+	reader, progressBar := progress.NewReader(resp.Body, "Downloading JDK... ", utils.ContentLength(resp), true)
+	defer progressBar.Finish()
+	return io.ReadAll(reader)
 }
 
 func hasJdkBuild(d *Descriptor) bool {

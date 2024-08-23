@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"github.com/ktorio/ktor-cli/internal/app"
 	"github.com/ktorio/ktor-cli/internal/app/config"
+	"github.com/ktorio/ktor-cli/internal/app/progress"
+	"github.com/ktorio/ktor-cli/internal/app/utils"
 	"io"
 	"net/http"
 )
@@ -47,7 +49,15 @@ func NewProject(client *http.Client, payload ProjectPayload) ([]byte, error) {
 
 	defer resp.Body.Close()
 
-	bodyBytes, err := io.ReadAll(resp.Body)
+	reader, progressBar := progress.NewReader(
+		resp.Body,
+		"Downloading project archive... ",
+		utils.ContentLength(resp),
+		true,
+	)
+	defer progressBar.Finish()
+
+	bodyBytes, err := io.ReadAll(reader)
 	if err != nil {
 		return nil, err
 	}

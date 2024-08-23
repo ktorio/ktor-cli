@@ -6,6 +6,8 @@ import (
 	"github.com/ktorio/ktor-cli/internal/app"
 	"github.com/ktorio/ktor-cli/internal/app/archive"
 	"github.com/ktorio/ktor-cli/internal/app/network"
+	"github.com/ktorio/ktor-cli/internal/app/progress"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -60,7 +62,16 @@ func Project(client *http.Client, logger *log.Logger, projectDir, project string
 	}
 
 	logger.Printf("Extracting downloaded archive to directory %s\n", projectDir)
-	_, err = archive.ExtractZip(bytes.NewReader(zipBytes), int64(len(zipBytes)), projectDir, logger)
+
+	reader, progressBar := progress.NewReaderAt(
+		bytes.NewReader(zipBytes),
+		"Extracting project archive... ",
+		len(zipBytes),
+		logger.Writer() == io.Discard,
+	)
+	defer progressBar.Finish()
+
+	_, err = archive.ExtractZip(reader, int64(len(zipBytes)), projectDir, logger)
 
 	if err != nil {
 		return &app.Error{Err: err, Kind: app.ProjectExtractError}

@@ -5,7 +5,9 @@ import (
 	"errors"
 	"github.com/ktorio/ktor-cli/internal/app"
 	"github.com/ktorio/ktor-cli/internal/app/archive"
+	"github.com/ktorio/ktor-cli/internal/app/progress"
 	"github.com/ktorio/ktor-cli/internal/app/utils"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -35,10 +37,27 @@ func fetch(client *http.Client, d *Descriptor, outDir string, logger *log.Logger
 		defer wg.Done()
 		extractedDirs := utils.NewStringSet()
 		logger.Printf("Extracting JDK files to %s\n", outDir)
+
 		if d.Platform == "windows" {
-			extractedDirs, extractErr = archive.ExtractZip(bytes.NewReader(jdkBytes), int64(len(jdkBytes)), outDir, logger)
+			reader, progressBar := progress.NewReaderAt(
+				bytes.NewReader(jdkBytes),
+				"Extracting JDK... ",
+				len(jdkBytes),
+				logger.Writer() == io.Discard,
+			)
+			defer progressBar.Finish()
+
+			extractedDirs, extractErr = archive.ExtractZip(reader, int64(len(jdkBytes)), outDir, logger)
 		} else {
-			extractedDirs, extractErr = archive.ExtractTarGz(bytes.NewReader(jdkBytes), outDir, logger)
+			reader, progressBar := progress.NewReader(
+				bytes.NewReader(jdkBytes),
+				"Extracting JDK... ",
+				len(jdkBytes),
+				logger.Writer() == io.Discard,
+			)
+			defer progressBar.Finish()
+
+			extractedDirs, extractErr = archive.ExtractTarGz(reader, outDir, logger)
 		}
 
 		if extractErr != nil {
