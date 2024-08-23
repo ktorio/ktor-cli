@@ -1,6 +1,7 @@
 package main
 
 import (
+	_ "embed"
 	"fmt"
 	"github.com/ktorio/ktor-cli/internal/app/cli"
 	"github.com/ktorio/ktor-cli/internal/app/cli/command"
@@ -11,19 +12,18 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 )
 
+//go:embed version.txt
+var version string
+
 func main() {
-	args, err := cli.ParseArgs(os.Args)
+	args, err := cli.ProcessArgs(cli.ParseArgs(os.Args))
 
 	if err != nil {
-		cli.WriteUsage(os.Stderr)
-		os.Exit(1)
-	}
-
-	if err := cli.ValidateArgs(args); err != nil {
-		cli.HandleArgsValidation(err, args.Command)
+		cli.HandleArgsValidation(err)
 	}
 
 	homeDir, err := os.UserHomeDir()
@@ -31,7 +31,7 @@ func main() {
 
 	verboseLogger := log.New(os.Stdout, "", 0)
 
-	if !*args.Options.Verbose {
+	if !args.Verbose {
 		verboseLogger.SetOutput(io.Discard)
 	}
 
@@ -53,8 +53,12 @@ func main() {
 		}
 	}
 
-	switch *args.Command {
-	case string(cli.NewCommand):
+	switch args.Command {
+	case cli.VersionCommand:
+		fmt.Printf("Ktor CLI version %s\n", strings.Trim(version, "\n\r"))
+	case cli.HelpCommand:
+		cli.WriteUsage(os.Stdout)
+	case cli.NewCommand:
 		client := &http.Client{
 			Timeout: 30 * time.Second,
 		}

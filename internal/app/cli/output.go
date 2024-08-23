@@ -7,6 +7,7 @@ import (
 	"github.com/ktorio/ktor-cli/internal/app/jdk"
 	"os"
 	"runtime"
+	"strings"
 )
 
 func HandleAppError(projectDir string, err error) (reportLog bool) {
@@ -77,15 +78,35 @@ func HandleAppError(projectDir string, err error) (reportLog bool) {
 	return
 }
 
-func HandleArgsValidation(err error, command *string) {
-	switch err {
+func HandleArgsValidation(err error) {
+	var e *Error
+	if !errors.As(err, &e) {
+		fmt.Fprintf(os.Stderr, "Unexpected error %s\n", err)
+	}
+
+	switch e.Kind {
+	case UnrecognizedFlagsError:
+		var fe UnrecognizedFlags
+		errors.As(e.Err, &fe)
+		fmt.Fprintf(os.Stderr, "Unrecongnized flags: %s\n", strings.Join(fe, ", "))
 	case NoCommandError:
 		fmt.Fprintln(os.Stderr, "Expected a command")
 	case CommandNotFoundError:
-		fmt.Fprintf(os.Stderr, "Command %s not found\n", *command)
+		var ce CommandError
+		errors.As(e.Err, &ce)
+		fmt.Fprintf(os.Stderr, "Command '%s' not found\n", ce.Command)
 	case WrongNumberOfArgumentsError:
-		if Command(*command) == NewCommand {
-			fmt.Fprintln(os.Stderr, "Expected one argument (project name) for the new command")
+		var ce CommandError
+		errors.As(e.Err, &ce)
+
+		if spec, ok := allCommandsSpec[ce.Command]; ok {
+			fmt.Fprintf(
+				os.Stderr,
+				"Expected %d argument[s]: %s for the %s command\n",
+				len(spec.args),
+				strings.Join(spec.args, " "),
+				ce.Command,
+			)
 		}
 	default:
 		// do nothing

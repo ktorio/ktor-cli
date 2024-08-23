@@ -38,3 +38,19 @@ The `-v` option can be used to enable verbose output:
 ```shell
 ktor -v new ktor-sample
 ```
+
+## Get the version
+
+To get the version of the tool, use the `--version` flag or the `version` command:
+```shell
+ktor --version
+ktor version
+```
+
+## Get the usage info
+
+To get the help page about the tool usage, use the `--help` flag or the `help` command:
+```shell
+ktor --help
+ktor help
+```

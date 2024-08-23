@@ -1,14 +1,35 @@
 package cli
 
-type ErrorType int
+import "fmt"
 
-func (e ErrorType) Error() string {
-	return "CLI args error"
+type ErrorKind int
+
+type Error struct {
+	Kind ErrorKind
+	Err  error
+}
+
+func (e Error) Error() string {
+	return fmt.Sprintf("CLI args error: %v", e.Kind)
 }
 
 const (
-	NotEnoughArgsError ErrorType = iota
-	NoCommandError
+	NoCommandError ErrorKind = iota
 	CommandNotFoundError
 	WrongNumberOfArgumentsError
+	UnrecognizedFlagsError
 )
+
+type UnrecognizedFlags []string
+
+func (f UnrecognizedFlags) Error() string {
+	return fmt.Sprintf("unrecognized flags: %sv", []string(f))
+}
+
+type CommandError struct {
+	Command Command
+}
+
+func (e CommandError) Error() string {
+	return fmt.Sprintf("command '%s' error", e.Command)
+}
