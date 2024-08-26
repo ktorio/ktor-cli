@@ -27,12 +27,17 @@ func NewReaderAt(r io.ReaderAt, prefix string, total int, enabled bool) (io.Read
 }
 
 func newPercent(prefix string, total int, enabled bool) *Percent {
+	writer := os.Stderr
 	return &Percent{
 		prefix:  prefix,
 		total:   total,
-		enabled: enabled && term.IsTerminal(int(os.Stdout.Fd())),
-		Writer:  os.Stderr,
+		enabled: enabled && term.IsTerminal(int(writer.Fd())),
+		Writer:  writer,
 	}
+}
+
+func (b *Percent) reset() {
+	b.current = 0
 }
 
 func (b *Percent) Write(p []byte) (n int, err error) {
