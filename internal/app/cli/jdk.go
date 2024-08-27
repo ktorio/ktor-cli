@@ -12,7 +12,6 @@ import (
 )
 
 func DownloadJdk(homeDir string, client *http.Client, logger *log.Logger, attempt int) (string, error) {
-	fmt.Println("Downloading JDK...")
 	jdkPath, err := jdk.FetchRecommendedJdk(client, homeDir, logger)
 
 	if err != nil {
