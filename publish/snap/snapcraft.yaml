@@ -1,0 +1,35 @@
+name: ktor
+base: core24
+version: 'dev'
+summary: Generates Ktor applications through the command line interface.
+description: |
+  Ktor is an asynchronous framework for creating microservices, web applications and more.
+  Written in Kotlin from the ground up.
+
+grade: stable # must be 'stable' to release into candidate/stable channels
+confinement: strict # use 'strict' once you have the right plugs and slots
+
+platforms:
+  amd64:
+  arm64:
+    build-on: [amd64]
+    build-for: [arm64]
+
+apps:
+  ktor:
+    command: bin/ktor
+    plugs:
+      - home
+      - network
+# TODO: Fix override-pull
+parts:
+  ktor:
+    plugin: go
+    source: https://github.com/ktorio/ktor-cli.git
+    override-pull: |
+      craftctl default
+      craftctl set version=$(git describe --tags --abbrev=10)
+      
+
+    build-snaps:
+      - go
