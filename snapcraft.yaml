@@ -1,3 +1,4 @@
+#file: noinspection YAMLSchemaValidation
 name: ktor
 base: core24
 version: 'dev'
@@ -6,8 +7,9 @@ description: |
   Ktor is an asynchronous framework for creating microservices, web applications and more.
   Written in Kotlin from the ground up.
 
-grade: stable # must be 'stable' to release into candidate/stable channels
-confinement: strict # use 'strict' once you have the right plugs and slots
+grade: stable
+confinement: strict
+adopt-info: ktor
 
 platforms:
   amd64:
@@ -21,15 +23,15 @@ apps:
     plugs:
       - home
       - network
-# TODO: Fix override-pull
+
 parts:
   ktor:
     plugin: go
     source: https://github.com/ktorio/ktor-cli.git
+    source-type: git
+    go-buildtags: -X main.Version=dev
     override-pull: |
       craftctl default
-      craftctl set version=$(git describe --tags --abbrev=10)
-      
-
+      craftctl set version=$(git describe --tags --contains --always --abbrev=10)
     build-snaps:
       - go
