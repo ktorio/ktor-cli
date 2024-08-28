@@ -42,7 +42,7 @@ func Generate(client *http.Client, projectDir, projectName string, verboseLogger
 	fmt.Printf("Project \"%s\" has been created in the directory %s.\n", projectName, projectDir)
 
 	if jh, ok := jdk.JavaHome(); ok {
-		if v, err := jdk.GetJavaMajorVersion(jh); err == nil && v >= jdk.MinJavaVersion {
+		if v, err := jdk.GetJavaMajorVersion(jh, homeDir); err == nil && v >= jdk.MinJavaVersion {
 			fmt.Printf("JDK is detected in JAVA_HOME=%s\n", jh)
 			cli.PrintCommands(projectName, true, "")
 			os.Exit(0)

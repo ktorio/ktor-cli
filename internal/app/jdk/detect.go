@@ -3,6 +3,7 @@ package jdk
 import (
 	_ "embed"
 	"fmt"
+	"github.com/ktorio/ktor-cli/internal/app/config"
 	"io"
 	"os"
 	"os/exec"
@@ -26,12 +27,17 @@ func findWithMinVersion(jdkPaths []string, minVersion int) (string, bool) {
 		return "", false
 	}
 
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return "", false
+	}
+
 	jdks := make(chan string)
 	done := make(chan bool)
 
 	for _, jdkPath := range jdkPaths {
 		go func(p string) {
-			version, _ := GetJavaMajorVersion(p)
+			version, _ := GetJavaMajorVersion(p, homeDir)
 			if version >= minVersion {
 				jdks <- p
 			}
@@ -44,6 +50,7 @@ func findWithMinVersion(jdkPaths []string, minVersion int) (string, bool) {
 	for {
 		select {
 		case p := <-jdks:
+			_ = os.RemoveAll(config.TempDir(homeDir)) // cleanup if some goroutines haven't finished
 			return p, true
 		case <-done:
 			total++
@@ -55,8 +62,14 @@ func findWithMinVersion(jdkPaths []string, minVersion int) (string, bool) {
 	}
 }
 
-func GetJavaMajorVersion(jdkPath string) (version int, err error) {
-	tmpDir, err := os.MkdirTemp(os.TempDir(), "ktor-java-script-*")
+func GetJavaMajorVersion(jdkPath, homeDir string) (version int, err error) {
+	rootTempDir := config.TempDir(homeDir)
+
+	if err = os.Mkdir(rootTempDir, 0755); err != nil && !os.IsExist(err) {
+		return
+	}
+
+	tmpDir, err := os.MkdirTemp(rootTempDir, "ktor-java-script-*")
 	if err != nil {
 		return
 	}
