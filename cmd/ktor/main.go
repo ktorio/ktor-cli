@@ -12,12 +12,10 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"strings"
 	"time"
 )
 
-//go:embed version.txt
-var version string
+var Version string
 
 func main() {
 	args, err := cli.ProcessArgs(cli.ParseArgs(os.Args))
@@ -55,7 +53,7 @@ func main() {
 
 	switch args.Command {
 	case cli.VersionCommand:
-		fmt.Printf("Ktor CLI version %s\n", strings.Trim(version, "\n\r"))
+		command.Version(Version)
 	case cli.HelpCommand:
 		cli.WriteUsage(os.Stdout)
 	case cli.NewCommand:

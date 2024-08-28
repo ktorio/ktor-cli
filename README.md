@@ -14,7 +14,7 @@ go build github.com/ktorio/ktor-cli/cmd/ktor
 If the build is successful, the `ktor` executable should appear in the current directory.
 Also, the `go` command can be issued through Docker using an [official Go image](https://hub.docker.com/_/golang):
 ```shell
-docker run --rm -v "$PWD":/usr/src/myapp -w /usr/src/myapp golang:1.21 go build -buildvcs=false -v github.com/ktorio/ktor-cli/cmd/ktor
+docker run --rm -v "$PWD":/usr/src/build -w /usr/src/build golang:1.21 git config --global --add safe.directory . && go build -v github.com/ktorio/ktor-cli/cmd/ktor
 ```
 
 ## Running
