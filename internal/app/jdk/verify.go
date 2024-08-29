@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"github.com/ktorio/ktor-cli/internal/app/config"
 	"io"
 	"log"
 	"net/http"
@@ -20,7 +21,7 @@ func Verify(client *http.Client, d *Descriptor, r io.Reader, logger *log.Logger)
 		ext = "zip"
 	}
 
-	url := fmt.Sprintf("https://corretto.aws/downloads/latest_sha256/amazon-corretto-%s-%s-%s-jdk.%s", d.Version, d.Arch, d.Platform, ext)
+	url := fmt.Sprintf("%s/downloads/latest_sha256/amazon-corretto-%s-%s-%s-jdk.%s", config.CorrettoBaseUrl(), d.Version, d.Arch, d.Platform, ext)
 	logger.Printf("Verifying %s...\n", d)
 
 	resp, err := client.Get(url)
