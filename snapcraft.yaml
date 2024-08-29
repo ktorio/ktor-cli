@@ -1,11 +1,12 @@
 name: ktor
 base: core24
 version: 'dev'
-summary: Generates Ktor applications through the command line interface.
+summary: Generates Ktor projects through the command line interface.
 website: https://github.com/ktorio/ktor-cli
 license: Apache-2.0
 description: |
-  Ktor is an asynchronous framework for creating microservices, web applications and more.
+  This CLI tool allows generating server-side projects written with Ktor.
+  Ktor is an asynchronous framework for creating client and server applications, from microservices to multiplatform client apps.
   Written in Kotlin from the ground up.
 
 grade: stable
