@@ -1,4 +1,3 @@
-#file: noinspection YAMLSchemaValidation
 name: ktor
 base: core24
 version: 'dev'
@@ -26,12 +25,16 @@ apps:
 
 parts:
   ktor:
-    plugin: go
+    plugin: nil
     source: https://github.com/ktorio/ktor-cli.git
     source-type: git
-    go-buildtags: -X main.Version=dev
+    override-build: |
+      export GOBIN="${CRAFT_PART_INSTALL}/bin"
+      export CGO_ENABLED=0
+      go mod download
+      go install -ldflags="-X main.Version=$(git describe --tags --contains --always --abbrev=7)" ./...
     override-pull: |
       craftctl default
-      craftctl set version=$(git describe --tags --contains --always --abbrev=10)
+      craftctl set version=$(git describe --tags --contains --always --abbrev=7)
     build-snaps:
       - go
