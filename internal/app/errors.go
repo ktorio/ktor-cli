@@ -11,6 +11,7 @@ const (
 	NetworkError ErrorKind = iota
 	InternalError
 	GenServerError
+	GenServerTimeoutError
 	UnknownError
 	ProjectDirError
 	JdksDirError

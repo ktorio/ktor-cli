@@ -58,7 +58,11 @@ func Project(client *http.Client, logger *log.Logger, projectDir, project string
 	zipBytes, err := network.NewProject(client, projectPayload)
 
 	if err != nil {
-		return err
+		if os.IsTimeout(err) {
+			return &app.Error{Err: err, Kind: app.GenServerTimeoutError}
+		}
+
+		return &app.Error{Err: err, Kind: app.GenServerError}
 	}
 
 	logger.Printf("Extracting downloaded archive to directory %s\n", projectDir)

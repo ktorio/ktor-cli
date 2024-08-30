@@ -21,6 +21,8 @@ func HandleAppError(projectDir string, err error) (reportLog bool) {
 		switch e.Kind {
 		case app.GenServerError:
 			fmt.Fprintf(os.Stderr, "Unexpected error occurred while connecting to the generation server. Please try again later.\n")
+		case app.GenServerTimeoutError:
+			fmt.Fprintf(os.Stderr, "Timeout occurred while requesting the generation server. Please try again later.\n")
 		case app.NetworkError:
 			fmt.Fprintf(os.Stderr, "Unexpected network error occurred while connecting to the generation server. Please check your Internet connection.\n")
 		case app.InternalError:
