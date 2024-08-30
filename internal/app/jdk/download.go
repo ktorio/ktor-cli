@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/ktorio/ktor-cli/internal/app"
+	"github.com/ktorio/ktor-cli/internal/app/config"
 	"github.com/ktorio/ktor-cli/internal/app/progress"
 	"github.com/ktorio/ktor-cli/internal/app/utils"
 	"io"
@@ -21,7 +22,7 @@ func DownloadJdk(client *http.Client, d *Descriptor, logger *log.Logger) ([]byte
 		ext = "zip"
 	}
 
-	url := fmt.Sprintf("https://corretto.aws/downloads/latest/amazon-corretto-%s-%s-%s-jdk.%s", d.Version, d.Arch, d.Platform, ext)
+	url := fmt.Sprintf("%s/downloads/latest/amazon-corretto-%s-%s-%s-jdk.%s", config.CorrettoBaseUrl(), d.Version, d.Arch, d.Platform, ext)
 	logger.Printf("Downloading %s from %s\n", d, url)
 
 	resp, err := client.Get(url)

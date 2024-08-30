@@ -6,13 +6,19 @@ import (
 )
 
 func GenBaseUrl() string {
-	envUrl := os.Getenv("GEN_BASEURL")
-
-	if len(envUrl) == 0 {
-		return "https://ktor-plugin.europe-north1-gke.intellij.net"
+	if e, ok := os.LookupEnv("GEN_BASEURL"); ok && e != "" {
+		return e
 	}
 
-	return envUrl
+	return "https://ktor-plugin.europe-north1-gke.intellij.net"
+}
+
+func CorrettoBaseUrl() string {
+	if e, ok := os.LookupEnv("CORRETTO_BASEURL"); ok && e != "" {
+		return e
+	}
+
+	return "https://corretto.aws"
 }
 
 func KtorDir(homeDir string) string {
