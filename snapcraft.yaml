@@ -1,30 +1,43 @@
 name: ktor
-summary: Creates porjects with ktor framework setup
-version: '2.0.0-eap-5'
-base: core18
-grade: stable
-confinement: classic
+base: core24
+version: 'dev'
+summary: Generates Ktor projects through the command line interface.
+website: https://github.com/ktorio/ktor-cli
+license: Apache-2.0
 description: |
-  Ktor is a web application framework for creating connected systems.
-  You can use it to create server-side as well as client-side applications.
-  It supports multiple platforms, including JVM, JavaScript, and Kotlin/Native.
-  This CLI tool provides functionality to create new Ktor projects.
+  This CLI tool allows generating server-side projects written with Ktor.
+  Ktor is an asynchronous framework for creating client and server applications, from microservices to multiplatform client apps.
+  Written in Kotlin from the ground up.
+
+grade: stable
+confinement: strict
+adopt-info: ktor
+
+platforms:
+  amd64:
+  arm64:
+    build-on: [amd64]
+    build-for: [arm64]
+
 apps:
   ktor:
-    command: ktor
+    command: bin/ktor
+    plugs:
+      - home
+      - network
+
 parts:
   ktor:
     plugin: nil
-    build-packages:
-      - wget
-    stage-packages:
-      - libcurl4
-      - libcurl4-gnutls-dev
-    override-pull: |
-      snapcraftctl pull
-      wget https://files.pkg.jetbrains.space/public/p/ktor-cli-tool/linux-release/ktor-cli-generator-3.kexe
-      cp ktor-cli-generator-3.kexe $SNAPCRAFT_PART_SRC/ktor
+    source: https://github.com/ktorio/ktor-cli.git
+    source-type: git
     override-build: |
-      snapcraftctl build
-      chmod +x ktor
-      cp ktor $SNAPCRAFT_PART_INSTALL/ktor
+      export GOBIN="${CRAFT_PART_INSTALL}/bin"
+      export CGO_ENABLED=0
+      go mod download
+      go install -ldflags="-X main.Version=$(git describe --tags --contains --always --abbrev=7)" ./...
+    override-pull: |
+      craftctl default
+      craftctl set version=$(git describe --tags --contains --always --abbrev=7)
+    build-snaps:
+      - go
