@@ -42,8 +42,13 @@ func HandleAppError(projectDir string, err error) (reportLog bool) {
 			if je, ok := e.Err.(interface{ Unwrap() []error }); ok && len(je.Unwrap()) > 0 {
 				errs := je.Unwrap()
 				var pe *os.PathError
-				if errors.As(errs[0], &pe) {
+				var appErr *app.Error
+				if errors.As(errs[0], &pe) || (errors.As(errs[0], &appErr) && appErr.Kind == app.ExtractRootDirExistError && errors.As(appErr.Err, &pe)) {
 					fmt.Fprintf(os.Stderr, "Unable to extract downloaded JDK to the directory %s.\n", pe.Path)
+
+					if errors.Is(pe.Err, os.ErrExist) {
+						fmt.Fprintln(os.Stderr, "The directory already exists.")
+					}
 				}
 
 				return
