@@ -55,7 +55,7 @@ func NewProject(client *http.Client, payload ProjectPayload) ([]byte, error) {
 		utils.ContentLength(resp),
 		true,
 	)
-	defer progressBar.Finish()
+	defer progressBar.Done()
 
 	bodyBytes, err := io.ReadAll(reader)
 	if err != nil {

@@ -45,7 +45,7 @@ func fetch(client *http.Client, d *Descriptor, outDir string, logger *log.Logger
 				len(jdkBytes),
 				logger.Writer() == io.Discard,
 			)
-			defer progressBar.Finish()
+			defer progressBar.Done()
 
 			extractedDirs, extractErr = archive.ExtractZip(reader, int64(len(jdkBytes)), outDir, logger)
 		} else {
@@ -55,7 +55,7 @@ func fetch(client *http.Client, d *Descriptor, outDir string, logger *log.Logger
 				len(jdkBytes),
 				logger.Writer() == io.Discard,
 			)
-			defer progressBar.Finish()
+			defer progressBar.Done()
 
 			extractedDirs, extractErr = archive.ExtractTarGz(reader, outDir, logger)
 		}

@@ -64,7 +64,7 @@ func (b *Percent) tick(p []byte) (n int, err error) {
 	return len(p), nil
 }
 
-func (b *Percent) Finish() (err error) {
+func (b *Percent) Done() (err error) {
 	if !b.enabled {
 		return nil
 	}
@@ -75,5 +75,14 @@ func (b *Percent) Finish() (err error) {
 	}
 
 	fmt.Fprintf(b.Writer, "%s100%%\n", b.prefix)
+	return
+}
+
+func (b *Percent) Stop() (err error) {
+	if !b.enabled {
+		return nil
+	}
+
+	fmt.Fprintln(b.Writer)
 	return
 }

@@ -40,8 +40,15 @@ func DownloadJdk(client *http.Client, d *Descriptor, logger *log.Logger) ([]byte
 	}
 
 	reader, progressBar := progress.NewReader(resp.Body, "Downloading JDK... ", utils.ContentLength(resp), true)
-	defer progressBar.Finish()
-	return io.ReadAll(reader)
+	b, err := io.ReadAll(reader)
+
+	if err != nil {
+		progressBar.Stop()
+		return nil, &app.Error{Err: err, Kind: app.JdkServerDownloadError}
+	}
+
+	progressBar.Done()
+	return b, nil
 }
 
 func hasJdkBuild(d *Descriptor) bool {

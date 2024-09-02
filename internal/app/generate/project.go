@@ -73,7 +73,7 @@ func Project(client *http.Client, logger *log.Logger, projectDir, project string
 		len(zipBytes),
 		logger.Writer() == io.Discard,
 	)
-	defer progressBar.Finish()
+	defer progressBar.Done()
 
 	_, err = archive.ExtractZip(reader, int64(len(zipBytes)), projectDir, logger)
 
