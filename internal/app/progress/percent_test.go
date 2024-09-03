@@ -78,7 +78,7 @@ func checkAllWrites(t *testing.T, p *Percent, b *strings.Builder, cases []testCa
 	for _, test := range cases {
 		var err error
 		if test.writeLen == -1 {
-			err = p.Finish()
+			err = p.Done()
 		} else {
 			_, err = p.Write(make([]byte, test.writeLen))
 		}
@@ -93,7 +93,7 @@ func checkAllWrites(t *testing.T, p *Percent, b *strings.Builder, cases []testCa
 	for _, test := range cases {
 		var err error
 		if test.writeLen == -1 {
-			err = p.Finish()
+			err = p.Done()
 		} else {
 			_, err = p.WriteAt(make([]byte, test.writeLen), test.offset)
 		}

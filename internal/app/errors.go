@@ -21,6 +21,7 @@ const (
 	ExtractRootDirExistError
 	UnableLocateJdkError
 	JdkServerError
+	JdkServerDownloadError
 	JdkVerificationFailed
 )
 

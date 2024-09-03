@@ -64,6 +64,8 @@ func HandleAppError(projectDir string, err error) (reportLog bool) {
 			fmt.Fprintf(os.Stderr, "Unable to download JDK %s for %s %s\n", je.Descriptor.Version, je.Descriptor.Platform, je.Arch)
 		case app.JdkServerError:
 			fmt.Fprintf(os.Stderr, "Unexpected error occurred while connecting to a JDK server. Please try again later.\n")
+		case app.JdkServerDownloadError:
+			fmt.Fprintf(os.Stderr, "An error occurred while downloading from a JDK server. Please try again later.\n")
 		case app.JdkVerificationFailed:
 			fmt.Fprintln(os.Stderr, "Checksum verification for the downloaded JDK failed")
 		case app.GradlewChmodError:

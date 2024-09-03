@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	_ "embed"
 	"fmt"
 	"github.com/ktorio/ktor-cli/internal/app/cli"
@@ -9,6 +10,7 @@ import (
 	"github.com/ktorio/ktor-cli/internal/app/utils"
 	"io"
 	"log"
+	"net"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -58,7 +60,13 @@ func main() {
 		cli.WriteUsage(os.Stdout)
 	case cli.NewCommand:
 		client := &http.Client{
-			Timeout: 30 * time.Second,
+			Transport: &http.Transport{
+				DialContext: func(_ context.Context, network, addr string) (net.Conn, error) {
+					return net.DialTimeout(network, addr, 5*time.Second)
+				},
+				TLSHandshakeTimeout:   10 * time.Second,
+				ResponseHeaderTimeout: 10 * time.Second,
+			},
 		}
 
 		projectName := utils.CleanProjectName(args.CommandArgs[0])
