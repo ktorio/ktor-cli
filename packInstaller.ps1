@@ -18,11 +18,11 @@ $wixProduct = @"
         <WixVariable Id="WixUILicenseRtf" Value="LICENSE.rtf" />
 
         <MajorUpgrade
-                AllowDowngrades="no" DowngradeErrorMessage="The newer version of Ktor CLI is already installed"
+                AllowDowngrades="no" DowngradeErrorMessage="A newer version of Ktor CLI is already installed"
                 AllowSameVersionUpgrades="yes"
         />
 
-        <Property Id="WIXUI_EXITDIALOGOPTIONALTEXT" Value="Ktor CLI has been successfully installed. Use ktor.exe alias on the command line to launch the tool." />
+        <Property Id="WIXUI_EXITDIALOGOPTIONALTEXT" Value="Ktor CLI has been successfully installed. Use the ktor.exe alias on the command line to launch the tool." />
 
         <StandardDirectory Id="LocalAppDataFolder">
             <Directory Id="JetBrains" Name="JetBrains">
