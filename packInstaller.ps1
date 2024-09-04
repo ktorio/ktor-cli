@@ -41,6 +41,5 @@ $wixProduct = @"
 "@
 
 $wixProduct | out-file -filepath KtorProduct.wxs
-& $wixExe extension add -g WixToolset.UI.wixext
 & $wixExe build -arch x64 -o $outPath -ext WixToolset.UI.wixext KtorProduct.wxs
 Remove-Item KtorProduct.wxs
