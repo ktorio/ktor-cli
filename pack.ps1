@@ -1,10 +1,18 @@
 param (
-    [string]$toolPath = ".\build\windows\amd64\ktor.exe"
+    [string]$toolPath = ".\build\windows\amd64\ktor.exe",
+    [string]$outPath = "ktor-installer.msi"
 )
+
+$version = $(git describe --tags --contains --always --abbrev=7)
+
+if (!($version -match '\d+\.\d+.\d+')) {
+    Write-Error "Expected version in the format *.*.*, got ${version}"
+    exit 1
+}
 
 $wixProduct = @"
 <Wix xmlns="http://wixtoolset.org/schemas/v4/wxs" xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui">
-    <Package Name="Ktor CLI" Version="$(git describe --tags --contains --always --abbrev=7)" Manufacturer="JetBrains" UpgradeCode="$(New-Guid)">
+    <Package Name="Ktor CLI" Version="${version}" Manufacturer="JetBrains" UpgradeCode="$(New-Guid)">
         <MediaTemplate EmbedCab="yes" />
         <WixVariable Id="WixUILicenseRtf" Value="LICENSE.rtf" />
 
@@ -33,4 +41,5 @@ $wixProduct = @"
 
 $wixProduct | out-file -filepath KtorProduct.wxs
 wix extension add -g WixToolset.UI.wixext
-wix build -arch x64 -o 'ktor-installer.msi' -ext WixToolset.UI.wixext KtorProduct.wxs
+wix build -arch x64 -o $outPath -ext WixToolset.UI.wixext KtorProduct.wxs
+Remove-Item KtorProduct.wxs
