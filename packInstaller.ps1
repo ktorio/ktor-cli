@@ -13,7 +13,7 @@ if (!($version -match '\d+\.\d+.\d+')) {
 
 $wixProduct = @"
 <Wix xmlns="http://wixtoolset.org/schemas/v4/wxs" xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui">
-    <Package Name="Ktor CLI" Version="${version}" Manufacturer="JetBrains" UpgradeCode="$(New-Guid)">
+    <Package Name="Ktor CLI" Version="${version}" Manufacturer="JetBrains" UpgradeCode="$(New-Guid)" Scope='perUser'>
         <MediaTemplate EmbedCab="yes" />
         <WixVariable Id="WixUILicenseRtf" Value="LICENSE.rtf" />
 
@@ -24,7 +24,7 @@ $wixProduct = @"
 
         <Property Id="WIXUI_EXITDIALOGOPTIONALTEXT" Value="Ktor CLI has been successfully installed. Use ktor.exe alias on the command line to launch the tool." />
 
-        <StandardDirectory Id="ProgramFiles64Folder">
+        <StandardDirectory Id="LocalAppDataFolder">
             <Directory Id="JetBrains" Name="JetBrains">
                 <Directory Id="INSTALLDIR" Name="KtorCLI">
                     <Component Id="MainExecutable" Guid="$(New-Guid)">
