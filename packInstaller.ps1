@@ -1,6 +1,7 @@
 param (
     [string]$toolPath = ".\build\windows\amd64\ktor.exe",
-    [string]$outPath = "ktor-installer.msi"
+    [string]$outPath = "ktor-installer.msi",
+    [string]$wixExe = "wix.exe"
 )
 
 $version = $(git describe --tags --contains --always --abbrev=7)
@@ -40,6 +41,6 @@ $wixProduct = @"
 "@
 
 $wixProduct | out-file -filepath KtorProduct.wxs
-wix extension add -g WixToolset.UI.wixext
-wix build -arch x64 -o $outPath -ext WixToolset.UI.wixext KtorProduct.wxs
+& $wixExe extension add -g WixToolset.UI.wixext
+& $wixExe build -arch x64 -o $outPath -ext WixToolset.UI.wixext KtorProduct.wxs
 Remove-Item KtorProduct.wxs
