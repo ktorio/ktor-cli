@@ -42,4 +42,5 @@ $wixProduct = @"
 
 $wixProduct | out-file -filepath KtorProduct.wxs
 & $wixExe build -arch x64 -o $outPath -ext WixToolset.UI.wixext KtorProduct.wxs
+(Get-FileHash -Path $outPath -Algorithm Sha256).Hash | out-file checksum.txt -NoNewline
 Remove-Item KtorProduct.wxs
