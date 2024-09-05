@@ -123,19 +123,34 @@ func JavaHome() (string, bool) {
 }
 
 func getCandidates() (paths []string) {
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		homeDir = ""
+	}
+
 	switch runtime.GOOS {
 	case "linux":
-		paths = append(paths, getLinuxCandidates()...)
+		paths = append(paths, getLinuxCandidates(homeDir)...)
 	case "darwin":
-		paths = append(paths, getDarwinCandidates()...)
+		paths = append(paths, getDarwinCandidates(homeDir)...)
 	case "windows":
-		paths = append(paths, getWindowsCandidates()...)
+		paths = append(paths, getWindowsCandidates(homeDir)...)
 	}
+
+	ktorJdks := getChildDirs(config.JdksDir(homeDir))
+
+	if runtime.GOOS == "darwin" {
+		for i, p := range ktorJdks {
+			ktorJdks[i] = filepath.Join(p, "Contents", "Home")
+		}
+	}
+
+	paths = append(paths, ktorJdks...)
 
 	return
 }
 
-func getWindowsCandidates() (paths []string) {
+func getWindowsCandidates(homeDir string) (paths []string) {
 	drives := []string{"C", "D", "E", "F", "G"}
 
 	for _, drive := range drives {
@@ -144,21 +159,17 @@ func getWindowsCandidates() (paths []string) {
 		paths = append(paths, getChildDirs(fmt.Sprintf("%s:\\Program Files\\Common Files\\Oracle\\Java", drive))...)
 	}
 
-	homeDir, err := os.UserHomeDir()
-	if err != nil {
-		return
+	if homeDir != "" {
+		paths = append(paths, getChildDirs(filepath.Join(homeDir, ".jdks"))...)
 	}
-
-	paths = append(paths, getChildDirs(filepath.Join(homeDir, ".jdks"))...)
 
 	return
 }
 
-func getDarwinCandidates() (paths []string) {
+func getDarwinCandidates(homeDir string) (paths []string) {
 	paths = append(paths, getChildDirs("/Library/Java/JavaVirtualMachines")...)
 
-	homeDir, err := os.UserHomeDir()
-	if err != nil {
+	if homeDir == "" {
 		return
 	}
 
@@ -172,12 +183,11 @@ func getDarwinCandidates() (paths []string) {
 	return
 }
 
-func getLinuxCandidates() (paths []string) {
+func getLinuxCandidates(homeDir string) (paths []string) {
 	paths = append(paths, getChildDirs("/usr/lib/jvm")...)
 	paths = append(paths, getChildDirs("/usr/lib64/jvm")...)
 
-	homeDir, err := os.UserHomeDir()
-	if err != nil {
+	if homeDir == "" {
 		return
 	}
 

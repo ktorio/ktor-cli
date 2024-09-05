@@ -11,6 +11,8 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
+	"runtime"
 	"sync"
 )
 
@@ -92,6 +94,10 @@ func fetch(client *http.Client, d *Descriptor, outDir string, logger *log.Logger
 		}
 
 		return "", &app.Error{Err: errors.New("verify jdk: downloaded JDK checksum failed"), Kind: app.JdkVerificationFailed}
+	}
+
+	if runtime.GOOS == "darwin" {
+		extractDir = filepath.Join(extractDir, "Contents", "Home")
 	}
 
 	return extractDir, nil
