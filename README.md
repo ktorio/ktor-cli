@@ -1,6 +1,13 @@
 # Ktor CLI
 The `ktor` tool allows generating [Ktor](https://ktor.io/) applications through the command line interface.
 
+## Installing
+
+The tool can be installed via Homebrew on Linux and macOS:
+```shell
+brew install ktor
+```
+
 ## Prerequisites
 To build the tool, the `go` compiler needs to be installed first. You can find the [installation guide](https://go.dev/doc/install) on the official website.
 
