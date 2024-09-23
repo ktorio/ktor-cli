@@ -3,9 +3,17 @@ The `ktor` tool allows generating [Ktor](https://ktor.io/) applications through 
 
 ## Installing
 
-The tool can be installed via Homebrew on Linux and macOS:
+### Linux and macOS
+
+The tool can be installed via Homebrew:
 ```shell
 brew install ktor
+```
+
+### Windows
+The tool can be installed via WinGet:
+```shell
+winget install JetBrains.KtorCLI
 ```
 
 ## Prerequisites
