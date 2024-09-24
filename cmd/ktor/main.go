@@ -7,6 +7,7 @@ import (
 	"github.com/ktorio/ktor-cli/internal/app/cli"
 	"github.com/ktorio/ktor-cli/internal/app/cli/command"
 	"github.com/ktorio/ktor-cli/internal/app/config"
+	"github.com/ktorio/ktor-cli/internal/app/interactive"
 	"github.com/ktorio/ktor-cli/internal/app/utils"
 	"io"
 	"log"
@@ -73,15 +74,23 @@ func main() {
 			},
 		}
 
-		projectName := utils.CleanProjectName(args.CommandArgs[0])
-		projectDir, err := filepath.Abs(projectName)
+		if len(args.CommandArgs) > 0 {
+			projectName := utils.CleanProjectName(args.CommandArgs[0])
+			projectDir, err := filepath.Abs(projectName)
 
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Unable to determine project directory for project %s\n", projectName)
-			os.Exit(1)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Unable to determine project directory for project %s\n", projectName)
+				os.Exit(1)
+			}
+
+			command.Generate(client, projectDir, projectName, verboseLogger, hasGlobalLog, ctx)
+			return
 		}
 
-		command.Generate(client, projectDir, projectName, verboseLogger, hasGlobalLog, ctx)
+		if err := interactive.Run(); err != nil {
+			fmt.Fprintf(os.Stderr, "Interactive error: %v\n", err)
+			os.Exit(1)
+		}
 	}
 }
 
