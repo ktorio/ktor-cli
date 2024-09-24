@@ -14,13 +14,17 @@ const (
 )
 
 var allCommandsSpec = map[Command]commandSpec{
-	NewCommand:     {args: []string{"<project-name>"}, description: "generate new Ktor project"},
-	VersionCommand: {args: []string{}, description: "print version"},
-	HelpCommand:    {args: []string{}, description: "show the help"},
+	NewCommand:     {args: map[string]Arg{"project-name": {required: false}}, description: "generate new Ktor project. If the project name is omitted run an interactive mode."},
+	VersionCommand: {args: map[string]Arg{}, description: "print version"},
+	HelpCommand:    {args: map[string]Arg{}, description: "show the help"},
+}
+
+type Arg struct {
+	required bool
 }
 
 type commandSpec struct {
-	args        []string
+	args        map[string]Arg
 	description string
 }
 
@@ -96,7 +100,7 @@ func ProcessArgs(args *Args) (*Input, error) {
 		return nil, &Error{Err: CommandError{Command: Command(args.Command)}, Kind: CommandNotFoundError}
 	}
 
-	if spec := allCommandsSpec[Command(args.Command)]; len(spec.args) != len(args.CommandArgs) {
+	if spec := allCommandsSpec[Command(args.Command)]; requiredArgsCount(spec.args) != len(args.CommandArgs) {
 		return nil, &Error{
 			Err:  CommandError{Command: Command(args.Command)},
 			Kind: WrongNumberOfArgumentsError,
@@ -104,6 +108,17 @@ func ProcessArgs(args *Args) (*Input, error) {
 	}
 
 	return &Input{Command: Command(args.Command), CommandArgs: args.CommandArgs, Verbose: flags[Verbose]}, nil
+}
+
+func requiredArgsCount(args map[string]Arg) int {
+	count := 0
+	for _, arg := range args {
+		if arg.required {
+			count++
+		}
+	}
+
+	return count
 }
 
 func searchFlag(f string) (bool, Flag) {

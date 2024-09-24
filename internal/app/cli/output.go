@@ -113,7 +113,7 @@ func HandleArgsValidation(err error) {
 				os.Stderr,
 				"Expected %d argument[s]: %s for the %s command\n",
 				len(spec.args),
-				strings.Join(spec.args, " "),
+				formatArgs(spec.args),
 				ce.Command,
 			)
 		}
@@ -125,6 +125,32 @@ func HandleArgsValidation(err error) {
 
 	WriteUsage(os.Stderr)
 	os.Exit(1)
+}
+
+func formatArgs(args map[string]Arg) string {
+	sep := ""
+	var sb strings.Builder
+	for name, arg := range args {
+		sb.WriteString(sep)
+
+		if arg.required {
+			sb.WriteString("<")
+		} else {
+			sb.WriteString("[")
+		}
+
+		sb.WriteString(name)
+
+		if arg.required {
+			sb.WriteString(">")
+		} else {
+			sb.WriteString("]")
+		}
+
+		sep = " "
+	}
+
+	return sb.String()
 }
 
 func PrintCommands(projectName string, javaHomeSet bool, jdkPath string) {
