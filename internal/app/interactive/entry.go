@@ -52,7 +52,21 @@ func Run(client *http.Client) error {
 		return err
 	}
 
-	st.Plugins = plugins
+	plugs := make(map[string]state.Plugin, len(plugins))
+	sort := make([]string, 0, len(plugins))
+	for _, p := range plugins {
+		sort = append(sort, p.Id)
+		plugs[p.Id] = state.Plugin{
+			Name:        p.Name,
+			Description: p.Description,
+			Group:       p.Group,
+		}
+	}
+	st.Plugins = state.Plugins{Map: plugs, Sort: sort}
+
+	if len(plugins) > 0 {
+		st.SelectedPlugin = plugins[0].Id
+	}
 
 	for st.Running {
 		processInput(scr.PollEvent(), st)
@@ -77,6 +91,18 @@ func processInput(ev tcell.Event, st *state.State) {
 		mod, key := ev.Modifiers(), ev.Key()
 		if (mod == tcell.ModCtrl && key == tcell.KeyCtrlC) || (key == tcell.KeyEscape) {
 			st.Running = false
+		}
+
+		if key == tcell.KeyDown {
+			if id, err := state.FindPlugin(st, func(i int) int { return i + 1 }); err == nil {
+				st.SelectedPlugin = id
+			}
+		}
+
+		if key == tcell.KeyUp {
+			if id, err := state.FindPlugin(st, func(i int) int { return i - 1 }); err == nil {
+				st.SelectedPlugin = id
+			}
 		}
 
 		if key == tcell.KeyPgDn {
@@ -112,17 +138,26 @@ func processInput(ev tcell.Event, st *state.State) {
 
 func drawTui(surface *draw.Screen, st *state.State) {
 	textColor := tcell.ColorWhite
-	secColor := tcell.Color243
-	//mainColor := tcell.Color27
+	secTextColor := tcell.Color243
+	activeColor := tcell.Color63
+	//activeSecColor := tcell.Color56
 
-	padding := 1
-	startX, startY := 0+padding, 1+padding
+	padding := 3
+	startX, startY := 0+padding, 0+padding
 	x, y := startX, startY
 
-	for _, p := range st.Plugins {
-		surface.DrawText(st.View, p.Name, x, y, tcell.StyleDefault.Foreground(textColor))
+	for _, id := range st.Plugins.Sort {
+		color := textColor
+		if id == st.SelectedPlugin {
+			color = activeColor
+			surface.DrawText(st.View, `⇒`, x-2, y, tcell.StyleDefault.Foreground(color))
+		}
+
+		p := st.Plugins.Map[id]
+		surface.DrawText(st.View, p.Name, x, y, tcell.StyleDefault.Foreground(color))
+
 		y++
-		surface.DrawText(st.View, p.Description, x+2, y, tcell.StyleDefault.Foreground(secColor))
+		surface.DrawText(st.View, p.Description, x+2, y, tcell.StyleDefault.Foreground(secTextColor))
 		y += 2
 	}
 
