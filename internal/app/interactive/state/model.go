@@ -9,8 +9,8 @@ type View struct {
 	X, Y, Width, Height int
 }
 
-func New(tWidth, tHeight int, view View) *State {
-	return &State{Running: true, View: view, TWidth: tWidth, THeight: tHeight}
+func New() *Model {
+	return &Model{Running: true}
 }
 
 type Plugin struct {
@@ -24,18 +24,20 @@ type Plugins struct {
 	Sort []string
 }
 
-type State struct {
-	Running         bool
-	Status          string
-	View            View
-	TWidth, THeight int
-	Plugins         Plugins
-	SelectedPlugin  string
+type Model struct {
+	Running        bool
+	WorkDir        string
+	Input          string
+	ProjectName    string
+	Location       string
+	Status         string
+	Plugins        Plugins
+	SelectedPlugin string
 }
 
 type pluginIndex func(int) int
 
-func FindPlugin(st *State, getPluginIndex pluginIndex) (string, error) {
+func FindRelatedToSelected(st *Model, getPluginIndex pluginIndex) (string, error) {
 	index := -1
 	for i, id := range st.Plugins.Sort {
 		if id == st.SelectedPlugin {
