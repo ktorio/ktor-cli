@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"strings"
 	"time"
 )
 
@@ -39,13 +40,15 @@ var locationShown bool
 var pluginsShown bool
 var activeElement Element
 var cursorAnimTimer float64 = 0
-var pluginsByGroup map[string][]network.Plugin
 var pluginsFetched bool
-var sortedGroups []string
+var allPluginsByGroup map[string][]network.Plugin
+var allSortedGroups []string
+var pluginsByGroup map[string][]network.Plugin
+var groups []string
 var activeTab int
-var tabsCount int
 var activePlugin int
 var genResult Result
+var search string
 
 func init() {
 	running = true
@@ -61,6 +64,7 @@ func init() {
 	activeTab = 0
 	activePlugin = 0
 	genResult = Result{}
+	search = ""
 }
 
 type Result struct {
@@ -80,7 +84,6 @@ func Run(client *http.Client) (result Result, err error) {
 
 	genResult.ProjectName = settings.ProjectName.DefaultVal
 	initProjectDir()
-	searchStr := ""
 
 	scr, err := tcell.NewScreen()
 
@@ -133,7 +136,7 @@ func Run(client *http.Client) (result Result, err error) {
 			case LocationInput:
 				processEvent(event, &genResult.ProjectDir)
 			case SearchInput:
-				processEvent(event, &searchStr)
+				processEvent(event, &search)
 			case Tabs:
 				processEvent(event, nil)
 			case CreateButton:
@@ -156,21 +159,22 @@ func Run(client *http.Client) (result Result, err error) {
 
 			pluginsFetched = true
 
-			pluginsByGroup = make(map[string][]network.Plugin, len(plugins))
+			allPluginsByGroup = make(map[string][]network.Plugin, len(plugins))
 			for _, p := range plugins {
-				if !slices.Contains(sortedGroups, p.Group) {
-					sortedGroups = append(sortedGroups, p.Group)
+				if !slices.Contains(allSortedGroups, p.Group) {
+					allSortedGroups = append(allSortedGroups, p.Group)
 				}
-				pluginsByGroup[p.Group] = append(pluginsByGroup[p.Group], p)
+				allPluginsByGroup[p.Group] = append(allPluginsByGroup[p.Group], p)
 			}
+			pluginsByGroup = allPluginsByGroup
 
-			tabsCount = len(sortedGroups)
-			slices.Sort(sortedGroups)
+			slices.Sort(allSortedGroups)
+			groups = allSortedGroups
 		}
 
 		scr.Clear()
 		scr.Fill(' ', defaultStyle)
-		drawTui(scr, scrHeight, delta, searchStr)
+		drawTui(scr, scrHeight, delta)
 		scr.Show()
 
 		if frameMs-delta > 0 {
@@ -182,7 +186,7 @@ func Run(client *http.Client) (result Result, err error) {
 	return
 }
 
-func drawTui(scr tcell.Screen, height int, deltaTime float64, searchStr string) {
+func drawTui(scr tcell.Screen, height int, deltaTime float64) {
 	cursorAnimTimer += deltaTime
 
 	defer func() {
@@ -220,7 +224,7 @@ func drawTui(scr tcell.Screen, height int, deltaTime float64, searchStr string) 
 	posX = padding
 	posX, posY = drawInlineText(scr, posX, posY, strongStyle, "Search for plugins:")
 	posX++
-	drawInput(scr, posX, posY, searchInputLen, searchStr, cursorPos, activeElement == SearchInput)
+	drawInput(scr, posX, posY, searchInputLen, search, cursorPos, activeElement == SearchInput)
 
 	if !pluginsFetched {
 		return
@@ -228,7 +232,7 @@ func drawTui(scr tcell.Screen, height int, deltaTime float64, searchStr string) 
 
 	posX = padding
 	posY += 2
-	for i, gr := range sortedGroups {
+	for i, gr := range groups {
 		ps := pluginsByGroup[gr]
 
 		style := buttonStyle
@@ -238,7 +242,7 @@ func drawTui(scr tcell.Screen, height int, deltaTime float64, searchStr string) 
 
 		posX, posY = drawInlineText(scr, posX, posY, style, fmt.Sprintf("%s (%d)", gr, len(ps)))
 
-		if i != len(sortedGroups)-1 {
+		if i != len(groups)-1 {
 			scr.SetContent(posX, posY, tcell.RuneHLine, nil, textStyle.Bold(true))
 		}
 
@@ -252,7 +256,7 @@ func drawTui(scr tcell.Screen, height int, deltaTime float64, searchStr string) 
 
 	posX += 2
 	pluginsXStart := posX
-	activeGroup := sortedGroups[activeTab]
+	activeGroup := groups[activeTab]
 	plugins := pluginsByGroup[activeGroup]
 
 	for i, p := range plugins {
@@ -325,6 +329,7 @@ func processEvent(ev tcell.Event, input *string) {
 			if input != nil {
 				*input = insertRune(*input, inputOff, ev.Rune())
 				cursorOffs[activeElement] = moveCursor(inputOff, len(*input), 1)
+				onInputChanged(activeElement, *input)
 			}
 		case key == tcell.KeyLeft:
 			if activeElement == Tabs {
@@ -341,7 +346,7 @@ func processEvent(ev tcell.Event, input *string) {
 			}
 		case key == tcell.KeyRight:
 			if activeElement == Tabs {
-				if activeTab+1 < tabsCount {
+				if activeTab+1 < len(groups) {
 					activeTab++
 					activePlugin = 0
 				}
@@ -393,11 +398,13 @@ func processEvent(ev tcell.Event, input *string) {
 			if input != nil {
 				*input = deleteChar(*input, inputOff-1)
 				cursorOffs[activeElement] = moveCursor(inputOff, len(*input), -1)
+				onInputChanged(activeElement, *input)
 			}
 		case key == tcell.KeyDelete:
 			if input != nil {
 				*input = deleteChar(*input, inputOff)
 				cursorOffs[activeElement] = moveCursor(inputOff, len(*input), -1)
+				onInputChanged(activeElement, *input)
 			}
 		case key == tcell.KeyEnter && mod == tcell.ModAlt && pluginsShown: // Generate project
 			running = false
@@ -438,6 +445,39 @@ func processEvent(ev tcell.Event, input *string) {
 	}
 }
 
+func searchPlugins() map[string][]network.Plugin {
+	m := make(map[string][]network.Plugin)
+	groups = groups[:0]
+	for gr, ps := range allPluginsByGroup {
+		var plugins []network.Plugin
+
+		for _, p := range ps {
+			if strings.Contains(strings.ToLower(p.Name), strings.ToLower(search)) || strings.Contains(strings.ToLower(p.Description), strings.ToLower(search)) {
+				plugins = append(plugins, p)
+			}
+		}
+
+		if len(plugins) > 0 {
+			slices.SortFunc(plugins, func(a, b network.Plugin) int {
+				return strings.Compare(a.Name, b.Name)
+			})
+			m[gr] = plugins
+			groups = append(groups, gr)
+		}
+	}
+
+	slices.Sort(groups)
+
+	return m
+}
+
+func onInputChanged(element Element, input string) {
+	if element == SearchInput {
+		search = input
+		pluginsByGroup = searchPlugins()
+	}
+}
+
 func initProjectDir() {
 	wd, err := os.Getwd()
 
@@ -459,7 +499,7 @@ func toggleSelectedPlugin() {
 }
 
 func visiblePlugins() []network.Plugin {
-	return pluginsByGroup[sortedGroups[activeTab]]
+	return pluginsByGroup[groups[activeTab]]
 }
 
 func nextElement() Element {
