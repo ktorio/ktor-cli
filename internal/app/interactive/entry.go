@@ -3,20 +3,87 @@ package interactive
 import (
 	"fmt"
 	"github.com/gdamore/tcell/v2"
-	"github.com/ktorio/ktor-cli/internal/app/interactive/draw"
-	"github.com/ktorio/ktor-cli/internal/app/interactive/element"
-	"github.com/ktorio/ktor-cli/internal/app/interactive/state"
 	"github.com/ktorio/ktor-cli/internal/app/network"
 	"net/http"
 	"os"
 	"path/filepath"
+	"slices"
 	"time"
 )
 
+var defaultStyle = tcell.StyleDefault.Background(tcell.Color233)
+var inputStyle = defaultStyle.Background(tcell.Color117).Foreground(tcell.Color233)
+var cursorStyle = inputStyle.Background(tcell.ColorWhite)
+var buttonStyle = defaultStyle.Background(tcell.Color163).Foreground(tcell.ColorWhite)
+var activeTabStyle = defaultStyle.Foreground(tcell.Color163).Background(tcell.ColorWhite)
+var textStyle = defaultStyle.Foreground(tcell.ColorWhite)
+var weakTextStyle = defaultStyle.Foreground(tcell.Color139)
+
+type Element int
+
+const (
+	ProjectNameInput Element = iota
+	LocationInput
+	SearchInput
+	Tabs
+	Last
+)
+const projectInputLen = 64
+const locationInputLen = 128
+const searchInputLen = 48
+
+var running bool
+var cursorOffs map[Element]int
+var locationShown bool
+var pluginsShown bool
+var activeElement Element
+var cursorAnimTimer float64 = 0
+var pluginsByGroup map[string][]network.Plugin
+var pluginsFetched bool
+var sortedGroups []string
+var activeTab int
+var tabsCount int
+var activePlugin int
+var addedPlugins []string
+
+func init() {
+	running = true
+	cursorOffs = map[Element]int{
+		ProjectNameInput: 0,
+		LocationInput:    0,
+		SearchInput:      0,
+	}
+	locationShown = true
+	pluginsShown = true
+	activeElement = ProjectNameInput
+	pluginsFetched = false
+	activeTab = 0
+	activePlugin = 0
+}
+
 func Run(client *http.Client) error {
+	settings, err := network.FetchSettings(client)
+
+	if err != nil {
+		// TODO: handle error
+		return err
+	}
+
+	projectName := settings.ProjectName.DefaultVal
+
+	wd, err := os.Getwd()
+
+	if err != nil {
+		return err
+	}
+
+	location := filepath.Join(wd, projectName)
+	searchStr := ""
+
 	scr, err := tcell.NewScreen()
 
 	if err != nil {
+		// TODO: handle error
 		return err
 	}
 
@@ -26,6 +93,7 @@ func Run(client *http.Client) error {
 
 	scr.EnableMouse()
 	scr.Clear()
+	//scrWidth, scrHeight := scr.Size()
 
 	quit := func() {
 		maybePanic := recover()
@@ -36,99 +104,69 @@ func Run(client *http.Client) error {
 	}
 	defer quit()
 
-	//width, height := scr.Size()
-	//surface := draw.NewScreen(scr)
-	model := state.New()
-
-	settings, err := network.FetchSettings(client)
-
-	if err != nil {
-		// TODO: handle error
-		return err
-	}
-
-	model.ProjectName = settings.ProjectName.DefaultVal
-	model.Input = model.ProjectName
-
-	wd, err := os.Getwd()
-
-	if err != nil {
-		// TODO: handle error
-		return err
-	}
-
-	model.WorkDir = wd
-	model.Location = filepath.Join(model.WorkDir, model.ProjectName)
-
-	//ktorVersion := settings.KtorVersion.DefaultId
-	//
-	//plugins, err := network.FetchPlugins(client, ktorVersion)
-	//
-	//if err != nil {
-	//	// TODO: handle error
-	//	return err
-	//}
-	//
-	//plugs := make(map[string]state.Plugin, len(plugins))
-	//sort := make([]string, 0, len(plugins))
-	//for _, p := range plugins {
-	//	sort = append(sort, p.Id)
-	//	plugs[p.Id] = state.Plugin{
-	//		Name:        p.Name,
-	//		Description: p.Description,
-	//		Group:       p.Group,
-	//	}
-	//}
-	//model.Plugins = state.Plugins{Map: plugs, Sort: sort}
-	//
-	//if len(plugins) > 0 {
-	//	model.SelectedPlugin = plugins[0].Id
-	//}
-
 	eventChan := make(chan tcell.Event)
 	startTime := time.Now().UnixMicro()
 	frameStart := startTime
-	frameMs := 1000.0 / 60
-	frame := 0
+	frameMs := 1000.0 / 30
 
 	go func() {
-		for model.Running {
+		for running {
 			eventChan <- scr.PollEvent()
 		}
 	}()
 
-	captionStyle := tcell.StyleDefault.Foreground(tcell.ColorGreen)
-	var root interface{} = element.Box{Padding: element.PaddingAll(2), Children: []interface{}{
-		element.Label{Text: "Enter project name:", Margin: element.MarginRight(1), TextStyle: captionStyle},
-		element.Input{Value: ""}.DefaultBehavior(),
-	}}
-
-	drawState := draw.NewState(scr)
-	drawState.Padding = 2
-
-	for model.Running {
+	for running {
 		delta := float64(time.Now().UnixMicro()-startTime) / 1000.0
 		startTime = time.Now().UnixMicro()
 
 		if startTime-frameStart > 1e6 {
-			frame = 0
 			frameStart = startTime
 		}
 
 		select {
 		case event := <-eventChan:
-			processInput(event, model, root)
+			switch activeElement {
+			case ProjectNameInput:
+				processEvent(event, &projectName)
+			case LocationInput:
+				processEvent(event, &location)
+			case SearchInput:
+				processEvent(event, &searchStr)
+			case Tabs:
+				processEvent(event, &searchStr)
+			default:
+				panic("unhandled default case")
+			}
 		default:
 			// do nothing
 		}
 
-		updateModel(model)
+		if pluginsShown && !pluginsFetched {
+			plugins, err := network.FetchPlugins(client, settings.KtorVersion.DefaultId)
+
+			if err != nil {
+				// TODO: handle error
+				return err
+			}
+
+			pluginsFetched = true
+
+			pluginsByGroup = make(map[string][]network.Plugin, len(plugins))
+			for _, p := range plugins {
+				if !slices.Contains(sortedGroups, p.Group) {
+					sortedGroups = append(sortedGroups, p.Group)
+				}
+				pluginsByGroup[p.Group] = append(pluginsByGroup[p.Group], p)
+			}
+
+			tabsCount = len(sortedGroups)
+			slices.Sort(sortedGroups)
+		}
 
 		scr.Clear()
-		drawTui(root, scr, model, frame)
+		scr.Fill(' ', defaultStyle)
+		drawTui(scr, delta, projectName, location, searchStr)
 		scr.Show()
-
-		frame++
 
 		if frameMs-delta > 0 {
 			time.Sleep(time.Duration(frameMs-delta) * time.Millisecond)
@@ -138,208 +176,315 @@ func Run(client *http.Client) error {
 	return nil
 }
 
-func processInput(ev tcell.Event, model *state.Model, root interface{}) {
-	//scrollSpeed := 3
+func drawTui(scr tcell.Screen, deltaTime float64, projectName string, location string, searchStr string) {
+	cursorAnimTimer += deltaTime
 
-	dispatchEvent(ev, root)
-
-	switch ev := ev.(type) {
-	//case *tcell.EventResize:
-	//	model.TWidth, model.THeight = ev.Size()
-	//	model.View.Width, model.View.Height = model.TWidth, model.THeight
-	case *tcell.EventKey:
-		mod, key := ev.Modifiers(), ev.Key()
-
-		switch {
-		case (mod == tcell.ModCtrl && key == tcell.KeyCtrlC) || (key == tcell.KeyEscape):
-			model.Running = false
-		case key == tcell.KeyRune:
-			model.Input += string(ev.Rune())
-		case key == tcell.KeyDEL:
-			if len(model.Input) > 0 {
-				model.Input = model.Input[:len(model.Input)-1]
-			}
-		case key == tcell.KeyDown:
-			if id, err := state.FindRelatedToSelected(model, func(i int) int { return i + 1 }); err == nil {
-				model.SelectedPlugin = id
-			}
-		case key == tcell.KeyUp:
-			if id, err := state.FindRelatedToSelected(model, func(i int) int { return i - 1 }); err == nil {
-				model.SelectedPlugin = id
-			}
-			//case key == tcell.KeyPgDn:
-			//	model.View.Y += scrollSpeed
-			//case key == tcell.KeyPgUp:
-			//	model.View.Y -= scrollSpeed
-			//	if model.View.Y <= 0 {
-			//		model.View.Y = 0
-			//	}
+	defer func() {
+		if cursorAnimTimer >= 1500 {
+			cursorAnimTimer = 0
 		}
-	case *tcell.EventMouse:
-		mod := ev.Modifiers()
-		btns := ev.Buttons()
-		x, y := ev.Position()
+	}()
 
-		model.Status = fmt.Sprintf("EventMouse Modifiers: %d Buttons: %d Position: %d,%d", mod, btns, x, y)
+	strongStyle := defaultStyle.Foreground(tcell.Color141)
+	cursorPos := cursorOffs[activeElement]
+	padding := 1
+	posX := padding
+	posY := padding
+	posX, posY = drawInlineText(scr, posX, posY, strongStyle, "Project name:")
+	posX++
 
-		//if btns == tcell.WheelDown {
-		//	model.View.Y += scrollSpeed
-		//}
-		//
-		//if btns == tcell.WheelUp {
-		//	model.View.Y -= scrollSpeed
-		//	if model.View.Y <= 0 {
-		//		model.View.Y = 0
-		//	}
-		//}
+	posX, posY = drawInput(scr, posX, posY, projectInputLen, projectName, cursorPos, activeElement == ProjectNameInput)
+
+	if !locationShown {
+		return
+	}
+
+	posY += 2
+	posX = padding
+	posX, posY = drawInlineText(scr, posX, posY, strongStyle, "Location:")
+	posX++
+
+	drawInput(scr, posX, posY, locationInputLen, location, cursorPos, activeElement == LocationInput)
+
+	if !pluginsShown {
+		return
+	}
+
+	posY += 2
+	posX = padding
+	posX, posY = drawInlineText(scr, posX, posY, strongStyle, "Search for plugins:")
+	posX++
+	drawInput(scr, posX, posY, searchInputLen, searchStr, cursorPos, activeElement == SearchInput)
+
+	if !pluginsFetched {
+		return
+	}
+
+	posX = padding
+	posY += 2
+	for i, gr := range sortedGroups {
+		ps := pluginsByGroup[gr]
+
+		style := buttonStyle
+		if activeElement == Tabs && i == activeTab {
+			style = activeTabStyle
+		}
+
+		posX, posY = drawInlineText(scr, posX, posY, style, fmt.Sprintf("%s (%d)", gr, len(ps)))
+
+		if i != len(sortedGroups)-1 {
+			scr.SetContent(posX, posY, tcell.RuneHLine, nil, textStyle.Bold(true))
+		}
+
+		posX += 1
+	}
+
+	posX = padding
+	posY++
+	scr.SetContent(posX, posY, tcell.RuneVLine, nil, textStyle.Bold(true))
+	posY++
+
+	posX += 2
+	pluginsXStart := posX
+	activeGroup := sortedGroups[activeTab]
+
+	for i, p := range pluginsByGroup[activeGroup] {
+		checkboxStyle := buttonStyle
+		if activeElement == Tabs && i == activePlugin {
+			checkboxStyle = activeTabStyle
+		}
+
+		checkboxVal := ' '
+		if slices.Contains(addedPlugins, p.Id) {
+			checkboxVal = 'x'
+		}
+		scr.SetContent(padding, posY, checkboxVal, nil, checkboxStyle)
+		scr.SetContent(padding, posY+1, tcell.RuneVLine, nil, textStyle.Bold(true))
+		scr.SetContent(padding, posY+2, tcell.RuneVLine, nil, textStyle.Bold(true))
+
+		nameStyle := textStyle
+		if activeElement == Tabs && i == activePlugin {
+			nameStyle = activeTabStyle
+		}
+		drawInlineText(scr, posX, posY, nameStyle, p.Name)
+		posY++
+
+		descrStyle := weakTextStyle
+		if activeElement == Tabs && i == activePlugin {
+			descrStyle = weakTextStyle.Background(tcell.ColorWhite)
+		}
+
+		drawInlineText(scr, pluginsXStart, posY, descrStyle, p.Description)
+		posY += 2
 	}
 }
 
-func dispatchEvent(ev tcell.Event, root interface{}) {
-	switch el := root.(type) {
-	case element.Label:
-		for _, sub := range el.Subscribers {
-			sub(ev, el)
-		}
-	case element.Input:
-		for _, sub := range el.Subscribers {
-			sub(ev, el)
-		}
-	case element.Box:
-		for _, ch := range el.Children {
-			dispatchEvent(ev, ch)
-		}
-
-		for _, sub := range el.Subscribers {
-			sub(ev, el)
-		}
+func drawInlineText(scr tcell.Screen, x, y int, style tcell.Style, text string) (int, int) {
+	for _, r := range []rune(text) {
+		scr.SetContent(x, y, r, nil, style)
+		x++
 	}
-
-	//if el, ok := root.(interface{ Children() []interface{} }); ok {
-	//	for _, e := range el.Children() {
-	//		if fff, ok := e.(interface{ Subscribers() []interface{} }); ok {
-	//
-	//		}
-	//	}
-	//} else {
-	//	root.TriggerEvent(ev)
-	//}
-
-	//switch e := ev.(type) {
-	//case *tcell.EventKey:
-	//	if e.Key() == tcell.KeyRune {
-	//
-	//	}
-	//}
-}
-
-func drawTui(el interface{}, scr tcell.Screen, model *state.Model, frame int) {
-	DrawElement(el, scr, 0, 0, frame)
-
-	//textColor := tcell.ColorWhite
-	//secTextColor := tcell.Color243
-	//activeColor := tcell.Color63
-	////activeSecColor := tcell.Color56
-
-	//padding := 2
-	//dr.Move(2, 2)
-	//captionStyle := tcell.StyleDefault.Foreground(tcell.ColorGreen)
-	//
-	//dr.Text("Enter project name: ", captionStyle)
-	//
-	////if frame <= 30 {
-	////	draw.Text(scr, "_", curPosX+len(model.Input), curPosY, tcell.StyleDefault)
-	////} else if frame <= 60 {
-	////	draw.Text(scr, " ", curPosX+len(model.Input), curPosY, tcell.StyleDefault)
-	////}
-	//
-	//dr.Text(model.Input, tcell.StyleDefault)
-	//dr.ResetPos()
-	//dr.MoveY(2)
-	//
-	//dr.Text("Location: ", captionStyle)
-	//
-	//curPosX, curPosY = draw.Text(scr, "Location: ", 2, curPosY+2, tcell.StyleDefault.Foreground(tcell.ColorGreen))
-	//draw.Text(scr, model.Location, curPosX, curPosY, tcell.StyleDefault)
-
-	//go func() {
-	//	draw.Text(scr, " ", curPosX, curPosY, tcell.StyleDefault)
-	//	time
-	//	draw.Text(scr, "|", curPosX, curPosY, tcell.StyleDefault)
-	//}()
-
-	//
-	//padding := 3
-	//startX, startY := 0+padding, 0+padding
-	//x, y := startX, startY
-	//
-	//for _, id := range st.Plugins.Sort {
-	//	color := textColor
-	//	if id == st.SelectedPlugin {
-	//		color = activeColor
-	//		surface.Text(st, `⇒`, x-2, y, tcell.StyleDefault.Foreground(color))
-	//	}
-	//
-	//	p := st.Plugins.Map[id]
-	//	surface.Text(st, p.Name, x, y, tcell.StyleDefault.Foreground(color))
-	//
-	//	y++
-	//	surface.Text(st, p.Description, x+2, y, tcell.StyleDefault.Foreground(secTextColor))
-	//	y += 2
-	//}
-
-	//surface.DrawStatus(st.Status)
-}
-
-func DrawElement(el interface{}, scr tcell.Screen, x, y int, frame int) (int, int) {
-	switch e := el.(type) {
-	case element.Label:
-		pad := e.Padding
-		marg := e.Margin
-		x, y = draw.Text(scr, e.Text, x+pad.Left+marg.Left, y+pad.Top+marg.Top, e.TextStyle)
-		x += marg.Right + pad.Right
-		return x, y
-	case element.Input:
-		activeCurStyle := tcell.StyleDefault.Foreground(tcell.ColorBlack).Background(tcell.ColorWhite)
-		for i, r := range []rune(e.Value) {
-			style := e.TextStyle
-			if i == e.CursorOff && frame < 60 {
-				style = activeCurStyle
-			}
-
-			scr.SetContent(x, y, r, nil, style)
-			x++
-		}
-
-		if e.Value == "" && frame < 60 {
-			scr.SetContent(x, y, ' ', nil, activeCurStyle)
-		}
-
-		return x, y
-	case element.Box:
-		pad := e.Padding
-		marg := e.Margin
-		cx, cy := x+pad.Left+marg.Left, y+pad.Top+marg.Top
-
-		for _, ch := range e.Children {
-			cx, cy = DrawElement(ch, scr, cx, cy, frame)
-		}
-	}
-
-	//pad := el.Padding()
-	//cx, cy := x+pad.Left, y+pad.Top
-	//
-	//switch e := el.(type) {
-	//case element.BlockElement:
-	//	for _, ch := range e.Children() {
-	//		sw
-	//	}
-	//}
 
 	return x, y
 }
 
-func updateModel(m *state.Model) {
-	m.ProjectName = m.Input
-	m.Location = filepath.Join(m.WorkDir, m.ProjectName)
+func processEvent(ev tcell.Event, input *string) {
+	inputOff := cursorOffs[activeElement]
+
+	switch ev := ev.(type) {
+	case *tcell.EventKey:
+		mod, key := ev.Modifiers(), ev.Key()
+
+		cursorAnimTimer = 0
+
+		switch {
+		case (mod == tcell.ModCtrl && key == tcell.KeyCtrlC) || (key == tcell.KeyEscape):
+			running = false
+		case key == tcell.KeyRune:
+			if activeElement == Tabs && ev.Rune() == ' ' {
+				toggleSelectedPlugin()
+				return
+			}
+
+			*input = insertRune(*input, inputOff, ev.Rune())
+			cursorOffs[activeElement] = moveCursor(inputOff, len(*input), 1)
+		case key == tcell.KeyLeft:
+			if activeElement == Tabs {
+				if activeTab-1 >= 0 {
+					activeTab--
+					activePlugin = 0
+				}
+
+				return
+			}
+
+			cursorOffs[activeElement] = moveCursor(inputOff, len(*input), -1)
+		case key == tcell.KeyRight:
+			if activeElement == Tabs {
+				if activeTab+1 < tabsCount {
+					activeTab++
+					activePlugin = 0
+				}
+
+				return
+			}
+
+			cursorOffs[activeElement] = moveCursor(inputOff, len(*input), 1)
+		case key == tcell.KeyUp:
+			if activeElement == Tabs {
+				if activePlugin == 0 {
+					activeElement = prevElement()
+					return
+				}
+
+				if activePlugin-1 >= 0 {
+					activePlugin--
+				}
+				return
+			}
+
+			activeElement = prevElement()
+		case key == tcell.KeyDown:
+			if activeElement == Tabs {
+				if activePlugin+1 < len(pluginsByGroup[sortedGroups[activeTab]]) {
+					activePlugin++
+				}
+				return
+			}
+
+			switch {
+			case activeElement == ProjectNameInput && locationShown:
+				activeElement = nextElement()
+			case activeElement == LocationInput && pluginsShown:
+				activeElement = nextElement()
+			case locationShown && pluginsShown:
+				activeElement = nextElement()
+			default:
+				// do nothing yet
+			}
+		case key == tcell.KeyDEL: // Backspace
+			*input = deleteChar(*input, inputOff-1)
+			cursorOffs[activeElement] = moveCursor(inputOff, len(*input), -1)
+		case key == tcell.KeyDelete:
+			*input = deleteChar(*input, inputOff)
+			cursorOffs[activeElement] = moveCursor(inputOff, len(*input), -1)
+		case key == tcell.KeyEnter:
+			if activeElement == Tabs {
+				toggleSelectedPlugin()
+				return
+			}
+
+			switch activeElement {
+			case ProjectNameInput:
+				locationShown = true
+			case LocationInput:
+				pluginsShown = true
+			default:
+				// do nothing yet
+			}
+
+			activeElement = nextElement()
+		case key == tcell.KeyTab:
+			switch activeElement {
+			case ProjectNameInput:
+				locationShown = true
+			case LocationInput:
+				pluginsShown = true
+			default:
+				// do nothing yet
+			}
+
+			activeElement = nextElement()
+		case key == tcell.KeyBacktab: // Shift + Tab
+			activeElement = prevElement()
+		}
+	}
+}
+
+func toggleSelectedPlugin() {
+	p := pluginsByGroup[sortedGroups[activeTab]][activePlugin]
+	if pIndex := slices.Index(addedPlugins, p.Id); pIndex >= 0 {
+		addedPlugins = slices.Delete(addedPlugins, pIndex, pIndex+1)
+	} else {
+		addedPlugins = append(addedPlugins, p.Id)
+	}
+}
+
+func nextElement() Element {
+	el := Element(int(activeElement) + 1)
+	if el != Last {
+		return el
+	}
+
+	return activeElement
+}
+
+func prevElement() Element {
+	elIndex := int(activeElement) - 1
+	if elIndex >= 0 {
+		return Element(elIndex)
+	}
+
+	return activeElement
+}
+
+func deleteChar(input string, pos int) string {
+	if pos >= len(input) || pos < 0 {
+		return input
+	}
+
+	return fmt.Sprintf("%s%s", input[0:pos], input[pos+1:])
+}
+
+func insertRune(input string, pos int, r rune) string {
+	if pos < 0 {
+		return input
+	}
+
+	if input == "" {
+		return fmt.Sprintf("%c", r)
+	}
+
+	if pos >= len(input) {
+		return fmt.Sprintf("%s%c", input, r)
+	}
+
+	return fmt.Sprintf("%s%c%s", input[0:pos], r, input[pos:])
+}
+
+func moveCursor(off, inputLen, delta int) int {
+	off += delta
+	if off > inputLen {
+		off = inputLen
+	}
+
+	if off < 0 {
+		off = 0
+	}
+
+	return off
+}
+
+func drawInput(scr tcell.Screen, posX, posY int, inputLen int, input string, cursorPos int, focused bool) (int, int) {
+	inputStart := posX
+	for i := posX; i < posX+inputLen; i++ {
+		scr.SetContent(i, posY, ' ', nil, inputStyle)
+	}
+
+	for i, r := range []rune(input) {
+		style := inputStyle
+		if focused && i == cursorPos && cursorAnimTimer < 700 {
+			style = cursorStyle
+		}
+
+		scr.SetContent(posX, posY, r, nil, style)
+
+		posX++
+	}
+
+	if focused && cursorPos >= len(input) && cursorAnimTimer < 700 {
+		scr.SetContent(inputStart+cursorPos, posY, ' ', nil, cursorStyle)
+	}
+
+	return posX, posY
 }
