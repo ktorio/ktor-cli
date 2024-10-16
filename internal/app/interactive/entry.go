@@ -26,6 +26,7 @@ const (
 	LocationInput
 	SearchInput
 	Tabs
+	CreateButton
 	Last
 )
 const projectInputLen = 64
@@ -93,7 +94,7 @@ func Run(client *http.Client) error {
 
 	scr.EnableMouse()
 	scr.Clear()
-	//scrWidth, scrHeight := scr.Size()
+	_, scrHeight := scr.Size()
 
 	quit := func() {
 		maybePanic := recover()
@@ -133,7 +134,9 @@ func Run(client *http.Client) error {
 			case SearchInput:
 				processEvent(event, &searchStr)
 			case Tabs:
-				processEvent(event, &searchStr)
+				processEvent(event, nil)
+			case CreateButton:
+				processEvent(event, nil)
 			default:
 				panic("unhandled default case")
 			}
@@ -165,7 +168,7 @@ func Run(client *http.Client) error {
 
 		scr.Clear()
 		scr.Fill(' ', defaultStyle)
-		drawTui(scr, delta, projectName, location, searchStr)
+		drawTui(scr, scrHeight, delta, projectName, location, searchStr)
 		scr.Show()
 
 		if frameMs-delta > 0 {
@@ -176,7 +179,7 @@ func Run(client *http.Client) error {
 	return nil
 }
 
-func drawTui(scr tcell.Screen, deltaTime float64, projectName string, location string, searchStr string) {
+func drawTui(scr tcell.Screen, height int, deltaTime float64, projectName string, location string, searchStr string) {
 	cursorAnimTimer += deltaTime
 
 	defer func() {
@@ -247,8 +250,9 @@ func drawTui(scr tcell.Screen, deltaTime float64, projectName string, location s
 	posX += 2
 	pluginsXStart := posX
 	activeGroup := sortedGroups[activeTab]
+	plugins := pluginsByGroup[activeGroup]
 
-	for i, p := range pluginsByGroup[activeGroup] {
+	for i, p := range plugins {
 		checkboxStyle := buttonStyle
 		if activeElement == Tabs && i == activePlugin {
 			checkboxStyle = activeTabStyle
@@ -259,8 +263,10 @@ func drawTui(scr tcell.Screen, deltaTime float64, projectName string, location s
 			checkboxVal = 'x'
 		}
 		scr.SetContent(padding, posY, checkboxVal, nil, checkboxStyle)
-		scr.SetContent(padding, posY+1, tcell.RuneVLine, nil, textStyle.Bold(true))
-		scr.SetContent(padding, posY+2, tcell.RuneVLine, nil, textStyle.Bold(true))
+		if i != len(plugins)-1 {
+			scr.SetContent(padding, posY+1, tcell.RuneVLine, nil, textStyle.Bold(true))
+			scr.SetContent(padding, posY+2, tcell.RuneVLine, nil, textStyle.Bold(true))
+		}
 
 		nameStyle := textStyle
 		if activeElement == Tabs && i == activePlugin {
@@ -277,6 +283,12 @@ func drawTui(scr tcell.Screen, deltaTime float64, projectName string, location s
 		drawInlineText(scr, pluginsXStart, posY, descrStyle, p.Description)
 		posY += 2
 	}
+
+	createStyle := buttonStyle
+	if activeElement == CreateButton {
+		createStyle = activeTabStyle
+	}
+	drawInlineText(scr, padding, height-2, createStyle, "CREATE PROJECT (CTRL+ENTER)")
 }
 
 func drawInlineText(scr tcell.Screen, x, y int, style tcell.Style, text string) (int, int) {
@@ -306,8 +318,10 @@ func processEvent(ev tcell.Event, input *string) {
 				return
 			}
 
-			*input = insertRune(*input, inputOff, ev.Rune())
-			cursorOffs[activeElement] = moveCursor(inputOff, len(*input), 1)
+			if input != nil {
+				*input = insertRune(*input, inputOff, ev.Rune())
+				cursorOffs[activeElement] = moveCursor(inputOff, len(*input), 1)
+			}
 		case key == tcell.KeyLeft:
 			if activeElement == Tabs {
 				if activeTab-1 >= 0 {
@@ -318,7 +332,9 @@ func processEvent(ev tcell.Event, input *string) {
 				return
 			}
 
-			cursorOffs[activeElement] = moveCursor(inputOff, len(*input), -1)
+			if input != nil {
+				cursorOffs[activeElement] = moveCursor(inputOff, len(*input), -1)
+			}
 		case key == tcell.KeyRight:
 			if activeElement == Tabs {
 				if activeTab+1 < tabsCount {
@@ -329,7 +345,9 @@ func processEvent(ev tcell.Event, input *string) {
 				return
 			}
 
-			cursorOffs[activeElement] = moveCursor(inputOff, len(*input), 1)
+			if input != nil {
+				cursorOffs[activeElement] = moveCursor(inputOff, len(*input), 1)
+			}
 		case key == tcell.KeyUp:
 			if activeElement == Tabs {
 				if activePlugin == 0 {
@@ -346,7 +364,12 @@ func processEvent(ev tcell.Event, input *string) {
 			activeElement = prevElement()
 		case key == tcell.KeyDown:
 			if activeElement == Tabs {
-				if activePlugin+1 < len(pluginsByGroup[sortedGroups[activeTab]]) {
+				if activePlugin+1 > len(visiblePlugins())-1 {
+					activeElement = nextElement()
+					return
+				}
+
+				if activePlugin+1 < len(visiblePlugins()) {
 					activePlugin++
 				}
 				return
@@ -363,11 +386,15 @@ func processEvent(ev tcell.Event, input *string) {
 				// do nothing yet
 			}
 		case key == tcell.KeyDEL: // Backspace
-			*input = deleteChar(*input, inputOff-1)
-			cursorOffs[activeElement] = moveCursor(inputOff, len(*input), -1)
+			if input != nil {
+				*input = deleteChar(*input, inputOff-1)
+				cursorOffs[activeElement] = moveCursor(inputOff, len(*input), -1)
+			}
 		case key == tcell.KeyDelete:
-			*input = deleteChar(*input, inputOff)
-			cursorOffs[activeElement] = moveCursor(inputOff, len(*input), -1)
+			if input != nil {
+				*input = deleteChar(*input, inputOff)
+				cursorOffs[activeElement] = moveCursor(inputOff, len(*input), -1)
+			}
 		case key == tcell.KeyEnter:
 			if activeElement == Tabs {
 				toggleSelectedPlugin()
@@ -402,12 +429,16 @@ func processEvent(ev tcell.Event, input *string) {
 }
 
 func toggleSelectedPlugin() {
-	p := pluginsByGroup[sortedGroups[activeTab]][activePlugin]
+	p := visiblePlugins()[activePlugin]
 	if pIndex := slices.Index(addedPlugins, p.Id); pIndex >= 0 {
 		addedPlugins = slices.Delete(addedPlugins, pIndex, pIndex+1)
 	} else {
 		addedPlugins = append(addedPlugins, p.Id)
 	}
+}
+
+func visiblePlugins() []network.Plugin {
+	return pluginsByGroup[sortedGroups[activeTab]]
 }
 
 func nextElement() Element {
