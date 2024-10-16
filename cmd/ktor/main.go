@@ -87,10 +87,19 @@ func main() {
 			return
 		}
 
-		if err := interactive.Run(client); err != nil {
+		result, err := interactive.Run(client)
+
+		if err != nil {
 			fmt.Fprintf(os.Stderr, "Interactive error: %v\n", err)
 			os.Exit(1)
 		}
+
+		if result.Quit {
+			fmt.Println("Goodbye!")
+			return
+		}
+
+		command.Generate(client, result.ProjectDir, result.ProjectName, verboseLogger, hasGlobalLog)
 	}
 }
 

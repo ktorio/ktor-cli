@@ -45,7 +45,7 @@ var sortedGroups []string
 var activeTab int
 var tabsCount int
 var activePlugin int
-var addedPlugins []string
+var genResult Result
 
 func init() {
 	running = true
@@ -54,42 +54,43 @@ func init() {
 		LocationInput:    0,
 		SearchInput:      0,
 	}
-	locationShown = true
-	pluginsShown = true
+	locationShown = false
+	pluginsShown = false
 	activeElement = ProjectNameInput
 	pluginsFetched = false
 	activeTab = 0
 	activePlugin = 0
+	genResult = Result{}
 }
 
-func Run(client *http.Client) error {
+type Result struct {
+	ProjectName string
+	ProjectDir  string
+	Plugins     []string
+	Quit        bool
+}
+
+func Run(client *http.Client) (result Result, err error) {
 	settings, err := network.FetchSettings(client)
 
 	if err != nil {
 		// TODO: handle error
-		return err
+		return
 	}
 
-	projectName := settings.ProjectName.DefaultVal
-
-	wd, err := os.Getwd()
-
-	if err != nil {
-		return err
-	}
-
-	location := filepath.Join(wd, projectName)
+	genResult.ProjectName = settings.ProjectName.DefaultVal
+	initProjectDir()
 	searchStr := ""
 
 	scr, err := tcell.NewScreen()
 
 	if err != nil {
 		// TODO: handle error
-		return err
+		return
 	}
 
-	if err := scr.Init(); err != nil {
-		return err
+	if err = scr.Init(); err != nil {
+		return
 	}
 
 	scr.EnableMouse()
@@ -128,9 +129,9 @@ func Run(client *http.Client) error {
 		case event := <-eventChan:
 			switch activeElement {
 			case ProjectNameInput:
-				processEvent(event, &projectName)
+				processEvent(event, &genResult.ProjectName)
 			case LocationInput:
-				processEvent(event, &location)
+				processEvent(event, &genResult.ProjectDir)
 			case SearchInput:
 				processEvent(event, &searchStr)
 			case Tabs:
@@ -145,11 +146,12 @@ func Run(client *http.Client) error {
 		}
 
 		if pluginsShown && !pluginsFetched {
-			plugins, err := network.FetchPlugins(client, settings.KtorVersion.DefaultId)
+			var plugins []network.Plugin
+			plugins, err = network.FetchPlugins(client, settings.KtorVersion.DefaultId)
 
 			if err != nil {
 				// TODO: handle error
-				return err
+				return
 			}
 
 			pluginsFetched = true
@@ -168,7 +170,7 @@ func Run(client *http.Client) error {
 
 		scr.Clear()
 		scr.Fill(' ', defaultStyle)
-		drawTui(scr, scrHeight, delta, projectName, location, searchStr)
+		drawTui(scr, scrHeight, delta, searchStr)
 		scr.Show()
 
 		if frameMs-delta > 0 {
@@ -176,10 +178,11 @@ func Run(client *http.Client) error {
 		}
 	}
 
-	return nil
+	result = genResult
+	return
 }
 
-func drawTui(scr tcell.Screen, height int, deltaTime float64, projectName string, location string, searchStr string) {
+func drawTui(scr tcell.Screen, height int, deltaTime float64, searchStr string) {
 	cursorAnimTimer += deltaTime
 
 	defer func() {
@@ -196,7 +199,7 @@ func drawTui(scr tcell.Screen, height int, deltaTime float64, projectName string
 	posX, posY = drawInlineText(scr, posX, posY, strongStyle, "Project name:")
 	posX++
 
-	posX, posY = drawInput(scr, posX, posY, projectInputLen, projectName, cursorPos, activeElement == ProjectNameInput)
+	posX, posY = drawInput(scr, posX, posY, projectInputLen, genResult.ProjectName, cursorPos, activeElement == ProjectNameInput)
 
 	if !locationShown {
 		return
@@ -207,7 +210,7 @@ func drawTui(scr tcell.Screen, height int, deltaTime float64, projectName string
 	posX, posY = drawInlineText(scr, posX, posY, strongStyle, "Location:")
 	posX++
 
-	drawInput(scr, posX, posY, locationInputLen, location, cursorPos, activeElement == LocationInput)
+	drawInput(scr, posX, posY, locationInputLen, genResult.ProjectDir, cursorPos, activeElement == LocationInput)
 
 	if !pluginsShown {
 		return
@@ -259,7 +262,7 @@ func drawTui(scr tcell.Screen, height int, deltaTime float64, projectName string
 		}
 
 		checkboxVal := ' '
-		if slices.Contains(addedPlugins, p.Id) {
+		if slices.Contains(genResult.Plugins, p.Id) {
 			checkboxVal = 'x'
 		}
 		scr.SetContent(padding, posY, checkboxVal, nil, checkboxStyle)
@@ -288,7 +291,7 @@ func drawTui(scr tcell.Screen, height int, deltaTime float64, projectName string
 	if activeElement == CreateButton {
 		createStyle = activeTabStyle
 	}
-	drawInlineText(scr, padding, height-2, createStyle, "CREATE PROJECT (CTRL+ENTER)")
+	drawInlineText(scr, padding, height-2, createStyle, "CREATE PROJECT (ALT+ENTER)")
 }
 
 func drawInlineText(scr tcell.Screen, x, y int, style tcell.Style, text string) (int, int) {
@@ -312,6 +315,7 @@ func processEvent(ev tcell.Event, input *string) {
 		switch {
 		case (mod == tcell.ModCtrl && key == tcell.KeyCtrlC) || (key == tcell.KeyEscape):
 			running = false
+			genResult.Quit = true
 		case key == tcell.KeyRune:
 			if activeElement == Tabs && ev.Rune() == ' ' {
 				toggleSelectedPlugin()
@@ -395,15 +399,20 @@ func processEvent(ev tcell.Event, input *string) {
 				*input = deleteChar(*input, inputOff)
 				cursorOffs[activeElement] = moveCursor(inputOff, len(*input), -1)
 			}
-		case key == tcell.KeyEnter:
+		case key == tcell.KeyEnter && mod == tcell.ModAlt && pluginsShown: // Generate project
+			running = false
+		case key == tcell.KeyEnter && mod == tcell.ModNone:
 			if activeElement == Tabs {
 				toggleSelectedPlugin()
 				return
+			} else if activeElement == CreateButton { // Generate project
+				running = false
 			}
 
 			switch activeElement {
 			case ProjectNameInput:
 				locationShown = true
+				initProjectDir()
 			case LocationInput:
 				pluginsShown = true
 			default:
@@ -415,6 +424,7 @@ func processEvent(ev tcell.Event, input *string) {
 			switch activeElement {
 			case ProjectNameInput:
 				locationShown = true
+				initProjectDir()
 			case LocationInput:
 				pluginsShown = true
 			default:
@@ -428,12 +438,23 @@ func processEvent(ev tcell.Event, input *string) {
 	}
 }
 
+func initProjectDir() {
+	wd, err := os.Getwd()
+
+	if err != nil {
+		genResult.ProjectDir = filepath.Join(".", genResult.ProjectName)
+		return
+	}
+
+	genResult.ProjectDir = filepath.Join(wd, genResult.ProjectName)
+}
+
 func toggleSelectedPlugin() {
 	p := visiblePlugins()[activePlugin]
-	if pIndex := slices.Index(addedPlugins, p.Id); pIndex >= 0 {
-		addedPlugins = slices.Delete(addedPlugins, pIndex, pIndex+1)
+	if pIndex := slices.Index(genResult.Plugins, p.Id); pIndex >= 0 {
+		genResult.Plugins = slices.Delete(genResult.Plugins, pIndex, pIndex+1)
 	} else {
-		addedPlugins = append(addedPlugins, p.Id)
+		genResult.Plugins = append(genResult.Plugins, p.Id)
 	}
 }
 
