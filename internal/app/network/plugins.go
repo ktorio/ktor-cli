@@ -10,10 +10,11 @@ import (
 )
 
 type Plugin struct {
-	Id          string `json:"xmlId"`
-	Name        string `json:"name"`
-	Group       string `json:"group"`
-	Description string `json:"description"`
+	Id              string   `json:"xmlId"`
+	Name            string   `json:"name"`
+	Group           string   `json:"group"`
+	Description     string   `json:"description"`
+	RequiredPlugins []string `json:"requiredFeatures"`
 }
 
 func FetchPlugins(client *http.Client, ktorVersion string) ([]Plugin, error) {
