@@ -12,6 +12,10 @@ import (
 	"time"
 )
 
+var searchHighlightColor = tcell.Color136
+
+// TODO: Extract all colors
+
 var defaultStyle = tcell.StyleDefault.Background(tcell.Color233)
 var inputStyle = defaultStyle.Background(tcell.Color117).Foreground(tcell.Color233)
 var cursorStyle = inputStyle.Background(tcell.ColorWhite)
@@ -290,7 +294,28 @@ func drawTui(scr tcell.Screen, height int, deltaTime float64) {
 		if activeElement == Tabs && i == activePlugin {
 			nameStyle = activeTabStyle
 		}
-		drawInlineText(scr, posX, posY, nameStyle, p.Name)
+
+		x := posX
+		var searchIndices []int
+
+		if len(search) > 0 {
+			searchIndices = searchAll(p.Name, search)
+		}
+
+		for i, r := range []rune(p.Name) {
+			style := nameStyle
+
+			for _, ind := range searchIndices {
+				if i >= ind && i < ind+len(search) {
+					style = nameStyle.Foreground(searchHighlightColor)
+					break
+				}
+			}
+
+			scr.SetContent(x, posY, r, nil, style)
+			x++
+		}
+
 		posY++
 
 		descrStyle := weakTextStyle
@@ -298,7 +323,25 @@ func drawTui(scr tcell.Screen, height int, deltaTime float64) {
 			descrStyle = weakTextStyle.Background(tcell.ColorWhite)
 		}
 
-		drawInlineText(scr, pluginsXStart, posY, descrStyle, p.Description)
+		searchIndices = searchIndices[:0]
+		if len(search) > 0 {
+			searchIndices = searchAll(p.Description, search)
+		}
+
+		x = pluginsXStart
+		for i, r := range []rune(p.Description) {
+			style := descrStyle
+
+			for _, ind := range searchIndices {
+				if i >= ind && i < ind+len(search) {
+					style = descrStyle.Foreground(searchHighlightColor)
+					break
+				}
+			}
+
+			scr.SetContent(x, posY, r, nil, style)
+			x++
+		}
 		posY += 2
 	}
 
@@ -316,6 +359,20 @@ func drawInlineText(scr tcell.Screen, x, y int, style tcell.Style, text string) 
 	}
 
 	return x, y
+}
+
+func searchAll(s string, substr string) []int {
+	sLow := strings.ToLower(s)
+	substrLow := strings.ToLower(substr)
+	var indices []int
+	off := 0
+	for i := strings.Index(sLow, substrLow); i < len(sLow) && i >= 0; i = strings.Index(sLow[off:], substrLow) {
+		indices = append(indices, i+off)
+		i += len(substrLow)
+		off += i
+	}
+
+	return indices
 }
 
 func processEvent(ev tcell.Event, input *string) {
