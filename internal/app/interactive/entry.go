@@ -13,16 +13,20 @@ import (
 )
 
 var searchHighlightColor = tcell.Color136
+var mainColor = tcell.Color126
+var bgColor = tcell.Color233
+var textColor = tcell.ColorWhite
+var inputColor = tcell.Color235
+var strongTextColor = tcell.Color141
+var weakTextColor = tcell.Color139
 
-// TODO: Extract all colors
-
-var defaultStyle = tcell.StyleDefault.Background(tcell.Color233)
-var inputStyle = defaultStyle.Background(tcell.Color117).Foreground(tcell.Color233)
-var cursorStyle = inputStyle.Background(tcell.ColorWhite)
-var buttonStyle = defaultStyle.Background(tcell.Color163).Foreground(tcell.ColorWhite)
-var activeTabStyle = defaultStyle.Foreground(tcell.Color163).Background(tcell.ColorWhite)
-var textStyle = defaultStyle.Foreground(tcell.ColorWhite)
-var weakTextStyle = defaultStyle.Foreground(tcell.Color139)
+var defaultStyle = tcell.StyleDefault.Background(bgColor)
+var inputStyle = defaultStyle.Background(inputColor).Foreground(textColor)
+var cursorStyle = defaultStyle.Background(mainColor)
+var buttonStyle = defaultStyle.Background(mainColor).Foreground(textColor)
+var activeTabStyle = defaultStyle.Foreground(mainColor).Background(textColor)
+var textStyle = defaultStyle.Foreground(textColor)
+var weakTextStyle = defaultStyle.Foreground(weakTextColor)
 
 type Element int
 
@@ -58,6 +62,7 @@ var search string
 var pluginDeps map[string][]string
 var indirectPlugins map[string]idSet
 var addedPlugins idSet
+var statusLine string
 
 func init() {
 	running = true
@@ -76,6 +81,7 @@ func init() {
 	search = ""
 	indirectPlugins = make(map[string]idSet)
 	addedPlugins = make(idSet)
+	statusLine = ""
 }
 
 type Result struct {
@@ -109,7 +115,7 @@ func Run(client *http.Client) (result Result, err error) {
 
 	scr.EnableMouse()
 	scr.Clear()
-	_, scrHeight := scr.Size()
+	scrWidth, scrHeight := scr.Size()
 
 	quit := func() {
 		maybePanic := recover()
@@ -188,7 +194,7 @@ func Run(client *http.Client) (result Result, err error) {
 
 		scr.Clear()
 		scr.Fill(' ', defaultStyle)
-		drawTui(scr, scrHeight, delta)
+		drawTui(scr, scrWidth, scrHeight, delta)
 		scr.Show()
 
 		if frameMs-delta > 0 {
@@ -200,7 +206,7 @@ func Run(client *http.Client) (result Result, err error) {
 	return
 }
 
-func drawTui(scr tcell.Screen, height int, deltaTime float64) {
+func drawTui(scr tcell.Screen, width, height int, deltaTime float64) {
 	cursorAnimTimer += deltaTime
 
 	defer func() {
@@ -209,7 +215,9 @@ func drawTui(scr tcell.Screen, height int, deltaTime float64) {
 		}
 	}()
 
-	strongStyle := defaultStyle.Foreground(tcell.Color141)
+	drawInlineText(scr, width-len(statusLine)-2, height-2, defaultStyle, statusLine)
+
+	strongStyle := defaultStyle.Foreground(strongTextColor)
 	cursorPos := cursorOffs[activeElement]
 	padding := 1
 	posX := padding
@@ -320,7 +328,7 @@ func drawTui(scr tcell.Screen, height int, deltaTime float64) {
 
 		descrStyle := weakTextStyle
 		if activeElement == Tabs && i == activePlugin {
-			descrStyle = weakTextStyle.Background(tcell.ColorWhite)
+			descrStyle = weakTextStyle.Background(textColor)
 		}
 
 		searchIndices = searchIndices[:0]
@@ -389,6 +397,18 @@ func processEvent(ev tcell.Event, input *string) {
 			running = false
 			genResult.Quit = true
 		case key == tcell.KeyRune:
+			if mod == tcell.ModAlt && ev.Rune() == 'm' {
+				inputColor++
+				statusLine = fmt.Sprintf("Color%d", inputColor-tcell.ColorValid)
+				return
+			}
+
+			if mod == tcell.ModAlt && ev.Rune() == 'n' {
+				inputColor--
+				statusLine = fmt.Sprintf("Color%d", inputColor-tcell.ColorValid)
+				return
+			}
+
 			if activeElement == Tabs && ev.Rune() == ' ' {
 				toggleSelectedPlugin()
 				return
