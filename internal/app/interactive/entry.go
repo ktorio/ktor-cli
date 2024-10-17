@@ -34,6 +34,8 @@ const projectInputLen = 64
 const locationInputLen = 128
 const searchInputLen = 48
 
+type idSet map[string]struct{}
+
 var running bool
 var cursorOffs map[Element]int
 var locationShown bool
@@ -49,6 +51,9 @@ var activeTab int
 var activePlugin int
 var genResult Result
 var search string
+var pluginDeps map[string][]string
+var indirectPlugins map[string]idSet
+var addedPlugins idSet
 
 func init() {
 	running = true
@@ -65,6 +70,8 @@ func init() {
 	activePlugin = 0
 	genResult = Result{}
 	search = ""
+	indirectPlugins = make(map[string]idSet)
+	addedPlugins = make(idSet)
 }
 
 type Result struct {
@@ -159,8 +166,11 @@ func Run(client *http.Client) (result Result, err error) {
 
 			pluginsFetched = true
 
+			pluginDeps = make(map[string][]string, len(plugins))
 			allPluginsByGroup = make(map[string][]network.Plugin, len(plugins))
 			for _, p := range plugins {
+				pluginDeps[p.Id] = p.RequiredPlugins
+
 				if !slices.Contains(allSortedGroups, p.Group) {
 					allSortedGroups = append(allSortedGroups, p.Group)
 				}
@@ -266,9 +276,10 @@ func drawTui(scr tcell.Screen, height int, deltaTime float64) {
 		}
 
 		checkboxVal := ' '
-		if slices.Contains(genResult.Plugins, p.Id) {
+		if _, ok := addedPlugins[p.Id]; ok {
 			checkboxVal = 'x'
 		}
+
 		scr.SetContent(padding, posY, checkboxVal, nil, checkboxStyle)
 		if i != len(plugins)-1 {
 			scr.SetContent(padding, posY+1, tcell.RuneVLine, nil, textStyle.Bold(true))
@@ -407,13 +418,21 @@ func processEvent(ev tcell.Event, input *string) {
 				onInputChanged(activeElement, *input)
 			}
 		case key == tcell.KeyEnter && mod == tcell.ModAlt && pluginsShown: // Generate project
+			for id := range addedPlugins {
+				genResult.Plugins = append(genResult.Plugins, id)
+			}
+
 			running = false
 		case key == tcell.KeyEnter && mod == tcell.ModNone:
 			if activeElement == Tabs {
 				toggleSelectedPlugin()
 				return
 			} else if activeElement == CreateButton { // Generate project
+				for id := range addedPlugins {
+					genResult.Plugins = append(genResult.Plugins, id)
+				}
 				running = false
+				return
 			}
 
 			switch activeElement {
@@ -491,10 +510,61 @@ func initProjectDir() {
 
 func toggleSelectedPlugin() {
 	p := visiblePlugins()[activePlugin]
-	if pIndex := slices.Index(genResult.Plugins, p.Id); pIndex >= 0 {
-		genResult.Plugins = slices.Delete(genResult.Plugins, pIndex, pIndex+1)
-	} else {
-		genResult.Plugins = append(genResult.Plugins, p.Id)
+
+	if _, ok := addedPlugins[p.Id]; ok { // Plugin is selected
+		for id := range addedPlugins {
+			if isPluginRequiredFor(p.Id, id) {
+				delete(addedPlugins, id)
+			}
+		}
+
+		delete(addedPlugins, p.Id)
+
+		if ips, ok := indirectPlugins[p.Id]; ok {
+			for id := range ips {
+				delete(addedPlugins, id)
+			}
+		}
+		delete(indirectPlugins, p.Id)
+		return
+	}
+
+	addedPlugins[p.Id] = struct{}{}
+	deps := make(idSet)
+	getDepPlugins(p.Id, deps)
+
+	for _, s := range indirectPlugins {
+		if _, ok := s[p.Id]; ok {
+			delete(s, p.Id)
+		}
+	}
+
+	for id := range deps {
+		if _, ok := addedPlugins[id]; ok {
+			delete(deps, id)
+		}
+	}
+
+	for id := range deps {
+		addedPlugins[id] = struct{}{}
+	}
+
+	indirectPlugins[p.Id] = deps
+}
+
+func isPluginRequiredFor(parentId string, childId string) bool {
+	for _, id := range pluginDeps[childId] {
+		if id == parentId || isPluginRequiredFor(id, childId) {
+			return true
+		}
+	}
+	return false
+}
+
+func getDepPlugins(id string, m idSet) {
+	for _, dp := range pluginDeps[id] {
+		m[dp] = struct{}{}
+		getDepPlugins(dp, m)
 	}
 }
 

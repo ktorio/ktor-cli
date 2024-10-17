@@ -49,6 +49,10 @@ func NewProject(client *http.Client, payload ProjectPayload) ([]byte, error) {
 
 	defer resp.Body.Close()
 
+	if err = checkResponseStatus(resp, "new project"); err != nil {
+		return nil, err
+	}
+
 	reader, progressBar := progress.NewReader(
 		resp.Body,
 		"Downloading project archive... ",
