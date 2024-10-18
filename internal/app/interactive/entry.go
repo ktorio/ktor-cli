@@ -12,7 +12,7 @@ import (
 	"time"
 )
 
-var searchHighlightColor = tcell.Color136
+var searchHighlightColor = tcell.Color172
 var mainColor = tcell.Color126
 var bgColor = tcell.Color233
 var textColor = tcell.ColorWhite
@@ -38,9 +38,10 @@ const (
 	CreateButton
 	Last
 )
-const projectInputLen = 64
-const locationInputLen = 128
-const searchInputLen = 48
+
+type Range struct {
+	start, end int
+}
 
 type idSet map[string]struct{}
 
@@ -63,6 +64,7 @@ var pluginDeps map[string][]string
 var indirectPlugins map[string]idSet
 var addedPlugins idSet
 var statusLine string
+var tabVisRanges []Range
 
 func init() {
 	running = true
@@ -71,8 +73,8 @@ func init() {
 		LocationInput:    0,
 		SearchInput:      0,
 	}
-	locationShown = false
-	pluginsShown = false
+	locationShown = true
+	pluginsShown = true
 	activeElement = ProjectNameInput
 	pluginsFetched = false
 	activeTab = 0
@@ -115,7 +117,6 @@ func Run(client *http.Client) (result Result, err error) {
 
 	scr.EnableMouse()
 	scr.Clear()
-	scrWidth, scrHeight := scr.Size()
 
 	quit := func() {
 		maybePanic := recover()
@@ -194,7 +195,7 @@ func Run(client *http.Client) (result Result, err error) {
 
 		scr.Clear()
 		scr.Fill(' ', defaultStyle)
-		drawTui(scr, scrWidth, scrHeight, delta)
+		drawTui(scr, delta)
 		scr.Show()
 
 		if frameMs-delta > 0 {
@@ -206,7 +207,7 @@ func Run(client *http.Client) (result Result, err error) {
 	return
 }
 
-func drawTui(scr tcell.Screen, width, height int, deltaTime float64) {
+func drawTui(scr tcell.Screen, deltaTime float64) {
 	cursorAnimTimer += deltaTime
 
 	defer func() {
@@ -215,6 +216,7 @@ func drawTui(scr tcell.Screen, width, height int, deltaTime float64) {
 		}
 	}()
 
+	width, height := scr.Size()
 	drawInlineText(scr, width-len(statusLine)-2, height-2, defaultStyle, statusLine)
 
 	strongStyle := defaultStyle.Foreground(strongTextColor)
@@ -225,7 +227,7 @@ func drawTui(scr tcell.Screen, width, height int, deltaTime float64) {
 	posX, posY = drawInlineText(scr, posX, posY, strongStyle, "Project name:")
 	posX++
 
-	posX, posY = drawInput(scr, posX, posY, projectInputLen, genResult.ProjectName, cursorPos, activeElement == ProjectNameInput)
+	posX, posY = drawInput(scr, posX, posY, width-posX-padding, genResult.ProjectName, cursorPos, activeElement == ProjectNameInput)
 
 	if !locationShown {
 		return
@@ -236,7 +238,7 @@ func drawTui(scr tcell.Screen, width, height int, deltaTime float64) {
 	posX, posY = drawInlineText(scr, posX, posY, strongStyle, "Location:")
 	posX++
 
-	drawInput(scr, posX, posY, locationInputLen, genResult.ProjectDir, cursorPos, activeElement == LocationInput)
+	drawInput(scr, posX, posY, width-posX-padding, genResult.ProjectDir, cursorPos, activeElement == LocationInput)
 
 	if !pluginsShown {
 		return
@@ -246,7 +248,7 @@ func drawTui(scr tcell.Screen, width, height int, deltaTime float64) {
 	posX = padding
 	posX, posY = drawInlineText(scr, posX, posY, strongStyle, "Search for plugins:")
 	posX++
-	drawInput(scr, posX, posY, searchInputLen, search, cursorPos, activeElement == SearchInput)
+	drawInput(scr, posX, posY, width-posX-padding, search, cursorPos, activeElement == SearchInput)
 
 	if !pluginsFetched {
 		return
@@ -254,21 +256,48 @@ func drawTui(scr tcell.Screen, width, height int, deltaTime float64) {
 
 	posX = padding
 	posY += 2
-	for i, gr := range groups {
+
+	tabVisRanges = tabVisRanges[:0]
+	for off := 0; off < len(groups); {
+		r := Range{start: off, end: off + getVisibleTabsCount(padding, width, groups[off:])}
+		tabVisRanges = append(tabVisRanges, r)
+		off = r.end
+	}
+
+	statusLine = fmt.Sprintf("[%d] (%v)", activeTab, getCurrentTabRange())
+
+	tabRange := getCurrentTabRange()
+	visibleTabs := groups[tabRange.start:tabRange.end]
+
+	if tabRange.start > 0 {
+		drawInlineText(scr, posX, posY, buttonStyle.Bold(true), "...")
+		posX += 3
+		scr.SetContent(posX, posY, tcell.RuneHLine, nil, textStyle.Bold(true))
+		posX++
+	}
+
+	for i, gr := range visibleTabs {
 		ps := pluginsByGroup[gr]
 
 		style := buttonStyle
-		if activeElement == Tabs && i == activeTab {
+		if activeElement == Tabs && i == activeTab-tabRange.start {
 			style = activeTabStyle
 		}
 
-		posX, posY = drawInlineText(scr, posX, posY, style, fmt.Sprintf("%s (%d)", gr, len(ps)))
+		groupText := fmt.Sprintf("%s (%d)", gr, len(ps))
+		posX, posY = drawInlineText(scr, posX, posY, style, groupText)
 
-		if i != len(groups)-1 {
+		if i != len(visibleTabs)-1 {
 			scr.SetContent(posX, posY, tcell.RuneHLine, nil, textStyle.Bold(true))
 		}
 
 		posX += 1
+	}
+
+	if tabRange.end < len(groups) {
+		posX--
+		scr.SetContent(posX, posY, tcell.RuneHLine, nil, textStyle.Bold(true))
+		drawInlineText(scr, posX+1, posY, buttonStyle.Bold(true), "...")
 	}
 
 	posX = padding
@@ -360,9 +389,53 @@ func drawTui(scr tcell.Screen, width, height int, deltaTime float64) {
 	drawInlineText(scr, padding, height-2, createStyle, "CREATE PROJECT (ALT+ENTER)")
 }
 
+func getCurrentTabRange() Range {
+	for _, r := range tabVisRanges {
+		if activeTab >= r.start && activeTab < r.end {
+			return r
+		}
+	}
+
+	panic(fmt.Sprintf("Cannot determine visible tab range; active tab: %v, range: %v", activeTab, tabVisRanges))
+}
+
+func getVisibleTabsCount(padding, width int, groups []string) int {
+	cx := padding
+	count := 0
+	for i, gr := range groups {
+		ps := pluginsByGroup[gr]
+
+		groupText := fmt.Sprintf("%s (%d)", gr, len(ps))
+
+		dotsSpace := 2 + 3
+		if i == len(groups)-1 {
+			dotsSpace = 0
+		}
+
+		if x, _ := inlinePos(cx, 0, groupText); x+padding+dotsSpace > width {
+			//tabVisSize = i
+			break
+		}
+		count++
+
+		cx, _ = inlinePos(cx, 0, groupText)
+		cx += 1
+	}
+
+	return count
+}
+
 func drawInlineText(scr tcell.Screen, x, y int, style tcell.Style, text string) (int, int) {
 	for _, r := range []rune(text) {
 		scr.SetContent(x, y, r, nil, style)
+		x++
+	}
+
+	return x, y
+}
+
+func inlinePos(x, y int, text string) (int, int) {
+	for range []rune(text) {
 		x++
 	}
 
