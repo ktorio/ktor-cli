@@ -65,6 +65,7 @@ var indirectPlugins map[string]idSet
 var addedPlugins idSet
 var statusLine string
 var tabVisRanges []Range
+var pluginVisRanges []Range
 
 func init() {
 	running = true
@@ -92,6 +93,9 @@ type Result struct {
 	Plugins     []string
 	Quit        bool
 }
+
+// TODO: Improve color scheme
+// TODO: Add status and error messages
 
 func Run(client *http.Client) (result Result, err error) {
 	settings, err := network.FetchSettings(client)
@@ -264,9 +268,7 @@ func drawTui(scr tcell.Screen, deltaTime float64) {
 		off = r.end
 	}
 
-	statusLine = fmt.Sprintf("[%d] (%v)", activeTab, getCurrentTabRange())
-
-	tabRange := getCurrentTabRange()
+	tabRange := findRange(tabVisRanges, activeTab)
 	visibleTabs := groups[tabRange.start:tabRange.end]
 
 	if tabRange.start > 0 {
@@ -310,7 +312,27 @@ func drawTui(scr tcell.Screen, deltaTime float64) {
 	activeGroup := groups[activeTab]
 	plugins := pluginsByGroup[activeGroup]
 
-	for i, p := range plugins {
+	pluginVisRanges = pluginVisRanges[:0]
+	for off := 0; off < len(plugins); {
+		r := Range{start: off, end: off + getVisiblePluginsCount(posY, height, plugins[off:], off > 0)}
+		pluginVisRanges = append(pluginVisRanges, r)
+		off = r.end
+	}
+
+	plugsRange := findRange(pluginVisRanges, activePlugin)
+	visPlugins := plugins[plugsRange.start:plugsRange.end]
+	statusLine = fmt.Sprintf("x:%v y:%v", posX, posY)
+
+	if plugsRange.start > 0 {
+		scr.SetContent(padding, posY, tcell.RuneVLine, nil, textStyle.Bold(true))
+		scr.SetContent(padding, posY, ' ', nil, buttonStyle)
+		drawInlineText(scr, posX, posY, textStyle, "...")
+		posY++
+		scr.SetContent(padding, posY, tcell.RuneVLine, nil, textStyle.Bold(true))
+		posY++
+	}
+
+	for i, p := range visPlugins {
 		checkboxStyle := buttonStyle
 		if activeElement == Tabs && i == activePlugin {
 			checkboxStyle = activeTabStyle
@@ -322,13 +344,13 @@ func drawTui(scr tcell.Screen, deltaTime float64) {
 		}
 
 		scr.SetContent(padding, posY, checkboxVal, nil, checkboxStyle)
-		if i != len(plugins)-1 {
+		if i != len(visPlugins)-1 {
 			scr.SetContent(padding, posY+1, tcell.RuneVLine, nil, textStyle.Bold(true))
 			scr.SetContent(padding, posY+2, tcell.RuneVLine, nil, textStyle.Bold(true))
 		}
 
 		nameStyle := textStyle
-		if activeElement == Tabs && i == activePlugin {
+		if activeElement == Tabs && i+plugsRange.start == activePlugin {
 			nameStyle = activeTabStyle
 		}
 
@@ -356,7 +378,7 @@ func drawTui(scr tcell.Screen, deltaTime float64) {
 		posY++
 
 		descrStyle := weakTextStyle
-		if activeElement == Tabs && i == activePlugin {
+		if activeElement == Tabs && i+plugsRange.start == activePlugin {
 			descrStyle = weakTextStyle.Background(textColor)
 		}
 
@@ -382,6 +404,16 @@ func drawTui(scr tcell.Screen, deltaTime float64) {
 		posY += 2
 	}
 
+	if plugsRange.end < len(plugins) {
+		posY -= 2
+		scr.SetContent(padding, posY, tcell.RuneVLine, nil, textStyle.Bold(true))
+		posY++
+		scr.SetContent(padding, posY, tcell.RuneVLine, nil, textStyle.Bold(true))
+		posY++
+		drawInlineText(scr, padding+2, posY, textStyle, "...")
+		scr.SetContent(padding, posY, ' ', nil, buttonStyle)
+	}
+
 	createStyle := buttonStyle
 	if activeElement == CreateButton {
 		createStyle = activeTabStyle
@@ -389,14 +421,41 @@ func drawTui(scr tcell.Screen, deltaTime float64) {
 	drawInlineText(scr, padding, height-2, createStyle, "CREATE PROJECT (ALT+ENTER)")
 }
 
-func getCurrentTabRange() Range {
-	for _, r := range tabVisRanges {
-		if activeTab >= r.start && activeTab < r.end {
+func findRange(ranges []Range, index int) Range {
+	for _, r := range ranges {
+		if index >= r.start && index < r.end {
 			return r
 		}
 	}
 
-	panic(fmt.Sprintf("Cannot determine visible tab range; active tab: %v, range: %v", activeTab, tabVisRanges))
+	panic(fmt.Sprintf("Cannot determine range; index: %v, ranges: %v", index, ranges))
+}
+
+func getVisiblePluginsCount(startY, height int, plugins []network.Plugin, inMiddle bool) int {
+	cy := startY
+	count := 0
+	createButtonSpace := 3
+
+	for i := range plugins {
+		dotsHeight := 2
+		if i == len(plugins)-1 {
+			dotsHeight = 0
+		}
+
+		if inMiddle {
+			dotsHeight += 3
+		}
+
+		if cy+createButtonSpace+dotsHeight > height {
+			break
+		}
+		count++
+
+		cy += 2 // name + description
+		cy += 1
+	}
+
+	return count
 }
 
 func getVisibleTabsCount(padding, width int, groups []string) int {
@@ -413,7 +472,6 @@ func getVisibleTabsCount(padding, width int, groups []string) int {
 		}
 
 		if x, _ := inlinePos(cx, 0, groupText); x+padding+dotsSpace > width {
-			//tabVisSize = i
 			break
 		}
 		count++
@@ -534,12 +592,12 @@ func processEvent(ev tcell.Event, input *string) {
 			activeElement = prevElement()
 		case key == tcell.KeyDown:
 			if activeElement == Tabs {
-				if activePlugin+1 > len(visiblePlugins())-1 {
+				if activePlugin+1 > len(pluginsOnCurrentTab())-1 {
 					activeElement = nextElement()
 					return
 				}
 
-				if activePlugin+1 < len(visiblePlugins()) {
+				if activePlugin+1 < len(pluginsOnCurrentTab()) {
 					activePlugin++
 				}
 				return
@@ -659,7 +717,7 @@ func initProjectDir() {
 }
 
 func toggleSelectedPlugin() {
-	p := visiblePlugins()[activePlugin]
+	p := pluginsOnCurrentTab()[activePlugin]
 
 	if _, ok := addedPlugins[p.Id]; ok { // Plugin is selected
 		for id := range addedPlugins {
@@ -718,7 +776,7 @@ func getDepPlugins(id string, m idSet) {
 	}
 }
 
-func visiblePlugins() []network.Plugin {
+func pluginsOnCurrentTab() []network.Plugin {
 	return pluginsByGroup[groups[activeTab]]
 }
 
