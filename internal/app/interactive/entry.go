@@ -97,6 +97,8 @@ type Result struct {
 // TODO: Improve color scheme
 // TODO: Add status and error messages
 
+// TODO: Separate draw state from model state
+
 func Run(client *http.Client) (result Result, err error) {
 	settings, err := network.FetchSettings(client)
 
@@ -302,6 +304,17 @@ func drawTui(scr tcell.Screen, deltaTime float64) {
 		drawInlineText(scr, posX+1, posY, buttonStyle.Bold(true), "...")
 	}
 
+	createStyle := buttonStyle
+	if activeElement == CreateButton {
+		createStyle = activeTabStyle
+	}
+	drawInlineText(scr, padding, height-2, createStyle, "CREATE PROJECT (ALT+ENTER)")
+
+	if len(groups) == 0 {
+		drawInlineText(scr, posX, posY, textStyle, "No plugins found by the search query")
+		return
+	}
+
 	posX = padding
 	posY++
 	scr.SetContent(posX, posY, tcell.RuneVLine, nil, textStyle.Bold(true))
@@ -309,12 +322,20 @@ func drawTui(scr tcell.Screen, deltaTime float64) {
 
 	posX += 2
 	pluginsXStart := posX
+
 	activeGroup := groups[activeTab]
 	plugins := pluginsByGroup[activeGroup]
 
 	pluginVisRanges = pluginVisRanges[:0]
 	for off := 0; off < len(plugins); {
-		r := Range{start: off, end: off + getVisiblePluginsCount(posY, height, plugins[off:], off > 0)}
+		count := getVisiblePluginsCount(posY, height, plugins[off:], off)
+
+		if count == 0 {
+			// TODO: Signify error (too little height)
+			return
+		}
+
+		r := Range{start: off, end: off + count}
 		pluginVisRanges = append(pluginVisRanges, r)
 		off = r.end
 	}
@@ -413,12 +434,6 @@ func drawTui(scr tcell.Screen, deltaTime float64) {
 		drawInlineText(scr, padding+2, posY, textStyle, "...")
 		scr.SetContent(padding, posY, ' ', nil, buttonStyle)
 	}
-
-	createStyle := buttonStyle
-	if activeElement == CreateButton {
-		createStyle = activeTabStyle
-	}
-	drawInlineText(scr, padding, height-2, createStyle, "CREATE PROJECT (ALT+ENTER)")
 }
 
 func findRange(ranges []Range, index int) Range {
@@ -428,25 +443,30 @@ func findRange(ranges []Range, index int) Range {
 		}
 	}
 
-	panic(fmt.Sprintf("Cannot determine range; index: %v, ranges: %v", index, ranges))
+	return Range{0, 0}
 }
 
-func getVisiblePluginsCount(startY, height int, plugins []network.Plugin, inMiddle bool) int {
+func getVisiblePluginsCount(startY, height int, plugs []network.Plugin, off int) int {
 	cy := startY
 	count := 0
 	createButtonSpace := 3
+	dotsHeight := 3
 
-	for i := range plugins {
-		dotsHeight := 2
-		if i == len(plugins)-1 {
-			dotsHeight = 0
+	for i := range plugs {
+		isLast := i == len(plugs)-1
+
+		extraSpace := 0
+		if (isLast && off > 0) || (!isLast && off == 0) {
+			extraSpace = dotsHeight + 1
+		} else if !isLast && off > 0 {
+			extraSpace = dotsHeight * 2
 		}
 
-		if inMiddle {
-			dotsHeight += 3
+		if isLast {
+			extraSpace += 2
 		}
 
-		if cy+createButtonSpace+dotsHeight > height {
+		if cy+createButtonSpace+extraSpace > height {
 			break
 		}
 		count++
@@ -691,6 +711,14 @@ func searchPlugins() map[string][]network.Plugin {
 			m[gr] = plugins
 			groups = append(groups, gr)
 		}
+	}
+
+	if activeTab >= len(groups) {
+		activeTab = len(groups) - 1
+	}
+
+	if activeTab < 0 {
+		activeTab = 0
 	}
 
 	slices.Sort(groups)
