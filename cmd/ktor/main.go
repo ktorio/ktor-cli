@@ -88,9 +88,17 @@ func main() {
 		}
 
 		result, err := interactive.Run(client)
-
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Interactive error: %v\n", err)
+			reportLog := cli.HandleAppError("", err)
+
+			if hasGlobalLog && reportLog {
+				fmt.Fprintf(os.Stderr, "You can find more information in the log: %s\n", config.LogPath(homeDir))
+			}
+
+			if hasGlobalLog {
+				log.Fatal(err)
+			}
+
 			os.Exit(1)
 		}
 
