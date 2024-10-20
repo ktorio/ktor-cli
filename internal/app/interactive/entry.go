@@ -4,12 +4,14 @@ import (
 	"fmt"
 	"github.com/gdamore/tcell/v2"
 	"github.com/ktorio/ktor-cli/internal/app/network"
+	"io"
 	"net/http"
 	"os"
 	"path/filepath"
 	"slices"
 	"strings"
 	"time"
+	"unicode"
 )
 
 var searchHighlightColor = tcell.Color172
@@ -19,6 +21,8 @@ var textColor = tcell.ColorWhite
 var inputColor = tcell.Color235
 var strongTextColor = tcell.Color141
 var weakTextColor = tcell.Color139
+var errorColor = tcell.Color160
+var statusColor = tcell.Color106
 
 var defaultStyle = tcell.StyleDefault.Background(bgColor)
 var inputStyle = defaultStyle.Background(inputColor).Foreground(textColor)
@@ -64,6 +68,7 @@ var pluginDeps map[string][]string
 var indirectPlugins map[string]idSet
 var addedPlugins idSet
 var statusLine string
+var errorLine string
 var tabVisRanges []Range
 var pluginVisRanges []Range
 
@@ -74,8 +79,8 @@ func init() {
 		LocationInput:    0,
 		SearchInput:      0,
 	}
-	locationShown = true
-	pluginsShown = true
+	locationShown = false
+	pluginsShown = false
 	activeElement = ProjectNameInput
 	pluginsFetched = false
 	activeTab = 0
@@ -85,6 +90,7 @@ func init() {
 	indirectPlugins = make(map[string]idSet)
 	addedPlugins = make(idSet)
 	statusLine = ""
+	errorLine = ""
 }
 
 type Result struct {
@@ -95,25 +101,23 @@ type Result struct {
 }
 
 // TODO: Improve color scheme
-// TODO: Add status and error messages
-
-// TODO: Separate draw state from model state
+// TODO: Separate draw state from model state ???
+// TODO: Add input key combinations: CTRL+A, CTRL+E, ALT+BACKSPACE, CTRL+Right, CTRL+Left
 
 func Run(client *http.Client) (result Result, err error) {
 	settings, err := network.FetchSettings(client)
 
 	if err != nil {
-		// TODO: handle error
 		return
 	}
 
+	genResult.Plugins = []string{}
 	genResult.ProjectName = settings.ProjectName.DefaultVal
 	initProjectDir()
 
 	scr, err := tcell.NewScreen()
 
 	if err != nil {
-		// TODO: handle error
 		return
 	}
 
@@ -177,8 +181,9 @@ func Run(client *http.Client) (result Result, err error) {
 			plugins, err = network.FetchPlugins(client, settings.KtorVersion.DefaultId)
 
 			if err != nil {
-				// TODO: handle error
-				return
+				errorLine = "Unable to fetch plugins from the generation server. Please restart the app."
+				pluginsFetched = true
+				continue
 			}
 
 			pluginsFetched = true
@@ -223,13 +228,21 @@ func drawTui(scr tcell.Screen, deltaTime float64) {
 	}()
 
 	width, height := scr.Size()
-	drawInlineText(scr, width-len(statusLine)-2, height-2, defaultStyle, statusLine)
 
 	strongStyle := defaultStyle.Foreground(strongTextColor)
 	cursorPos := cursorOffs[activeElement]
 	padding := 1
 	posX := padding
 	posY := padding
+
+	errY := height - 4
+	if _, y := multilinePos(width/2, width, padding, errorLine); y > 0 {
+		errY -= y
+	}
+
+	drawMultilineText(scr, width/2, errY, width, padding, defaultStyle.Foreground(errorColor), errorLine)
+	drawInlineText(scr, width-len(statusLine)-1, height-2, defaultStyle.Foreground(statusColor), statusLine)
+
 	posX, posY = drawInlineText(scr, posX, posY, strongStyle, "Project name:")
 	posX++
 
@@ -315,12 +328,8 @@ func drawTui(scr tcell.Screen, deltaTime float64) {
 		return
 	}
 
-	posX = padding
-	posY++
-	scr.SetContent(posX, posY, tcell.RuneVLine, nil, textStyle.Bold(true))
-	posY++
-
-	posX += 2
+	posX = padding + 2
+	posY += 2
 	pluginsXStart := posX
 
 	activeGroup := groups[activeTab]
@@ -331,7 +340,7 @@ func drawTui(scr tcell.Screen, deltaTime float64) {
 		count := getVisiblePluginsCount(posY, height, plugins[off:], off)
 
 		if count == 0 {
-			// TODO: Signify error (too little height)
+			errorLine = fmt.Sprintf("Terminal height %d is too small to display plugins", height)
 			return
 		}
 
@@ -342,7 +351,6 @@ func drawTui(scr tcell.Screen, deltaTime float64) {
 
 	plugsRange := findRange(pluginVisRanges, activePlugin)
 	visPlugins := plugins[plugsRange.start:plugsRange.end]
-	statusLine = fmt.Sprintf("x:%v y:%v", posX, posY)
 
 	if plugsRange.start > 0 {
 		scr.SetContent(padding, posY, tcell.RuneVLine, nil, textStyle.Bold(true))
@@ -512,6 +520,41 @@ func drawInlineText(scr tcell.Screen, x, y int, style tcell.Style, text string) 
 	return x, y
 }
 
+func multilinePos(x, width, padding int, text string) (int, int) {
+	startX := x
+	y := 0
+	for range []rune(text) {
+		x++
+
+		if x >= width-padding {
+			x = startX
+			y++
+		}
+	}
+
+	return x, y
+}
+
+func drawMultilineText(scr tcell.Screen, x, y, width, padding int, style tcell.Style, text string) {
+	startX := x
+	spaceThresh := 10
+	for _, r := range []rune(text) {
+		if unicode.IsSpace(r) && (x+spaceThresh >= width-padding) {
+			x = startX
+			y++
+			continue
+		}
+
+		if x >= width-padding {
+			x = startX
+			y++
+		}
+
+		scr.SetContent(x, y, r, nil, style)
+		x++
+	}
+}
+
 func inlinePos(x, y int, text string) (int, int) {
 	for range []rune(text) {
 		x++
@@ -534,10 +577,19 @@ func searchAll(s string, substr string) []int {
 	return indices
 }
 
+var firstResize = false
+
 func processEvent(ev tcell.Event, input *string) {
 	inputOff := cursorOffs[activeElement]
 
 	switch ev := ev.(type) {
+	case *tcell.EventResize:
+		if !firstResize {
+			firstResize = true
+			break
+		}
+
+		errorLine = ""
 	case *tcell.EventKey:
 		mod, key := ev.Modifiers(), ev.Key()
 
@@ -562,6 +614,7 @@ func processEvent(ev tcell.Event, input *string) {
 
 			if activeElement == Tabs && ev.Rune() == ' ' {
 				toggleSelectedPlugin()
+				statusLine = fmt.Sprintf("%d plugins selected", len(addedPlugins))
 				return
 			}
 
@@ -650,23 +703,31 @@ func processEvent(ev tcell.Event, input *string) {
 				genResult.Plugins = append(genResult.Plugins, id)
 			}
 
-			running = false
+			if isDirEmptyOrAbsent(genResult.ProjectDir) {
+				running = false
+				return
+			}
 		case key == tcell.KeyEnter && mod == tcell.ModNone:
 			if activeElement == Tabs {
 				toggleSelectedPlugin()
+				statusLine = fmt.Sprintf("%d plugins selected", len(addedPlugins))
 				return
 			} else if activeElement == CreateButton { // Generate project
 				for id := range addedPlugins {
 					genResult.Plugins = append(genResult.Plugins, id)
 				}
-				running = false
-				return
+
+				if isDirEmptyOrAbsent(genResult.ProjectDir) {
+					running = false
+					return
+				}
 			}
 
 			switch activeElement {
 			case ProjectNameInput:
 				locationShown = true
 				initProjectDir()
+				checkProjectDir(genResult.ProjectDir)
 			case LocationInput:
 				pluginsShown = true
 			default:
@@ -679,6 +740,7 @@ func processEvent(ev tcell.Event, input *string) {
 			case ProjectNameInput:
 				locationShown = true
 				initProjectDir()
+				checkProjectDir(genResult.ProjectDir)
 			case LocationInput:
 				pluginsShown = true
 			default:
@@ -730,7 +792,34 @@ func onInputChanged(element Element, input string) {
 	if element == SearchInput {
 		search = input
 		pluginsByGroup = searchPlugins()
+		return
 	}
+
+	if element == LocationInput {
+		checkProjectDir(input)
+	}
+}
+
+func checkProjectDir(dir string) {
+	if !isDirEmptyOrAbsent(dir) {
+		errorLine = fmt.Sprintf("Directory %s isn't empty", dir)
+	} else {
+		errorLine = ""
+	}
+}
+
+func isDirEmptyOrAbsent(dir string) bool {
+	f, err := os.Open(dir)
+	if err != nil {
+		return true
+	}
+	defer f.Close()
+
+	_, err = f.Readdirnames(1)
+	if err == io.EOF {
+		return true
+	}
+	return false
 }
 
 func initProjectDir() {
