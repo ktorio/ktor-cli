@@ -12,8 +12,6 @@ import (
 	"time"
 )
 
-// TODO: Add input key combinations: CTRL+A, CTRL+E, ALT+BACKSPACE, CTRL+Right, CTRL+Left, / for search
-
 func Run(client *http.Client) (result model.Result, err error) {
 	settings, err := network.FetchSettings(client)
 
@@ -151,10 +149,55 @@ func processEvent(ev tcell.Event, drawState *draw.State, mdl *model.State, resul
 		draw.ResetCursorAnim(drawState)
 
 		switch {
+		case mod == tcell.ModAlt && key == tcell.KeyDEL:
+			if input != nil {
+				pos := model.FindNonAlphaNumericFromEnd(draw.ActiveInputOffset(drawState), *input)
+
+				if pos > 0 {
+					pos++
+				}
+
+				v := *input
+				*input = v[0:pos] + v[draw.ActiveInputOffset(drawState):]
+				drawState.CursorOffs[drawState.ActiveElement] = pos
+				onInputChanged(drawState, mdl, *input)
+
+				mdl.StatusLine = fmt.Sprintf("%d %d", draw.ActiveInputOffset(drawState), pos)
+			}
 		case (mod == tcell.ModCtrl && key == tcell.KeyCtrlC) || (key == tcell.KeyEscape):
 			mdl.Running = false
-			mdl.Quit = true
+			result.Quit = true
+		case mod == tcell.ModCtrl && key == tcell.KeyRight:
+			if input != nil {
+				drawState.CursorOffs[drawState.ActiveElement] = model.FindNonAlphaNumeric(draw.ActiveInputOffset(drawState), *input)
+			}
+		case mod == tcell.ModCtrl && key == tcell.KeyLeft:
+			if input != nil {
+				pos := model.FindNonAlphaNumericFromEnd(draw.ActiveInputOffset(drawState), *input)
+
+				if pos > 0 {
+					pos++
+				}
+
+				drawState.CursorOffs[drawState.ActiveElement] = pos
+			}
+		case key == tcell.KeyCtrlA:
+			if input != nil {
+				drawState.CursorOffs[drawState.ActiveElement] = 0
+			}
+		case key == tcell.KeyCtrlE:
+			if input != nil {
+				drawState.CursorOffs[drawState.ActiveElement] = len(*input)
+			}
 		case key == tcell.KeyRune:
+			if !draw.IsElementActive(drawState, draw.ProjectNameInput) &&
+				!draw.IsElementActive(drawState, draw.LocationInput) &&
+				!draw.IsElementActive(drawState, draw.SearchInput) && ev.Rune() == '/' {
+
+				drawState.ActiveElement = draw.SearchInput
+				return
+			}
+
 			if draw.IsElementActive(drawState, draw.Tabs) && ev.Rune() == ' ' {
 				toggleSelectedPlugin(drawState, mdl)
 				mdl.StatusLine = fmt.Sprintf("%d plugins selected", len(mdl.AddedPlugins))

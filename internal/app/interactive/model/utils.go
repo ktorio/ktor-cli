@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"unicode"
 )
 
 func IsDirEmptyOrAbsent(dir string) bool {
@@ -37,4 +38,36 @@ func HasNonExistentDirsInPath(p string) (bool, string) {
 	}
 
 	return false, ""
+}
+
+func FindNonAlphaNumeric(start int, str string) int {
+	for i, r := range str {
+		if i >= start+1 && !unicode.IsLetter(r) && !unicode.IsNumber(r) {
+			return i
+		}
+	}
+
+	return len(str)
+}
+
+func FindNonAlphaNumericFromEnd(start int, str string) int {
+	runes := []rune(str)
+
+	specialSeq := true
+	for i := start - 1; i >= 0; i-- {
+		isSpecial := !unicode.IsLetter(runes[i]) && !unicode.IsNumber(runes[i])
+		if isSpecial && specialSeq {
+			continue
+		}
+
+		if !isSpecial {
+			specialSeq = false
+		}
+
+		if isSpecial {
+			return i
+		}
+	}
+
+	return 0
 }
