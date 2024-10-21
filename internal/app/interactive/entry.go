@@ -12,8 +12,7 @@ import (
 	"time"
 )
 
-// TODO: Improve color scheme
-// TODO: Add input key combinations: CTRL+A, CTRL+E, ALT+BACKSPACE, CTRL+Right, CTRL+Left
+// TODO: Add input key combinations: CTRL+A, CTRL+E, ALT+BACKSPACE, CTRL+Right, CTRL+Left, / for search
 
 func Run(client *http.Client) (result model.Result, err error) {
 	settings, err := network.FetchSettings(client)
