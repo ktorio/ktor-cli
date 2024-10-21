@@ -74,8 +74,6 @@ func Tui(scr tcell.Screen, st *State, mdl *model.State, deltaTime float64) {
 		off = r.end
 	}
 
-	mdl.StatusLine = fmt.Sprintf("%v [%d]", st.tabVisRanges, len(mdl.Groups))
-
 	tabRange := findRange(st.tabVisRanges, st.ActiveTab)
 	visibleTabs := mdl.Groups[tabRange.start:tabRange.end]
 

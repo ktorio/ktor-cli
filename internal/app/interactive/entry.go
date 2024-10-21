@@ -12,9 +12,8 @@ import (
 	"time"
 )
 
-// TODO: Add input key combinations: CTRL+A, CTRL+E, ALT+BACKSPACE, CTRL+Right, CTRL+Left
-// TODO: Check if root directories exist
 // TODO: Improve color scheme
+// TODO: Add input key combinations: CTRL+A, CTRL+E, ALT+BACKSPACE, CTRL+Right, CTRL+Left
 
 func Run(client *http.Client) (result model.Result, err error) {
 	settings, err := network.FetchSettings(client)
@@ -235,33 +234,15 @@ func processEvent(ev tcell.Event, drawState *draw.State, mdl *model.State, resul
 				draw.MoveCursor(drawState, len(*input), -1)
 				onInputChanged(drawState, mdl, *input)
 			}
-		case key == tcell.KeyEnter && mod == tcell.ModAlt && drawState.PluginsShown: // Generate project
-			result.ProjectName = mdl.ProjectName
-			result.ProjectDir = mdl.ProjectDir
-
-			for id := range mdl.AddedPlugins {
-				result.Plugins = append(result.Plugins, id)
-			}
-
-			if model.IsDirEmptyOrAbsent(mdl.ProjectDir) {
-				mdl.Running = false
-				return
-			}
+		case key == tcell.KeyEnter && mod == tcell.ModAlt && drawState.PluginsShown:
+			generateProject(result, mdl)
 		case key == tcell.KeyEnter && mod == tcell.ModNone:
 			if drawState.ActiveElement == draw.Tabs {
 				toggleSelectedPlugin(drawState, mdl)
 				mdl.StatusLine = fmt.Sprintf("%d plugins selected", len(mdl.AddedPlugins))
 				return
-			} else if drawState.ActiveElement == draw.CreateButton { // Generate project
-				result.ProjectName = mdl.ProjectName
-				result.ProjectDir = mdl.ProjectDir
-
-				for id := range mdl.AddedPlugins {
-					result.Plugins = append(result.Plugins, id)
-				}
-
-				if model.IsDirEmptyOrAbsent(mdl.ProjectDir) {
-					mdl.Running = false
+			} else if drawState.ActiveElement == draw.CreateButton {
+				if generateProject(result, mdl) {
 					return
 				}
 			}
@@ -295,6 +276,23 @@ func processEvent(ev tcell.Event, drawState *draw.State, mdl *model.State, resul
 			draw.SwitchElement(drawState, -1)
 		}
 	}
+}
+
+func generateProject(result *model.Result, mdl *model.State) bool {
+	result.ProjectName = mdl.ProjectName
+	result.ProjectDir = mdl.ProjectDir
+
+	result.Plugins = []string{}
+	for id := range mdl.AddedPlugins {
+		result.Plugins = append(result.Plugins, id)
+	}
+
+	if ok, _ := model.HasNonExistentDirsInPath(mdl.ProjectDir); !ok && model.IsDirEmptyOrAbsent(mdl.ProjectDir) {
+		mdl.Running = false
+		return true
+	}
+
+	return false
 }
 
 func searchPlugins(mdl *model.State, drawState *draw.State) map[string][]network.Plugin {

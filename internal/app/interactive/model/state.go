@@ -10,11 +10,9 @@ import (
 type IdSet map[string]struct{}
 
 type State struct {
-	Running    bool
-	ErrorLine  string
-	StatusLine string
-	//ProjectName       string
-	//ProjectDir        string
+	Running           bool
+	ErrorLine         string
+	StatusLine        string
 	Search            string
 	PluginsFetched    bool
 	Groups            []string
@@ -70,8 +68,13 @@ func DeleteChar(input string, pos int) string {
 func CheckProjectDir(mdl *State) {
 	if !IsDirEmptyOrAbsent(mdl.ProjectDir) {
 		mdl.ErrorLine = fmt.Sprintf("Directory %s isn't empty", mdl.ProjectDir)
+		return
 	} else {
 		mdl.ErrorLine = ""
+	}
+
+	if ok, p := HasNonExistentDirsInPath(mdl.ProjectDir); ok {
+		mdl.ErrorLine = fmt.Sprintf("Directory %s doesn't exist", p)
 	}
 }
 
