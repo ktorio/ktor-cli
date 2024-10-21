@@ -199,7 +199,7 @@ func Tui(scr tcell.Screen, st *State, mdl *model.State, deltaTime float64) {
 
 		descrStyle := weakTextStyle
 		if st.ActiveElement == Tabs && i+plugsRange.start == st.ActivePlugin {
-			descrStyle = weakTextStyle.Background(textColor)
+			descrStyle = weakTextStyle.Background(activeColor).Foreground(bgColor)
 		}
 
 		searchIndices = searchIndices[:0]
