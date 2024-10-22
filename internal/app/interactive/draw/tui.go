@@ -26,12 +26,16 @@ func Tui(scr tcell.Screen, st *State, mdl *model.State, deltaTime float64) {
 	posX := padding
 	posY := padding
 
+	errX := width - len(mdl.ErrorLine) - padding
+	if errX < width/2 {
+		errX = width / 2
+	}
 	errY := height - 4
-	if _, y := multilinePos(width/2, width, padding, mdl.ErrorLine); y > 0 {
+	if _, y := multilinePos(errX, width, mdl.ErrorLine); y > 0 {
 		errY -= y
 	}
 
-	drawMultilineText(scr, width/2, errY, width, padding, DefaultStyle.Foreground(errorColor), mdl.ErrorLine)
+	drawMultilineText(scr, errX, errY, width, padding, DefaultStyle.Foreground(errorColor), mdl.ErrorLine)
 	drawInlineText(scr, width-len(mdl.StatusLine)-1, height-2, DefaultStyle.Foreground(statusColor), mdl.StatusLine)
 
 	posX, posY = drawInlineText(scr, posX, posY, strongStyle, "Project name:")
@@ -235,13 +239,13 @@ func Tui(scr tcell.Screen, st *State, mdl *model.State, deltaTime float64) {
 	}
 }
 
-func multilinePos(x, width, padding int, text string) (int, int) {
+func multilinePos(x, width int, text string) (int, int) {
 	startX := x
 	y := 0
 	for range []rune(text) {
 		x++
 
-		if x >= width-padding {
+		if x >= width {
 			x = startX
 			y++
 		}
@@ -253,8 +257,9 @@ func multilinePos(x, width, padding int, text string) (int, int) {
 func drawMultilineText(scr tcell.Screen, x, y, width, padding int, style tcell.Style, text string) {
 	startX := x
 	spaceThresh := 10
+	textLen := len(text)
 	for _, r := range []rune(text) {
-		if unicode.IsSpace(r) && (x+spaceThresh >= width-padding) {
+		if unicode.IsSpace(r) && (x+spaceThresh >= width-padding) && x-textLen-padding >= width {
 			x = startX
 			y++
 			continue
