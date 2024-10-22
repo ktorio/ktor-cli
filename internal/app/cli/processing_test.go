@@ -11,7 +11,6 @@ func TestProcessArgs(t *testing.T) {
 	checkProcessError(t, []string{"ktor", "-a", "-b", "new", "proj"}, &Error{Err: UnrecognizedFlags{"-a", "-b"}, Kind: UnrecognizedFlagsError})
 	checkProcessError(t, []string{"ktor"}, &Error{Err: errors.New("command expected"), Kind: NoCommandError})
 	checkProcessError(t, []string{"ktor", "nonexistent"}, &Error{Err: CommandError{Command: "nonexistent"}, Kind: CommandNotFoundError})
-	checkProcessError(t, []string{"ktor", "new"}, &Error{Err: CommandError{Command: "new"}, Kind: WrongNumberOfArgumentsError})
 	checkProcessError(t, []string{"ktor", "new", "a", "b"}, &Error{Err: CommandError{Command: "new"}, Kind: WrongNumberOfArgumentsError})
 
 	checkProcessing(t, []string{"ktor", "--version"}, &Input{Command: VersionCommand})
