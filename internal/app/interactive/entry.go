@@ -161,8 +161,6 @@ func processEvent(ev tcell.Event, drawState *draw.State, mdl *model.State, resul
 				*input = v[0:pos] + v[draw.ActiveInputOffset(drawState):]
 				drawState.CursorOffs[drawState.ActiveElement] = pos
 				onInputChanged(drawState, mdl, *input)
-
-				mdl.StatusLine = fmt.Sprintf("%d %d", draw.ActiveInputOffset(drawState), pos)
 			}
 		case (mod == tcell.ModCtrl && key == tcell.KeyCtrlC) || (key == tcell.KeyEscape):
 			mdl.Running = false
@@ -444,5 +442,9 @@ func getDepPlugins(mdl *model.State, id string, m model.IdSet) {
 }
 
 func pluginsOnCurrentTab(drawState *draw.State, mdl *model.State) []network.Plugin {
+	if drawState.ActiveTab >= len(mdl.Groups) {
+		return []network.Plugin{}
+	}
+
 	return mdl.PluginsByGroup[mdl.Groups[drawState.ActiveTab]]
 }

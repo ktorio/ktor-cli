@@ -74,6 +74,7 @@ func SwitchTab(st *State, numTabs int, delta int) {
 	}
 
 	st.ActiveTab = newTab
+	st.ActivePlugin = 0
 }
 
 func SwitchElement(st *State, delta int) {
