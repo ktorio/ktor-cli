@@ -44,7 +44,7 @@ func Generate(client *http.Client, projectDir, projectName string, plugins []str
 	if jh, ok := jdk.JavaHome(); ok {
 		if v, err := jdk.GetJavaMajorVersion(jh, homeDir); err == nil && v >= jdk.MinJavaVersion {
 			fmt.Printf("JDK is detected in JAVA_HOME=%s\n", jh)
-			cli.PrintCommands(projectName, true, "")
+			cli.PrintCommands(projectDir, true, "")
 			os.Exit(0)
 		}
 	}
@@ -52,7 +52,7 @@ func Generate(client *http.Client, projectDir, projectName string, plugins []str
 	if jdkPath, ok := config.GetValue("jdk"); ok {
 		if st, err := os.Stat(jdkPath); err == nil && st.IsDir() {
 			fmt.Printf("Detected JDK %s\n", jdkPath)
-			cli.PrintCommands(projectName, false, jdkPath)
+			cli.PrintCommands(projectDir, false, jdkPath)
 			os.Exit(0)
 		}
 	}
@@ -61,7 +61,7 @@ func Generate(client *http.Client, projectDir, projectName string, plugins []str
 		config.SetValue("jdk", jdkPath)
 		_ = config.Commit()
 		fmt.Printf("JDK found locally %s\n", jdkPath)
-		cli.PrintCommands(projectName, false, jdkPath)
+		cli.PrintCommands(projectDir, false, jdkPath)
 		os.Exit(0)
 	}
 
@@ -81,5 +81,5 @@ func Generate(client *http.Client, projectDir, projectName string, plugins []str
 	}
 
 	fmt.Printf("JDK has been downloaded to %s\n", jdkPath)
-	cli.PrintCommands(projectName, false, jdkPath)
+	cli.PrintCommands(projectDir, false, jdkPath)
 }

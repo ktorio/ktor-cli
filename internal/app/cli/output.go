@@ -153,12 +153,11 @@ func formatArgs(args map[string]Arg) string {
 	return sb.String()
 }
 
-func PrintCommands(projectName string, javaHomeSet bool, jdkPath string) {
-	initialProjectDir := projectName
+func PrintCommands(projectDir string, javaHomeSet bool, jdkPath string) {
 	fmt.Print("To run the project use the following commands:\n\n")
 
 	if runtime.GOOS == "windows" {
-		fmt.Printf("cd %s\n", initialProjectDir)
+		fmt.Printf("cd %s\n", projectDir)
 
 		if javaHomeSet {
 			fmt.Println(".\\gradlew.bat run")
@@ -168,7 +167,7 @@ func PrintCommands(projectName string, javaHomeSet bool, jdkPath string) {
 			fmt.Println(jdkPath)
 		}
 	} else {
-		fmt.Printf("cd %s\n", initialProjectDir)
+		fmt.Printf("cd %s\n", projectDir)
 
 		if javaHomeSet {
 			fmt.Println("./gradlew run")
