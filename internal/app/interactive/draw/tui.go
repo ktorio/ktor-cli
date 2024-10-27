@@ -9,6 +9,9 @@ import (
 	"unicode"
 )
 
+var scrWidth = 0
+var scrHeight = 0
+
 func Tui(scr tcell.Screen, st *State, mdl *model.State, deltaTime float64) {
 	st.CursorAnimTimer += deltaTime
 
@@ -20,8 +23,17 @@ func Tui(scr tcell.Screen, st *State, mdl *model.State, deltaTime float64) {
 
 	width, height := scr.Size()
 
+	if scrWidth != width || scrHeight != height {
+		for _, inp := range []Element{ProjectNameInput, LocationInput, SearchInput} {
+			st.CursorOffs[inp] = 0
+			st.VisibleOffs[inp] = 0
+		}
+
+		scrWidth = width
+		scrHeight = height
+	}
+
 	strongStyle := DefaultStyle.Foreground(strongTextColor)
-	cursorPos := st.CursorOffs[st.ActiveElement]
 	padding := 1
 	posX := padding
 	posY := padding
@@ -38,10 +50,13 @@ func Tui(scr tcell.Screen, st *State, mdl *model.State, deltaTime float64) {
 	drawMultilineText(scr, errX, errY, width, padding, DefaultStyle.Foreground(errorColor), mdl.ErrorLine)
 	drawInlineText(scr, width-len(mdl.StatusLine)-1, height-2, DefaultStyle.Foreground(statusColor), mdl.StatusLine)
 
+	mdl.StatusLine = fmt.Sprintf("Cur: %d, Off: %d, Input: %d, [%d]", st.CursorOffs[st.ActiveElement], st.VisibleOffs[st.ActiveElement], len(mdl.ProjectName), st.InputLens[st.ActiveElement])
+
 	posX, posY = drawInlineText(scr, posX, posY, strongStyle, "Project name:")
 	posX++
 
-	posX, posY = drawInput(scr, st, posX, posY, width-posX-padding, mdl.ProjectName, cursorPos, st.ActiveElement == ProjectNameInput)
+	st.InputLens[ProjectNameInput] = width - posX - padding
+	posX, posY = drawInput(scr, st, posX, posY, mdl.ProjectName, ProjectNameInput)
 
 	if !st.LocationShown {
 		return
@@ -52,7 +67,8 @@ func Tui(scr tcell.Screen, st *State, mdl *model.State, deltaTime float64) {
 	posX, posY = drawInlineText(scr, posX, posY, strongStyle, "Location:")
 	posX++
 
-	drawInput(scr, st, posX, posY, width-posX-padding, mdl.ProjectDir, cursorPos, st.ActiveElement == LocationInput)
+	st.InputLens[LocationInput] = width - posX - padding
+	drawInput(scr, st, posX, posY, mdl.ProjectDir, LocationInput)
 
 	if !st.PluginsShown {
 		return
@@ -62,7 +78,8 @@ func Tui(scr tcell.Screen, st *State, mdl *model.State, deltaTime float64) {
 	posX = padding
 	posX, posY = drawInlineText(scr, posX, posY, strongStyle, "Search for plugins:")
 	posX++
-	drawInput(scr, st, posX, posY, width-posX-padding, mdl.Search, cursorPos, st.ActiveElement == SearchInput)
+	st.InputLens[SearchInput] = width - posX - padding
+	drawInput(scr, st, posX, posY, mdl.Search, SearchInput)
 
 	if !mdl.PluginsFetched {
 		return
@@ -284,25 +301,32 @@ func drawInlineText(scr tcell.Screen, x, y int, style tcell.Style, text string) 
 	return x, y
 }
 
-func drawInput(scr tcell.Screen, st *State, posX, posY int, inputLen int, input string, cursorPos int, focused bool) (int, int) {
-	inputStart := posX
-	for i := posX; i < posX+inputLen; i++ {
+func drawInput(scr tcell.Screen, st *State, posX, posY int, input string, el Element) (int, int) {
+	for i := posX; i < posX+st.InputLens[el]; i++ {
 		scr.SetContent(i, posY, ' ', nil, inputStyle)
 	}
 
-	for i, r := range []rune(input) {
+	focused := st.ActiveElement == el
+	cursorPos := st.CursorOffs[st.ActiveElement]
+	visOff := st.VisibleOffs[el]
+
+	runes := []rune(input)
+	start := visOff
+	end := min(len(runes), visOff+st.InputLens[el]-1)
+
+	if end-start >= st.InputLens[el] {
+		panic(fmt.Sprintf("%d:%d = %d out of len %d", start, end, end-start, st.InputLens[el]))
+	}
+
+	for i, r := range append(runes[start:end], ' ') {
 		style := inputStyle
-		if focused && i == cursorPos && st.CursorAnimTimer < 700 {
+		if focused && i == cursorPos-visOff && st.CursorAnimTimer < 700 {
 			style = cursorStyle
 		}
 
 		scr.SetContent(posX, posY, r, nil, style)
 
 		posX++
-	}
-
-	if focused && cursorPos >= len(input) && st.CursorAnimTimer < 700 {
-		scr.SetContent(inputStart+cursorPos, posY, ' ', nil, cursorStyle)
 	}
 
 	return posX, posY

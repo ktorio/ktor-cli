@@ -14,6 +14,8 @@ type State struct {
 	pluginVisRanges []Range
 	ActiveTab       int
 	ActivePlugin    int
+	VisibleOffs     map[Element]int
+	InputLens       map[Element]int
 }
 
 type Element int
@@ -28,11 +30,23 @@ const (
 )
 
 func NewState() *State {
-	return &State{CursorOffs: map[Element]int{
-		ProjectNameInput: 0,
-		LocationInput:    0,
-		SearchInput:      0,
-	}}
+	return &State{
+		CursorOffs: map[Element]int{
+			ProjectNameInput: 0,
+			LocationInput:    0,
+			SearchInput:      0,
+		},
+		VisibleOffs: map[Element]int{
+			ProjectNameInput: 0,
+			LocationInput:    0,
+			SearchInput:      0,
+		},
+		InputLens: map[Element]int{
+			ProjectNameInput: 0,
+			LocationInput:    0,
+			SearchInput:      0,
+		},
+	}
 }
 
 func ActiveInputOffset(st *State) int {
@@ -89,4 +103,16 @@ func SwitchElement(st *State, delta int) {
 	}
 
 	st.ActiveElement = Element(newElement)
+}
+
+func (st *State) VisOff() int {
+	return st.VisibleOffs[st.ActiveElement]
+}
+
+func (st *State) CursorPos() int {
+	return st.CursorOffs[st.ActiveElement]
+}
+
+func (st *State) InputLen() int {
+	return st.InputLens[st.ActiveElement]
 }
