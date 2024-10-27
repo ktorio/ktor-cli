@@ -197,8 +197,9 @@ func processEvent(ev tcell.Event, drawState *draw.State, mdl *model.State, resul
 			}
 		case key == tcell.KeyCtrlE:
 			if input != nil {
-				drawState.CursorOffs[drawState.ActiveElement] = len(*input)
-				drawState.VisibleOffs[drawState.ActiveElement] = max(0, len(*input)-drawState.InputLen()+1)
+				runes := []rune(*input)
+				drawState.CursorOffs[drawState.ActiveElement] = len(runes)
+				drawState.VisibleOffs[drawState.ActiveElement] = max(0, len(runes)-drawState.InputLen()+1)
 			}
 		case key == tcell.KeyRune:
 			if !draw.IsElementActive(drawState, draw.ProjectNameInput) &&
@@ -218,7 +219,8 @@ func processEvent(ev tcell.Event, drawState *draw.State, mdl *model.State, resul
 			if input != nil {
 				*input = model.InsertRune(*input, inputOff, ev.Rune())
 
-				draw.MoveCursor(drawState, len(*input), 1)
+				runes := []rune(*input)
+				draw.MoveCursor(drawState, len(runes), 1)
 				onInputChanged(drawState, mdl, *input)
 
 				if drawState.CursorPos()-drawState.VisOff() >= drawState.InputLen() {
@@ -232,7 +234,8 @@ func processEvent(ev tcell.Event, drawState *draw.State, mdl *model.State, resul
 			}
 
 			if input != nil {
-				draw.MoveCursor(drawState, len(*input), -1)
+				runes := []rune(*input)
+				draw.MoveCursor(drawState, len(runes), -1)
 
 				if drawState.CursorPos() < drawState.VisOff() {
 					drawState.VisibleOffs[drawState.ActiveElement]--
@@ -245,7 +248,8 @@ func processEvent(ev tcell.Event, drawState *draw.State, mdl *model.State, resul
 			}
 
 			if input != nil {
-				draw.MoveCursor(drawState, len(*input), 1)
+				runes := []rune(*input)
+				draw.MoveCursor(drawState, len(runes), 1)
 
 				if drawState.CursorPos()-drawState.VisOff() >= drawState.InputLen() {
 					drawState.VisibleOffs[drawState.ActiveElement]++
@@ -291,7 +295,8 @@ func processEvent(ev tcell.Event, drawState *draw.State, mdl *model.State, resul
 		case key == tcell.KeyDEL: // Backspace
 			if input != nil {
 				*input = model.DeleteChar(*input, inputOff-1)
-				draw.MoveCursor(drawState, len(*input), -1)
+				runes := []rune(*input)
+				draw.MoveCursor(drawState, len(runes), -1)
 				if drawState.VisOff() > 0 {
 					drawState.VisibleOffs[drawState.ActiveElement]--
 				}
@@ -300,7 +305,8 @@ func processEvent(ev tcell.Event, drawState *draw.State, mdl *model.State, resul
 		case key == tcell.KeyDelete:
 			if input != nil {
 				*input = model.DeleteChar(*input, inputOff)
-				draw.MoveCursor(drawState, len(*input), -1)
+				runes := []rune(*input)
+				draw.MoveCursor(drawState, len(runes), -1)
 				if drawState.VisOff() > 0 {
 					drawState.VisibleOffs[drawState.ActiveElement]--
 				}

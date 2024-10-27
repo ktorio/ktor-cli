@@ -50,11 +50,21 @@ func InsertRune(input string, pos int, r rune) string {
 		return fmt.Sprintf("%c", r)
 	}
 
-	if pos >= len(input) {
-		return fmt.Sprintf("%s%c", input, r)
+	runes := []rune(input)
+	if pos >= len(runes) {
+		return string(append([]rune(input), r))
 	}
 
-	return fmt.Sprintf("%s%c%s", input[0:pos], r, input[pos:])
+	var result []rune
+	for _, run := range runes[:pos] {
+		result = append(result, run)
+	}
+	result = append(result, r)
+	for _, run := range runes[pos:] {
+		result = append(result, run)
+	}
+
+	return string(result)
 }
 
 func DeleteChar(input string, pos int) string {
@@ -62,7 +72,18 @@ func DeleteChar(input string, pos int) string {
 		return input
 	}
 
-	return fmt.Sprintf("%s%s", input[0:pos], input[pos+1:])
+	runes := []rune(input)
+
+	var result []rune
+	for _, r := range runes[:pos] {
+		result = append(result, r)
+	}
+
+	for _, r := range runes[pos+1:] {
+		result = append(result, r)
+	}
+
+	return string(result)
 }
 
 func CheckProjectDir(mdl *State) {
