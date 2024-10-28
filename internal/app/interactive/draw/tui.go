@@ -5,6 +5,7 @@ import (
 	"github.com/gdamore/tcell/v2"
 	"github.com/ktorio/ktor-cli/internal/app/interactive/model"
 	"github.com/ktorio/ktor-cli/internal/app/network"
+	"runtime"
 	"strings"
 	"unicode"
 )
@@ -49,8 +50,6 @@ func Tui(scr tcell.Screen, st *State, mdl *model.State, deltaTime float64) {
 
 	drawMultilineText(scr, errX, errY, width, padding, DefaultStyle.Foreground(errorColor), mdl.ErrorLine)
 	drawInlineText(scr, width-len(mdl.StatusLine)-1, height-2, DefaultStyle.Foreground(statusColor), mdl.StatusLine)
-
-	mdl.StatusLine = fmt.Sprintf("Cur: %d, Off: %d, Input: %d, [%d]", st.CursorOffs[st.ActiveElement], st.VisibleOffs[st.ActiveElement], len(mdl.ProjectName), st.InputLens[st.ActiveElement])
 
 	posX, posY = drawInlineText(scr, posX, posY, strongStyle, "Project name:")
 	posX++
@@ -133,7 +132,11 @@ func Tui(scr tcell.Screen, st *State, mdl *model.State, deltaTime float64) {
 	if st.ActiveElement == CreateButton {
 		createStyle = activeTabStyle
 	}
-	drawInlineText(scr, padding, height-2, createStyle, "CREATE PROJECT (ALT+ENTER)")
+	comb := "ALT+ENTER"
+	if runtime.GOOS == "darwin" {
+		comb = "CMD+ENTER"
+	}
+	drawInlineText(scr, padding, height-2, createStyle, fmt.Sprintf("CREATE PROJECT (%s)", comb))
 
 	if len(mdl.Groups) == 0 {
 		drawInlineText(scr, posX, posY, textStyle, "No plugins found by the search query")
