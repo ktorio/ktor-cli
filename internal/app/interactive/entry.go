@@ -90,7 +90,7 @@ func Run(client *http.Client) (result model.Result, err error) {
 			// do nothing
 		}
 
-		if drawState.PluginsShown && !mdl.PluginsFetched {
+		if mdl.ShouldFetchPlugins && !mdl.PluginsFetched {
 			var plugins []network.Plugin
 			plugins, err = network.FetchPlugins(client, settings.KtorVersion.DefaultId)
 

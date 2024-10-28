@@ -13,18 +13,19 @@ const maxFilenameLen = 255
 type IdSet map[string]struct{}
 
 type State struct {
-	Running           bool
-	ErrorLine         string
-	StatusLine        string
-	Search            string
-	PluginsFetched    bool
-	Groups            []string
-	PluginsByGroup    map[string][]network.Plugin
-	AddedPlugins      IdSet
-	IndirectPlugins   map[string]IdSet
-	PluginDeps        map[string][]string
-	AllPluginsByGroup map[string][]network.Plugin
-	AllSortedGroups   []string
+	Running            bool
+	ErrorLine          string
+	StatusLine         string
+	Search             string
+	PluginsFetched     bool
+	Groups             []string
+	PluginsByGroup     map[string][]network.Plugin
+	AddedPlugins       IdSet
+	IndirectPlugins    map[string]IdSet
+	PluginDeps         map[string][]string
+	AllPluginsByGroup  map[string][]network.Plugin
+	AllSortedGroups    []string
+	ShouldFetchPlugins bool
 	Result
 }
 
@@ -37,10 +38,11 @@ type Result struct {
 
 func NewState() *State {
 	return &State{
-		Running:         true,
-		PluginsByGroup:  make(map[string][]network.Plugin),
-		IndirectPlugins: make(map[string]IdSet),
-		AddedPlugins:    make(IdSet),
+		Running:            true,
+		PluginsByGroup:     make(map[string][]network.Plugin),
+		IndirectPlugins:    make(map[string]IdSet),
+		AddedPlugins:       make(IdSet),
+		ShouldFetchPlugins: true,
 	}
 }
 
