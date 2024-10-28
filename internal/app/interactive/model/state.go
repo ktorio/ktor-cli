@@ -5,7 +5,10 @@ import (
 	"github.com/ktorio/ktor-cli/internal/app/network"
 	"os"
 	"path/filepath"
+	"strings"
 )
+
+const maxFilenameLen = 255
 
 type IdSet map[string]struct{}
 
@@ -86,17 +89,25 @@ func DeleteChar(input string, pos int) string {
 	return string(result)
 }
 
-func CheckProjectDir(mdl *State) {
+func CheckProjectDir(mdl *State) (errs []string) {
 	if !IsDirEmptyOrAbsent(mdl.ProjectDir) {
-		mdl.ErrorLine = fmt.Sprintf("Directory %s isn't empty", mdl.ProjectDir)
-		return
-	} else {
-		mdl.ErrorLine = ""
+		errs = append(errs, fmt.Sprintf("Directory %s isn't empty", mdl.ProjectDir))
 	}
 
 	if ok, p := HasNonExistentDirsInPath(mdl.ProjectDir); ok {
-		mdl.ErrorLine = fmt.Sprintf("Directory %s doesn't exist", p)
+		errs = append(errs, fmt.Sprintf("Directory %s doesn't exist", p))
 	}
+
+	if len(filepath.Base(mdl.ProjectDir)) > maxFilenameLen {
+		errs = append(errs, "Project directory is too long")
+	}
+
+	return
+}
+
+func CheckProjectDirAndUpdateError(mdl *State) {
+	errs := CheckProjectDir(mdl)
+	mdl.ErrorLine = strings.Join(errs, "; ")
 }
 
 func InitProjectDir(mdl *State) {

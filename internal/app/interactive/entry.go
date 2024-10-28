@@ -13,7 +13,6 @@ import (
 )
 
 // TODO: Return back the commented combinations
-// TODO: Check performance
 
 func Run(client *http.Client) (result model.Result, err error) {
 	settings, err := network.FetchSettings(client)
@@ -329,7 +328,7 @@ func processEvent(ev tcell.Event, drawState *draw.State, mdl *model.State, resul
 			case draw.ProjectNameInput:
 				drawState.LocationShown = true
 				model.InitProjectDir(mdl)
-				model.CheckProjectDir(mdl)
+				model.CheckProjectDirAndUpdateError(mdl)
 			case draw.LocationInput:
 				drawState.PluginsShown = true
 			default:
@@ -342,7 +341,7 @@ func processEvent(ev tcell.Event, drawState *draw.State, mdl *model.State, resul
 			case draw.ProjectNameInput:
 				drawState.LocationShown = true
 				model.InitProjectDir(mdl)
-				model.CheckProjectDir(mdl)
+				model.CheckProjectDirAndUpdateError(mdl)
 			case draw.LocationInput:
 				drawState.PluginsShown = true
 			default:
@@ -365,7 +364,7 @@ func generateProject(result *model.Result, mdl *model.State) bool {
 		result.Plugins = append(result.Plugins, id)
 	}
 
-	if ok, _ := model.HasNonExistentDirsInPath(mdl.ProjectDir); !ok && model.IsDirEmptyOrAbsent(mdl.ProjectDir) {
+	if errs := model.CheckProjectDir(mdl); len(errs) == 0 {
 		mdl.Running = false
 		return true
 	}
@@ -415,7 +414,7 @@ func onInputChanged(drawState *draw.State, mdl *model.State, input string) {
 	}
 
 	if drawState.ActiveElement == draw.LocationInput {
-		model.CheckProjectDir(mdl)
+		model.CheckProjectDirAndUpdateError(mdl)
 	}
 }
 
