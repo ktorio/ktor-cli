@@ -12,8 +12,6 @@ import (
 	"time"
 )
 
-// TODO: Return back the commented combinations
-
 func Run(client *http.Client) (result model.Result, err error) {
 	settings, err := network.FetchSettings(client)
 
@@ -151,44 +149,9 @@ func processEvent(ev tcell.Event, drawState *draw.State, mdl *model.State, resul
 		draw.ResetCursorAnim(drawState)
 
 		switch {
-		//case mod == tcell.ModAlt && key == tcell.KeyDEL:
-		//	if input != nil {
-		//		pos := model.FindNonAlphaNumericFromEnd(draw.ActiveInputOffset(drawState), *input)
-		//
-		//		if pos > 0 {
-		//			pos++
-		//		}
-		//
-		//		v := *input
-		//		*input = v[0:pos] + v[draw.ActiveInputOffset(drawState):]
-		//		drawState.CursorOffs[drawState.ActiveElement] = pos
-		//		draw.UpdateVisOff(drawState, pos)
-		//		onInputChanged(drawState, mdl, *input)
-		//	}
 		case (mod == tcell.ModCtrl && key == tcell.KeyCtrlC) || (key == tcell.KeyEscape):
 			mdl.Running = false
 			result.Quit = true
-		//case mod == tcell.ModCtrl && key == tcell.KeyRight:
-		//	if input != nil {
-		//		pos := model.FindNonAlphaNumeric(draw.ActiveInputOffset(drawState), *input)
-		//
-		//		//draw.UpdateVisOff(drawState, pos)
-		//		drawState.CursorOffs[drawState.ActiveElement] = model.FindNonAlphaNumeric(draw.ActiveInputOffset(drawState), *input)
-		//
-		//		if pos-drawState.VisibleOffs[drawState.ActiveElement] >= drawState.InputLens[drawState.ActiveElement] {
-		//			drawState.VisibleOffs[drawState.ActiveElement] = pos
-		//		}
-		//	}
-		//case mod == tcell.ModCtrl && key == tcell.KeyLeft:
-		//	if input != nil {
-		//		pos := model.FindNonAlphaNumericFromEnd(draw.ActiveInputOffset(drawState), *input)
-		//
-		//		if pos > 0 {
-		//			pos++
-		//		}
-		//		draw.UpdateVisOff(drawState, pos)
-		//		drawState.CursorOffs[drawState.ActiveElement] = pos
-		//	}
 		case key == tcell.KeyCtrlA:
 			if input != nil {
 				drawState.CursorOffs[drawState.ActiveElement] = 0
