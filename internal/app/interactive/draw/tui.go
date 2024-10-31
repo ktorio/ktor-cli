@@ -13,15 +13,7 @@ import (
 var scrWidth = 0
 var scrHeight = 0
 
-func Tui(scr tcell.Screen, st *State, mdl *model.State, deltaTime float64) {
-	st.CursorAnimTimer += deltaTime
-
-	defer func() {
-		if st.CursorAnimTimer >= 1500 {
-			st.CursorAnimTimer = 0
-		}
-	}()
-
+func Tui(scr tcell.Screen, st *State, mdl *model.State) {
 	width, height := scr.Size()
 
 	if scrWidth != width || scrHeight != height {
@@ -323,10 +315,10 @@ func drawInput(scr tcell.Screen, st *State, posX, posY int, input string, el Ele
 
 	for i, r := range append(runes[start:end], ' ') {
 		style := inputStyle
-		if focused && i == cursorPos-visOff && st.CursorAnimTimer < 700 {
-			style = cursorStyle
-		}
 
+		if focused && i == cursorPos-visOff {
+			scr.ShowCursor(posX, posY)
+		}
 		scr.SetContent(posX, posY, r, nil, style)
 
 		posX++

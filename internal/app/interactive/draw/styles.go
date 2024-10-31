@@ -15,7 +15,6 @@ var activeColor = tcell.Color189
 
 var DefaultStyle = tcell.StyleDefault.Background(bgColor)
 var inputStyle = DefaultStyle.Background(inputColor).Foreground(textColor)
-var cursorStyle = DefaultStyle.Background(mainColor)
 var buttonStyle = DefaultStyle.Background(mainColor).Foreground(textColor)
 var activeTabStyle = DefaultStyle.Foreground(mainColor).Background(activeColor)
 var textStyle = DefaultStyle.Foreground(textColor)

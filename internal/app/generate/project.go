@@ -49,6 +49,8 @@ func Project(client *http.Client, logger *log.Logger, projectDir, project string
 			BuildSystemArgs: map[network.BuildSystemArgs]string{
 				network.VersionCatalogBuildArg: "",
 			},
+			CompilationTargets: []string{settings.CompileTargets.DefaultId},
+			ProjectStructure:   settings.ProjectStructure.DefaultId,
 		},
 		Plugins:       plugins,
 		HasSampleCode: true,

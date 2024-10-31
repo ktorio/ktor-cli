@@ -1,11 +1,17 @@
 package draw
 
+import "github.com/gdamore/tcell/v2"
+
 type Range struct {
 	start, end int
 }
 
+type CursorGlobalInfo struct {
+	R    rune
+	X, Y int
+}
+
 type State struct {
-	CursorAnimTimer float64
 	CursorOffs      map[Element]int
 	ActiveElement   Element
 	LocationShown   bool
@@ -51,10 +57,6 @@ func NewState() *State {
 
 func ActiveInputOffset(st *State) int {
 	return st.CursorOffs[st.ActiveElement]
-}
-
-func ResetCursorAnim(st *State) {
-	st.CursorAnimTimer = 0
 }
 
 func IsElementActive(st *State, element Element) bool {
@@ -115,4 +117,10 @@ func (st *State) CursorPos() int {
 
 func (st *State) InputLen() int {
 	return st.InputLens[st.ActiveElement]
+}
+
+func HideCursorIfNeeded(st *State, scr tcell.Screen) {
+	if st.ActiveElement != ProjectNameInput && st.ActiveElement != LocationInput && st.ActiveElement != SearchInput {
+		scr.HideCursor()
+	}
 }

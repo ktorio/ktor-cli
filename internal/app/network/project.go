@@ -22,13 +22,15 @@ type ProjectPayload struct {
 }
 
 type ProjectSettings struct {
-	Name            string                     `json:"project_name"`
-	CompanyWebsite  string                     `json:"company_website"`
-	Engine          string                     `json:"engine"`
-	BuildSystem     string                     `json:"build_system"`
-	KtorVersion     string                     `json:"ktor_version"`
-	KotlinVersion   string                     `json:"kotlin_version"`
-	BuildSystemArgs map[BuildSystemArgs]string `json:"build_system_args"`
+	Name               string                     `json:"project_name"`
+	CompanyWebsite     string                     `json:"company_website"`
+	Engine             string                     `json:"engine"`
+	BuildSystem        string                     `json:"build_system"`
+	KtorVersion        string                     `json:"ktor_version"`
+	KotlinVersion      string                     `json:"kotlin_version"`
+	BuildSystemArgs    map[BuildSystemArgs]string `json:"build_system_args"`
+	CompilationTargets []string                   `json:"compile_targets"`
+	ProjectStructure   string                     `json:"project_structure"`
 }
 
 type BuildSystemArgs string

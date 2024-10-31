@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"slices"
 	"strings"
-	"time"
 )
 
 func Run(client *http.Client) (result model.Result, err error) {
@@ -49,44 +48,27 @@ func Run(client *http.Client) (result model.Result, err error) {
 	}
 	defer quit()
 
-	eventChan := make(chan tcell.Event)
-	startTime := time.Now().UnixMicro()
-	frameStart := startTime
-	frameMs := 1000.0 / 30
-
-	go func() {
-		for mdl.Running {
-			eventChan <- scr.PollEvent()
-		}
-	}()
+	scr.SetCursorStyle(tcell.CursorStyleBlinkingBar)
 
 	for mdl.Running {
-		delta := float64(time.Now().UnixMicro()-startTime) / 1000.0
-		startTime = time.Now().UnixMicro()
+		event := scr.PollEvent()
 
-		if startTime-frameStart > 1e6 {
-			frameStart = startTime
-		}
-
-		select {
-		case event := <-eventChan:
-			switch drawState.ActiveElement {
-			case draw.ProjectNameInput:
-				processEvent(event, drawState, mdl, &result, &mdl.ProjectName)
-			case draw.LocationInput:
-				processEvent(event, drawState, mdl, &result, &mdl.ProjectDir)
-			case draw.SearchInput:
-				processEvent(event, drawState, mdl, &result, &mdl.Search)
-			case draw.Tabs:
-				processEvent(event, drawState, mdl, &result, nil)
-			case draw.CreateButton:
-				processEvent(event, drawState, mdl, &result, nil)
-			default:
-				panic("unhandled default case")
-			}
+		switch drawState.ActiveElement {
+		case draw.ProjectNameInput:
+			processEvent(event, drawState, mdl, &result, &mdl.ProjectName)
+		case draw.LocationInput:
+			processEvent(event, drawState, mdl, &result, &mdl.ProjectDir)
+		case draw.SearchInput:
+			processEvent(event, drawState, mdl, &result, &mdl.Search)
+		case draw.Tabs:
+			processEvent(event, drawState, mdl, &result, nil)
+		case draw.CreateButton:
+			processEvent(event, drawState, mdl, &result, nil)
 		default:
-			// do nothing
+			panic("unhandled default case")
 		}
+
+		draw.HideCursorIfNeeded(drawState, scr)
 
 		if mdl.ShouldFetchPlugins && !mdl.PluginsFetched {
 			var plugins []network.Plugin
@@ -119,12 +101,8 @@ func Run(client *http.Client) (result model.Result, err error) {
 		scr.Clear()
 		scr.Fill(' ', draw.DefaultStyle)
 
-		draw.Tui(scr, drawState, mdl, delta)
+		draw.Tui(scr, drawState, mdl)
 		scr.Show()
-
-		if frameMs-delta > 0 {
-			time.Sleep(time.Duration(frameMs-delta) * time.Millisecond)
-		}
 	}
 
 	return
@@ -145,8 +123,6 @@ func processEvent(ev tcell.Event, drawState *draw.State, mdl *model.State, resul
 		mdl.ErrorLine = ""
 	case *tcell.EventKey:
 		mod, key := ev.Modifiers(), ev.Key()
-
-		draw.ResetCursorAnim(drawState)
 
 		switch {
 		case (mod == tcell.ModCtrl && key == tcell.KeyCtrlC) || (key == tcell.KeyEscape):
@@ -267,8 +243,6 @@ func processEvent(ev tcell.Event, drawState *draw.State, mdl *model.State, resul
 		case key == tcell.KeyDelete:
 			if input != nil {
 				*input = model.DeleteChar(*input, inputOff)
-				runes := []rune(*input)
-				draw.MoveCursor(drawState, len(runes), -1)
 				if drawState.VisOff() > 0 {
 					drawState.VisibleOffs[drawState.ActiveElement]--
 				}
