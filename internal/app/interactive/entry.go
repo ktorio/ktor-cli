@@ -128,6 +128,10 @@ func processEvent(ev tcell.Event, drawState *draw.State, mdl *model.State, resul
 		case (mod == tcell.ModCtrl && key == tcell.KeyCtrlC) || (key == tcell.KeyEscape):
 			mdl.Running = false
 			result.Quit = true
+		case mod == tcell.ModCtrl && key == tcell.KeyBEL:
+			if drawState.PluginsShown {
+				generateProject(result, mdl)
+			}
 		case key == tcell.KeyCtrlA:
 			if input != nil {
 				drawState.CursorOffs[drawState.ActiveElement] = 0
@@ -248,8 +252,6 @@ func processEvent(ev tcell.Event, drawState *draw.State, mdl *model.State, resul
 				}
 				onInputChanged(drawState, mdl, *input)
 			}
-		case key == tcell.KeyEnter && mod == tcell.ModAlt && drawState.PluginsShown:
-			generateProject(result, mdl)
 		case key == tcell.KeyEnter && mod == tcell.ModNone:
 			if drawState.ActiveElement == draw.Tabs {
 				toggleSelectedPlugin(drawState, mdl)

@@ -5,7 +5,6 @@ import (
 	"github.com/gdamore/tcell/v2"
 	"github.com/ktorio/ktor-cli/internal/app/interactive/model"
 	"github.com/ktorio/ktor-cli/internal/app/network"
-	"runtime"
 	"strings"
 	"unicode"
 )
@@ -124,11 +123,7 @@ func Tui(scr tcell.Screen, st *State, mdl *model.State) {
 	if st.ActiveElement == CreateButton {
 		createStyle = activeTabStyle
 	}
-	shortcut := "ALT+ENTER"
-	if runtime.GOOS == "darwin" {
-		shortcut = "CMD+ENTER"
-	}
-	drawInlineText(scr, padding, height-2, createStyle, fmt.Sprintf("CREATE PROJECT (%s)", shortcut))
+	drawInlineText(scr, padding, height-2, createStyle, "CREATE PROJECT (CTRL+G)")
 
 	if len(mdl.Groups) == 0 {
 		drawInlineText(scr, posX, posY, textStyle, "No plugins found by the search query")
