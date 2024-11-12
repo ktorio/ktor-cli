@@ -124,11 +124,11 @@ func Tui(scr tcell.Screen, st *State, mdl *model.State) {
 	if st.ActiveElement == CreateButton {
 		createStyle = activeTabStyle
 	}
-	comb := "ALT+ENTER"
+	shortcut := "ALT+ENTER"
 	if runtime.GOOS == "darwin" {
-		comb = "CMD+ENTER"
+		shortcut = "CMD+ENTER"
 	}
-	drawInlineText(scr, padding, height-2, createStyle, fmt.Sprintf("CREATE PROJECT (%s)", comb))
+	drawInlineText(scr, padding, height-2, createStyle, fmt.Sprintf("CREATE PROJECT (%s)", shortcut))
 
 	if len(mdl.Groups) == 0 {
 		drawInlineText(scr, posX, posY, textStyle, "No plugins found by the search query")
@@ -187,7 +187,7 @@ func Tui(scr tcell.Screen, st *State, mdl *model.State) {
 
 		nameStyle := textStyle
 		if st.ActiveElement == Tabs && i+plugsRange.start == st.ActivePlugin {
-			nameStyle = activeTabStyle
+			nameStyle = activeStyle
 		}
 
 		x := posX
