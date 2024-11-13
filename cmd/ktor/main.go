@@ -55,7 +55,7 @@ func main() {
 		}
 	}
 
-	ctx := context.WithValue(context.Background(), "user-agent", fmt.Sprintf("Ktor CLI/%s", getVersion()))
+	ctx := context.WithValue(context.Background(), "user-agent", fmt.Sprintf("KtorCLI/%s", getVersion()))
 
 	switch args.Command {
 	case cli.VersionCommand:
