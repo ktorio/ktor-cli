@@ -2,6 +2,7 @@ package network
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/ktorio/ktor-cli/internal/app"
@@ -34,14 +35,23 @@ type BuildSystemArgs string
 
 const VersionCatalogBuildArg BuildSystemArgs = "version_catalog"
 
-func NewProject(client *http.Client, payload ProjectPayload) ([]byte, error) {
+func NewProject(client *http.Client, payload ProjectPayload, ctx context.Context) ([]byte, error) {
 	var body bytes.Buffer
 	err := json.NewEncoder(&body).Encode(payload)
 	if err != nil {
 		return nil, &app.Error{Err: err, Kind: app.InternalError}
 	}
 
-	resp, err := client.Post(fmt.Sprintf("%s/project/generate", config.GenBaseUrl()), "application/json", &body)
+	req, err := http.NewRequest("POST", fmt.Sprintf("%s/project/generate", config.GenBaseUrl()), &body)
+
+	if err != nil {
+		return nil, &app.Error{Err: err, Kind: app.InternalError}
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("User-Agent", ctx.Value("user-agent").(string))
+
+	resp, err := client.Do(req)
 
 	if err != nil {
 		return nil, err

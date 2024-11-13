@@ -2,6 +2,7 @@ package generate
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"github.com/ktorio/ktor-cli/internal/app"
 	"github.com/ktorio/ktor-cli/internal/app/archive"
@@ -15,7 +16,7 @@ import (
 )
 
 // Project Returns *app.Error on error
-func Project(client *http.Client, logger *log.Logger, projectDir, project string) error {
+func Project(client *http.Client, logger *log.Logger, projectDir, project string, ctx context.Context) error {
 	err := os.Mkdir(projectDir, 0755)
 	if err != nil {
 		var pe *os.PathError
@@ -55,7 +56,7 @@ func Project(client *http.Client, logger *log.Logger, projectDir, project string
 		HasWrapper:    true,
 	}
 
-	zipBytes, err := network.NewProject(client, projectPayload)
+	zipBytes, err := network.NewProject(client, projectPayload, ctx)
 
 	if err != nil {
 		if os.IsTimeout(err) {

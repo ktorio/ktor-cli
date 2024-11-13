@@ -14,6 +14,8 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"runtime/debug"
+	"strings"
 	"time"
 )
 
@@ -53,9 +55,11 @@ func main() {
 		}
 	}
 
+	ctx := context.WithValue(context.Background(), "user-agent", fmt.Sprintf("Ktor CLI/%s", getVersion()))
+
 	switch args.Command {
 	case cli.VersionCommand:
-		command.Version(Version)
+		fmt.Printf("Ktor CLI version %s\n", getVersion())
 	case cli.HelpCommand:
 		cli.WriteUsage(os.Stdout)
 	case cli.NewCommand:
@@ -77,6 +81,22 @@ func main() {
 			os.Exit(1)
 		}
 
-		command.Generate(client, projectDir, projectName, verboseLogger, hasGlobalLog)
+		command.Generate(client, projectDir, projectName, verboseLogger, hasGlobalLog, ctx)
 	}
+}
+
+func getVersion() string {
+	if Version != "" {
+		return strings.Trim(Version, "\n\r")
+	}
+
+	if info, ok := debug.ReadBuildInfo(); ok {
+		for _, setting := range info.Settings {
+			if setting.Key == "vcs.revision" {
+				return fmt.Sprintf("dev-%s", setting.Value[:7])
+			}
+		}
+	}
+
+	return "dev"
 }

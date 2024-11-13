@@ -54,7 +54,6 @@ func FetchSettings(client *http.Client) (*DefaultSettings, error) {
 	}
 
 	dec := json.NewDecoder(resp.Body)
-	dec.DisallowUnknownFields()
 	var settings DefaultSettings
 	err = dec.Decode(&settings)
 
