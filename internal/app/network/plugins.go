@@ -18,7 +18,16 @@ type Plugin struct {
 }
 
 func FetchPlugins(client *http.Client, ktorVersion string) ([]Plugin, error) {
-	resp, err := client.Get(fmt.Sprintf("%s/features/%s", config.GenBaseUrl(), ktorVersion))
+	req, err := http.NewRequest("GET", fmt.Sprintf("%s/features/%s", config.GenBaseUrl(), ktorVersion), nil)
+
+	if err != nil {
+		return nil, &app.Error{Err: err, Kind: app.InternalError}
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("User-Agent", "Ktor CLI")
+
+	resp, err := client.Do(req)
 
 	if err != nil {
 		return nil, convertResponseError(err)
