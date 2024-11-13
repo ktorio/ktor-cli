@@ -12,6 +12,21 @@ func TestProcessArgs(t *testing.T) {
 	checkProcessError(t, []string{"ktor"}, &Error{Err: errors.New("command expected"), Kind: NoCommandError})
 	checkProcessError(t, []string{"ktor", "nonexistent"}, &Error{Err: CommandError{Command: "nonexistent"}, Kind: CommandNotFoundError})
 	checkProcessError(t, []string{"ktor", "new", "a", "b"}, &Error{Err: CommandError{Command: "new"}, Kind: WrongNumberOfArgumentsError})
+	checkProcessError(
+		t,
+		[]string{"ktor", "openapi", "-o", "file.yml"},
+		&Error{Err: CommandError{Command: "openapi"}, Kind: WrongNumberOfArgumentsError},
+	)
+	checkProcessError(
+		t,
+		[]string{"ktor", "openapi", "file.yml", "-o", "dir"},
+		&Error{Err: CommandError{Command: "openapi"}, Kind: WrongNumberOfArgumentsError},
+	)
+	checkProcessError(
+		t,
+		[]string{"ktor", "openapi", "-o"},
+		&Error{Err: FlagError{Flag: "-o"}, Kind: NoArgumentForFlag},
+	)
 
 	checkProcessing(t, []string{"ktor", "--version"}, &Input{Command: VersionCommand})
 	checkProcessing(t, []string{"ktor", "-V"}, &Input{Command: VersionCommand})
@@ -21,8 +36,18 @@ func TestProcessArgs(t *testing.T) {
 	checkProcessing(t, []string{"ktor", "--help", "--version"}, &Input{Command: HelpCommand})
 	checkProcessing(t, []string{"ktor", "--version", "new"}, &Input{Command: VersionCommand})
 	checkProcessing(t, []string{"ktor", "--help", "new", "some"}, &Input{Command: HelpCommand})
-	checkProcessing(t, []string{"ktor", "new", "some"}, &Input{Command: NewCommand, CommandArgs: []string{"some"}})
-	checkProcessing(t, []string{"ktor", "-v", "new", "some"}, &Input{Command: NewCommand, CommandArgs: []string{"some"}, Verbose: true})
+	checkProcessing(t, []string{"ktor", "new", "some"}, &Input{Command: NewCommand, CommandArgs: []string{"some"}, CommandOptions: map[Flag]string{}})
+	checkProcessing(t, []string{"ktor", "-v", "new", "some"}, &Input{Command: NewCommand, CommandArgs: []string{"some"}, Verbose: true, CommandOptions: map[Flag]string{}})
+	checkProcessing(
+		t,
+		[]string{"ktor", "openapi", "-o", "dir", "file.yml"},
+		&Input{Command: OpenAPI, CommandArgs: []string{"file.yml"}, CommandOptions: map[Flag]string{OutDir: "dir"}},
+	)
+	checkProcessing(
+		t,
+		[]string{"ktor", "-v", "openapi", "-o", "dir", "file.yml"},
+		&Input{Command: OpenAPI, CommandArgs: []string{"file.yml"}, CommandOptions: map[Flag]string{OutDir: "dir"}, Verbose: true},
+	)
 }
 
 func checkProcessing(t *testing.T, args []string, expected *Input) {

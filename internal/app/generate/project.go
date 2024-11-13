@@ -9,6 +9,7 @@ import (
 	"github.com/ktorio/ktor-cli/internal/app/i18n"
 	"github.com/ktorio/ktor-cli/internal/app/network"
 	"github.com/ktorio/ktor-cli/internal/app/progress"
+	"github.com/ktorio/ktor-cli/internal/app/utils"
 	"io"
 	"log"
 	"net/http"
@@ -18,16 +19,22 @@ import (
 
 // Project Returns *app.Error on error
 func Project(client *http.Client, logger *log.Logger, projectDir, project string, plugins []string, ctx context.Context) error {
-	err := os.Mkdir(projectDir, 0755)
-	if err != nil {
-		var pe *os.PathError
-		errors.As(err, &pe)
+	err := os.MkdirAll(projectDir, 0755)
+	logger.Printf(i18n.Get(i18n.CreatingDir, projectDir))
 
-		if errors.Is(pe.Err, os.ErrExist) || errors.Is(pe.Err, os.ErrPermission) {
-			return &app.Error{Err: err, Kind: app.ProjectDirError}
+	if _, err = os.Stat(projectDir); errors.Is(err, os.ErrNotExist) {
+		if err != nil {
+			var pe *os.PathError
+			errors.As(err, &pe)
+
+			if errors.Is(pe.Err, os.ErrExist) || errors.Is(pe.Err, os.ErrPermission) {
+				return &app.Error{Err: err, Kind: app.ProjectDirError}
+			}
+
+			return &app.Error{Err: err, Kind: app.UnknownError}
 		}
-
-		return &app.Error{Err: err, Kind: app.UnknownError}
+	} else if !utils.IsDirEmpty(projectDir) {
+		return &app.Error{Err: &os.PathError{Err: os.ErrExist, Path: projectDir}, Kind: app.ProjectDirError}
 	}
 
 	logger.Printf(i18n.Get(i18n.CreatingDir, projectDir))

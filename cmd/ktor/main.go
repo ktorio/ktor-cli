@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	_ "embed"
+	"errors"
 	"fmt"
 	"github.com/ktorio/ktor-cli/internal/app/cli"
 	"github.com/ktorio/ktor-cli/internal/app/cli/command"
@@ -59,25 +60,25 @@ func main() {
 
 	ctx := context.WithValue(context.Background(), "user-agent", fmt.Sprintf("KtorCLI/%s", getVersion()))
 
+	client := &http.Client{
+		Transport: &http.Transport{
+			DialContext: func(_ context.Context, network, addr string) (net.Conn, error) {
+				return net.DialTimeout(network, addr, 5*time.Second)
+			},
+			TLSHandshakeTimeout:   10 * time.Second,
+			ResponseHeaderTimeout: 10 * time.Second,
+		},
+	}
+
 	switch args.Command {
 	case cli.VersionCommand:
 		fmt.Printf(i18n.Get(i18n.VersionInfo, getVersion()))
 	case cli.HelpCommand:
 		cli.WriteUsage(os.Stdout)
 	case cli.NewCommand:
-		client := &http.Client{
-			Transport: &http.Transport{
-				DialContext: func(_ context.Context, network, addr string) (net.Conn, error) {
-					return net.DialTimeout(network, addr, 5*time.Second)
-				},
-				TLSHandshakeTimeout:   10 * time.Second,
-				ResponseHeaderTimeout: 10 * time.Second,
-			},
-		}
-
 		if len(args.CommandArgs) > 0 {
-			projectName := utils.CleanProjectName(args.CommandArgs[0])
-			projectDir, err := filepath.Abs(projectName)
+			projectName := utils.CleanProjectName(filepath.Base(args.CommandArgs[0]))
+			projectDir, err := filepath.Abs(args.CommandArgs[0])
 
 			if err != nil {
 				fmt.Fprintf(os.Stderr, i18n.Get(i18n.CannotDetermineProjectDir, projectName))
@@ -90,17 +91,7 @@ func main() {
 
 		result, err := interactive.Run(client, ctx)
 		if err != nil {
-			reportLog := cli.HandleAppError("", err)
-
-			if hasGlobalLog && reportLog {
-				fmt.Fprintf(os.Stderr, i18n.Get(i18n.LogHint, config.LogPath(homeDir)))
-			}
-
-			if hasGlobalLog {
-				log.Fatal(err)
-			}
-
-			os.Exit(1)
+			cli.ExitWithError(err, "", hasGlobalLog, homeDir)
 		}
 
 		if result.Quit {
@@ -109,6 +100,33 @@ func main() {
 		}
 
 		command.Generate(client, result.ProjectDir, result.ProjectName, result.Plugins, verboseLogger, hasGlobalLog, ctx)
+	case cli.OpenAPI:
+		specPath := args.CommandArgs[0]
+		projectDir, err := filepath.Abs(".")
+
+		if dir, ok := args.CommandOptions[cli.OutDir]; ok {
+			projectDir, err = filepath.Abs(dir)
+		}
+
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Unable to determine project directory %s\n", projectDir)
+			os.Exit(1)
+		}
+
+		projectName := utils.CleanProjectName(filepath.Base(projectDir))
+
+		if _, err := os.Stat(specPath); errors.Is(err, os.ErrNotExist) {
+			fmt.Printf("OpenAPI spec file %s does not exist\n", specPath)
+			os.Exit(1)
+		}
+
+		err = command.OpenApi(client, specPath, projectName, projectDir, homeDir, verboseLogger)
+
+		if err != nil {
+			cli.ExitWithError(err, projectDir, hasGlobalLog, homeDir)
+		}
+
+		fmt.Printf("Project %s has been generated in the directory %s\n", projectName, projectDir)
 	}
 }
 

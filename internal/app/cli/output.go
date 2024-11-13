@@ -4,12 +4,34 @@ import (
 	"errors"
 	"fmt"
 	"github.com/ktorio/ktor-cli/internal/app"
+	"github.com/ktorio/ktor-cli/internal/app/config"
 	"github.com/ktorio/ktor-cli/internal/app/i18n"
 	"github.com/ktorio/ktor-cli/internal/app/jdk"
+	"github.com/ktorio/ktor-cli/internal/app/utils"
+	"log"
 	"os"
 	"runtime"
 	"strings"
+	"syscall"
 )
+
+func ExitWithError(err error, projectDir string, hasGlobalLog bool, homeDir string) {
+	if _, err := os.Stat(projectDir); err == nil && utils.IsDirEmpty(projectDir) {
+		_ = os.Remove(projectDir)
+	}
+
+	reportLog := HandleAppError(projectDir, err)
+
+	if hasGlobalLog && reportLog {
+		fmt.Fprintf(os.Stderr, "You can find more information in the log: %s\n", config.LogPath(homeDir))
+	}
+
+	if hasGlobalLog {
+		log.Fatal(err)
+	}
+
+	os.Exit(1)
+}
 
 func HandleAppError(projectDir string, err error) (reportLog bool) {
 	if err == nil {
@@ -26,6 +48,13 @@ func HandleAppError(projectDir string, err error) (reportLog bool) {
 			fmt.Fprintf(os.Stderr, i18n.Get(i18n.GenServerTimeoutError))
 		case app.NetworkError:
 			fmt.Fprintf(os.Stderr, i18n.Get(i18n.NetworkError))
+			fmt.Fprintf(os.Stderr, "Unexpected network error occurred. Please check your Internet connection.\n")
+		case app.OpenApiDownloadJarError:
+			fmt.Fprintf(os.Stderr, "Unexpected error occurred while downloading OpenAPI utility. Please try again later.\n")
+		case app.OpenApiExecuteJarError:
+			fmt.Fprintf(os.Stderr, "Unable to execute OpenAPI utility.\n")
+		case app.ExternalCommandError:
+			fmt.Fprintf(os.Stderr, "Unexpected error occcured while executing an external command.\n")
 		case app.InternalError:
 			fmt.Fprintf(os.Stderr, i18n.Get(i18n.InternalError))
 		case app.ProjectDirError:
@@ -35,9 +64,9 @@ func HandleAppError(projectDir string, err error) (reportLog bool) {
 
 			switch {
 			case errors.Is(pe.Err, os.ErrExist):
-				fmt.Fprintf(os.Stderr, i18n.Get(i18n.ProjectDirExist, pe.Path))
+				fmt.Fprintf(os.Stderr, i18n.Get(i18n.ProjectDirExist, pe.Path)) // "The project directory %s already exists and not empty.\n"
 			case errors.Is(pe.Err, os.ErrPermission):
-				fmt.Fprintf(os.Stderr, i18n.Get(i18n.NoPermsCreateProjectDir, pe.Path))
+				fmt.Fprintf(os.Stderr, i18n.Get(i18n.NoPermsCreateProjectDir, pe.Path)) // "Not enough permissions to create project directory %s.\n", pe.Path)
 			}
 		case app.ProjectExtractError:
 			fmt.Fprintf(os.Stderr, i18n.Get(i18n.ProjectExtractError, projectDir))
@@ -112,6 +141,10 @@ func HandleArgsValidation(err error) {
 		if spec, ok := allCommandsSpec[ce.Command]; ok {
 			fmt.Fprintf(os.Stderr, i18n.Get(i18n.CommandArgumentsError, ce.Command, len(spec.args), formatArgs(spec.args)))
 		}
+	case NoArgumentForFlag:
+		var fe FlagError
+		errors.As(e.Err, &fe)
+		fmt.Fprintf(os.Stderr, "Flag %s requires an argument\n", fe.Flag)
 	default:
 		// do nothing
 	}
