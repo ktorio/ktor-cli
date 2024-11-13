@@ -10,6 +10,7 @@ import (
 	"github.com/ktorio/ktor-cli/internal/app/utils"
 	"io"
 	"net/http"
+	"net/http/httptest"
 )
 
 type ProjectPayload struct {
@@ -41,7 +42,11 @@ func NewProject(client *http.Client, payload ProjectPayload) ([]byte, error) {
 		return nil, &app.Error{Err: err, Kind: app.InternalError}
 	}
 
-	resp, err := client.Post(fmt.Sprintf("%s/project/generate", config.GenBaseUrl()), "application/json", &body)
+	req := httptest.NewRequest("POST", fmt.Sprintf("%s/project/generate", config.GenBaseUrl()), &body)
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("User-Agent", "Ktor CLI")
+
+	resp, err := client.Do(req)
 
 	if err != nil {
 		return nil, err
