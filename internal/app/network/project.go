@@ -2,6 +2,7 @@ package network
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/ktorio/ktor-cli/internal/app"
@@ -34,7 +35,7 @@ type BuildSystemArgs string
 
 const VersionCatalogBuildArg BuildSystemArgs = "version_catalog"
 
-func NewProject(client *http.Client, payload ProjectPayload) ([]byte, error) {
+func NewProject(client *http.Client, payload ProjectPayload, ctx context.Context) ([]byte, error) {
 	var body bytes.Buffer
 	err := json.NewEncoder(&body).Encode(payload)
 	if err != nil {
@@ -48,7 +49,7 @@ func NewProject(client *http.Client, payload ProjectPayload) ([]byte, error) {
 	}
 
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("User-Agent", "Ktor CLI")
+	req.Header.Set("User-Agent", ctx.Value("user-agent").(string))
 
 	resp, err := client.Do(req)
 
