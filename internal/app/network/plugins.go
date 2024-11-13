@@ -1,6 +1,7 @@
 package network
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -17,7 +18,7 @@ type Plugin struct {
 	RequiredPlugins []string `json:"requiredFeatures"`
 }
 
-func FetchPlugins(client *http.Client, ktorVersion string) ([]Plugin, error) {
+func FetchPlugins(client *http.Client, ktorVersion string, ctx context.Context) ([]Plugin, error) {
 	req, err := http.NewRequest("GET", fmt.Sprintf("%s/features/%s", config.GenBaseUrl(), ktorVersion), nil)
 
 	if err != nil {
@@ -25,7 +26,7 @@ func FetchPlugins(client *http.Client, ktorVersion string) ([]Plugin, error) {
 	}
 
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("User-Agent", "Ktor CLI")
+	req.Header.Set("User-Agent", ctx.Value("user-agent").(string))
 
 	resp, err := client.Do(req)
 

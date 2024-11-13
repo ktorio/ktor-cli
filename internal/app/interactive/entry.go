@@ -1,6 +1,7 @@
 package interactive
 
 import (
+	"context"
 	"fmt"
 	"github.com/gdamore/tcell/v2"
 	"github.com/ktorio/ktor-cli/internal/app/interactive/draw"
@@ -11,7 +12,7 @@ import (
 	"strings"
 )
 
-func Run(client *http.Client) (result model.Result, err error) {
+func Run(client *http.Client, ctx context.Context) (result model.Result, err error) {
 	settings, err := network.FetchSettings(client)
 
 	if err != nil {
@@ -72,7 +73,7 @@ func Run(client *http.Client) (result model.Result, err error) {
 
 		if mdl.ShouldFetchPlugins && !mdl.PluginsFetched {
 			var plugins []network.Plugin
-			plugins, err = network.FetchPlugins(client, settings.KtorVersion.DefaultId)
+			plugins, err = network.FetchPlugins(client, settings.KtorVersion.DefaultId, ctx)
 
 			if err != nil {
 				mdl.ErrorLine = "Unable to fetch plugins from the generation server. Please restart the app."

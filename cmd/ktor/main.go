@@ -87,7 +87,7 @@ func main() {
 			return
 		}
 
-		result, err := interactive.Run(client)
+		result, err := interactive.Run(client, ctx)
 		if err != nil {
 			reportLog := cli.HandleAppError("", err)
 
