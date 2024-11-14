@@ -7,6 +7,7 @@ import (
 	"github.com/ktorio/ktor-cli/internal/app/cli"
 	"github.com/ktorio/ktor-cli/internal/app/cli/command"
 	"github.com/ktorio/ktor-cli/internal/app/config"
+	"github.com/ktorio/ktor-cli/internal/app/interactive"
 	"github.com/ktorio/ktor-cli/internal/app/utils"
 	"io"
 	"log"
@@ -73,15 +74,40 @@ func main() {
 			},
 		}
 
-		projectName := utils.CleanProjectName(args.CommandArgs[0])
-		projectDir, err := filepath.Abs(projectName)
+		if len(args.CommandArgs) > 0 {
+			projectName := utils.CleanProjectName(args.CommandArgs[0])
+			projectDir, err := filepath.Abs(projectName)
 
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Unable to determine project directory for project %s\n", projectName)
+				os.Exit(1)
+			}
+
+			command.Generate(client, projectDir, projectName, []string{}, verboseLogger, hasGlobalLog, ctx)
+			return
+		}
+
+		result, err := interactive.Run(client, ctx)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Unable to determine project directory for project %s\n", projectName)
+			reportLog := cli.HandleAppError("", err)
+
+			if hasGlobalLog && reportLog {
+				fmt.Fprintf(os.Stderr, "You can find more information in the log: %s\n", config.LogPath(homeDir))
+			}
+
+			if hasGlobalLog {
+				log.Fatal(err)
+			}
+
 			os.Exit(1)
 		}
 
-		command.Generate(client, projectDir, projectName, verboseLogger, hasGlobalLog, ctx)
+		if result.Quit {
+			fmt.Println("Goodbye!")
+			return
+		}
+
+		command.Generate(client, result.ProjectDir, result.ProjectName, result.Plugins, verboseLogger, hasGlobalLog, ctx)
 	}
 }
 

@@ -168,17 +168,19 @@ func getWindowsCandidates(homeDir string) (paths []string) {
 
 func getDarwinCandidates(homeDir string) (paths []string) {
 	paths = append(paths, getChildDirs("/Library/Java/JavaVirtualMachines")...)
+	paths = append(paths, getChildDirs(filepath.Join(homeDir, "Library", "Java", "JavaVirtualMachines"))...)
 
 	if homeDir == "" {
 		return
 	}
-
-	paths = append(paths, getChildDirs(filepath.Join(homeDir, ".sdkman", "candidates", "java"))...)
+	sdkManPaths := append(paths, getChildDirs(filepath.Join(homeDir, ".sdkman", "candidates", "java"))...)
 	paths = append(paths, getChildDirs(filepath.Join(homeDir, ".jdks"))...)
 
 	for i, p := range paths {
 		paths[i] = filepath.Join(p, "Contents", "Home")
 	}
+
+	paths = append(paths, sdkManPaths...)
 
 	return
 }

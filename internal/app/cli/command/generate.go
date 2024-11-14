@@ -13,14 +13,14 @@ import (
 	"os"
 )
 
-func Generate(client *http.Client, projectDir, projectName string, verboseLogger *log.Logger, hasGlobalLog bool, ctx context.Context) {
+func Generate(client *http.Client, projectDir, projectName string, plugins []string, verboseLogger *log.Logger, hasGlobalLog bool, ctx context.Context) {
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "Unable to determine home directory.")
 		os.Exit(1)
 	}
 
-	err = generate.Project(client, verboseLogger, projectDir, projectName, ctx)
+	err = generate.Project(client, verboseLogger, projectDir, projectName, plugins, ctx)
 
 	if err != nil {
 		if _, err := os.Stat(projectDir); err == nil && utils.IsDirEmpty(projectDir) {
@@ -45,7 +45,7 @@ func Generate(client *http.Client, projectDir, projectName string, verboseLogger
 	if jh, ok := jdk.JavaHome(); ok {
 		if v, err := jdk.GetJavaMajorVersion(jh, homeDir); err == nil && v >= jdk.MinJavaVersion {
 			fmt.Printf("JDK is detected in JAVA_HOME=%s\n", jh)
-			cli.PrintCommands(projectName, true, "")
+			cli.PrintCommands(projectDir, true, "")
 			os.Exit(0)
 		}
 	}
@@ -53,7 +53,7 @@ func Generate(client *http.Client, projectDir, projectName string, verboseLogger
 	if jdkPath, ok := config.GetValue("jdk"); ok {
 		if st, err := os.Stat(jdkPath); err == nil && st.IsDir() {
 			fmt.Printf("Detected JDK %s\n", jdkPath)
-			cli.PrintCommands(projectName, false, jdkPath)
+			cli.PrintCommands(projectDir, false, jdkPath)
 			os.Exit(0)
 		}
 	}
@@ -62,7 +62,7 @@ func Generate(client *http.Client, projectDir, projectName string, verboseLogger
 		config.SetValue("jdk", jdkPath)
 		_ = config.Commit()
 		fmt.Printf("JDK found locally %s\n", jdkPath)
-		cli.PrintCommands(projectName, false, jdkPath)
+		cli.PrintCommands(projectDir, false, jdkPath)
 		os.Exit(0)
 	}
 
@@ -82,5 +82,5 @@ func Generate(client *http.Client, projectDir, projectName string, verboseLogger
 	}
 
 	fmt.Printf("JDK has been downloaded to %s\n", jdkPath)
-	cli.PrintCommands(projectName, false, jdkPath)
+	cli.PrintCommands(projectDir, false, jdkPath)
 }

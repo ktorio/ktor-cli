@@ -16,7 +16,7 @@ import (
 )
 
 // Project Returns *app.Error on error
-func Project(client *http.Client, logger *log.Logger, projectDir, project string, ctx context.Context) error {
+func Project(client *http.Client, logger *log.Logger, projectDir, project string, plugins []string, ctx context.Context) error {
 	err := os.Mkdir(projectDir, 0755)
 	if err != nil {
 		var pe *os.PathError
@@ -50,7 +50,7 @@ func Project(client *http.Client, logger *log.Logger, projectDir, project string
 				network.VersionCatalogBuildArg: "",
 			},
 		},
-		Plugins:       []string{},
+		Plugins:       plugins,
 		HasSampleCode: true,
 		ConfigType:    settings.ConfigType.DefaultId,
 		HasWrapper:    true,

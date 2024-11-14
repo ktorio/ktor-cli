@@ -36,7 +36,7 @@ func WriteUsage(w io.Writer) {
 	}
 }
 func formatCommand(command Command) string {
-	return fmt.Sprintf("%s %s", command, strings.Join(allCommandsSpec[command].args, " "))
+	return fmt.Sprintf("%s %s", command, formatArgs(allCommandsSpec[command].args))
 }
 
 func formatFlags(spec *flagSpec) string {

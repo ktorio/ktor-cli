@@ -54,6 +54,14 @@ The `-v` option can be used to enable verbose output:
 ktor -v new ktor-project
 ```
 
+## Create a project in an interactive mode
+
+To create a new project in the interactive mode, simply use the `new` command without a project name:
+
+```shell
+ktor new
+```
+
 ## Get the version
 
 To get the version of the tool, use the `--version` flag or the `version` command:
