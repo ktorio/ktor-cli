@@ -34,15 +34,13 @@ func FetchSettings(client *http.Client) (*DefaultSettings, error) {
 }
 
 type DefaultSettings struct {
-	ProjectName      StringParam `json:"project_name"`
-	CompanyWebsite   StringParam `json:"company_website"`
-	Engine           EnumParam   `json:"engine"`
-	KtorVersion      EnumParam   `json:"ktor_version"`
-	KotlinVersion    EnumParam   `json:"kotlin_version"`
-	BuildSystem      EnumParam   `json:"build_system"`
-	ConfigType       EnumParam   `json:"configuration_in"`
-	CompileTargets   EnumParam   `json:"compile_targets"`
-	ProjectStructure EnumParam   `json:"project_structure"`
+	ProjectName    StringParam `json:"project_name"`
+	CompanyWebsite StringParam `json:"company_website"`
+	Engine         EnumParam   `json:"engine"`
+	KtorVersion    EnumParam   `json:"ktor_version"`
+	KotlinVersion  EnumParam   `json:"kotlin_version"`
+	BuildSystem    EnumParam   `json:"build_system"`
+	ConfigType     EnumParam   `json:"configuration_in"`
 }
 
 type StringParam struct {
