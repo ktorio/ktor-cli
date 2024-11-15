@@ -110,7 +110,7 @@ func HandleArgsValidation(err error) {
 		errors.As(e.Err, &ce)
 
 		if spec, ok := allCommandsSpec[ce.Command]; ok {
-			fmt.Fprintf(os.Stderr, i18n.Get(i18n.CommandArgumentsError, len(spec.args), formatArgs(spec.args), ce.Command))
+			fmt.Fprintf(os.Stderr, i18n.Get(i18n.CommandArgumentsError, ce.Command, len(spec.args), formatArgs(spec.args)))
 		}
 	default:
 		// do nothing

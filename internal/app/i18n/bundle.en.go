@@ -33,7 +33,7 @@ var en = map[Message]string{
 	UnrecognizedFlagsError:            "Unrecognized flags: %s.\n",
 	NoCommandError:                    "Expected a command",
 	CommandNotFoundError:              "Command '%s' not recognized.\n",
-	CommandArgumentsError:             "Expected %d argument[s]: %s for the %s command.\n"
+	CommandArgumentsError:             "Command %s requires %d argument[s]: %s.\n",
 	ToRunProject:                      "To run the project, use the following commands:\n\n",
 	JavaHomeJdkIdeaInstruction:        "Either permanently set the JAVA_HOME environment variable, or add the following JDK in IntelliJ IDEA: \n",
 	ToolSummary:                       "Ktor CLI is a tool for generating Ktor projects.\n\n",
