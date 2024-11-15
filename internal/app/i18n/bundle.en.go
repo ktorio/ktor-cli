@@ -48,7 +48,7 @@ var en = map[Message]string{
 	MakeFileExec:                      "Making %s file executable...\n",
 	UsageLine:                         "Usage: ktor [options] <command> [arguments]\n\n",
 	TermHeightSmall:                   "Terminal height %d is too small to display plugins.",
-	SelectedPluginsCount:              "%d plugins selected.",
+	SelectedPluginsCount:              "%d plugins added.",
 	ProjectNameCaption:                "Project name:",
 	LocationCaption:                   "Location:",
 	SearchPluginsCaption:              "Search for plugins:",
