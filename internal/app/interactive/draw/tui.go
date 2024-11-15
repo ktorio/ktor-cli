@@ -31,16 +31,17 @@ func Tui(scr tcell.Screen, st *State, mdl *model.State) {
 	posX := padding
 	posY := padding
 
-	errX := width - len(mdl.ErrorLine) - padding
+	errStr := mdl.FormatErrors()
+	errX := width - len(errStr) - padding
 	if errX < width/2 {
 		errX = width / 2
 	}
 	errY := height - 4
-	if _, y := multilinePos(errX, width, mdl.ErrorLine); y > 0 {
+	if _, y := multilinePos(errX, width, errStr); y > 0 {
 		errY -= y
 	}
 
-	drawMultilineText(scr, errX, errY, width, padding, DefaultStyle.Foreground(errorColor), mdl.ErrorLine)
+	drawMultilineText(scr, errX, errY, width, padding, DefaultStyle.Foreground(errorColor), errStr)
 	drawInlineText(scr, width-len(mdl.StatusLine)-1, height-2, DefaultStyle.Foreground(statusColor), mdl.StatusLine)
 
 	posX, posY = drawInlineText(scr, posX, posY, strongStyle, i18n.Get(i18n.ProjectNameCaption))
@@ -146,8 +147,10 @@ func Tui(scr tcell.Screen, st *State, mdl *model.State) {
 		count := getVisiblePluginsCount(posY, height, plugins[off:], off)
 
 		if count == 0 {
-			mdl.ErrorLine = fmt.Sprintf(i18n.Get(i18n.TermHeightSmall, height))
+			mdl.SetError(model.TerminalHeightError, fmt.Sprintf(i18n.Get(i18n.TermHeightSmall, height)))
 			return
+		} else {
+			mdl.RemoveErrors(model.TerminalHeightError)
 		}
 
 		r := Range{start: off, end: off + count}
