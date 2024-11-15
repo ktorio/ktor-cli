@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/ktorio/ktor-cli/internal/app"
+	"github.com/ktorio/ktor-cli/internal/app/i18n"
 	"github.com/ktorio/ktor-cli/internal/app/jdk"
 	"os"
 	"runtime"
@@ -20,13 +21,13 @@ func HandleAppError(projectDir string, err error) (reportLog bool) {
 	if errors.As(err, &e) {
 		switch e.Kind {
 		case app.GenServerError:
-			fmt.Fprintf(os.Stderr, "Unexpected error occurred while connecting to the generation server. Please try again later.\n")
+			fmt.Fprintf(os.Stderr, i18n.Get(i18n.GenServerError))
 		case app.GenServerTimeoutError:
-			fmt.Fprintf(os.Stderr, "Timeout occurred while requesting the generation server. Please try again later.\n")
+			fmt.Fprintf(os.Stderr, i18n.Get(i18n.GenServerTimeoutError))
 		case app.NetworkError:
-			fmt.Fprintf(os.Stderr, "Unexpected network error occurred while connecting to the generation server. Please check your Internet connection.\n")
+			fmt.Fprintf(os.Stderr, i18n.Get(i18n.NetworkError))
 		case app.InternalError:
-			fmt.Fprintf(os.Stderr, "An internal error occurred. Please file an issue on https://youtrack.jetbrains.com/newIssue?project=ktor\n")
+			fmt.Fprintf(os.Stderr, i18n.Get(i18n.InternalError))
 		case app.ProjectDirError:
 			reportLog = false
 			var pe *os.PathError
@@ -34,53 +35,53 @@ func HandleAppError(projectDir string, err error) (reportLog bool) {
 
 			switch {
 			case errors.Is(pe.Err, os.ErrExist):
-				fmt.Fprintf(os.Stderr, "The project directory %s already exists.\n", pe.Path)
+				fmt.Fprintf(os.Stderr, i18n.Get(i18n.ProjectDirExist, pe.Path))
 			case errors.Is(pe.Err, os.ErrPermission):
-				fmt.Fprintf(os.Stderr, "Not enough permissions to create project directory %s.\n", pe.Path)
+				fmt.Fprintf(os.Stderr, i18n.Get(i18n.NoPermsCreateProjectDir, pe.Path))
 			}
 		case app.ProjectExtractError:
-			fmt.Fprintf(os.Stderr, "Unable to extract downloaded archive to the directory %s.\n", projectDir)
+			fmt.Fprintf(os.Stderr, i18n.Get(i18n.ProjectExtractError, projectDir))
 		case app.JdkExtractError:
 			if je, ok := e.Err.(interface{ Unwrap() []error }); ok && len(je.Unwrap()) > 0 {
 				errs := je.Unwrap()
 				var pe *os.PathError
 				var appErr *app.Error
 				if errors.As(errs[0], &pe) || (errors.As(errs[0], &appErr) && appErr.Kind == app.ExtractRootDirExistError && errors.As(appErr.Err, &pe)) {
-					fmt.Fprintf(os.Stderr, "Unable to extract downloaded JDK to the directory %s.\n", pe.Path)
+					fmt.Fprintf(os.Stderr, i18n.Get(i18n.JdkExtractError, pe.Path))
 
 					if errors.Is(pe.Err, os.ErrExist) {
-						fmt.Fprintln(os.Stderr, "The directory already exists.")
+						fmt.Fprintln(os.Stderr, i18n.Get(i18n.DirAlreadyExist))
 					}
 				}
 
 				return
 			}
 
-			fmt.Fprintf(os.Stderr, "Unable to extract downloaded JDK.\n")
+			fmt.Fprintf(os.Stderr, i18n.Get(i18n.UnableExtractJdk))
 		case app.UnableLocateJdkError:
 			var je jdk.Error
 			errors.As(e.Err, &je)
 
-			fmt.Fprintf(os.Stderr, "Unable to download JDK %s for %s %s\n", je.Descriptor.Version, je.Descriptor.Platform, je.Arch)
+			fmt.Fprintf(os.Stderr, i18n.Get(i18n.UnableDownloadJdk, je.Descriptor.Version, je.Descriptor.Platform, je.Arch))
 		case app.JdkServerError:
-			fmt.Fprintf(os.Stderr, "Unexpected error occurred while connecting to a JDK server. Please try again later.\n")
+			fmt.Fprintf(os.Stderr, i18n.Get(i18n.JdkServerError))
 		case app.JdkServerDownloadError:
-			fmt.Fprintf(os.Stderr, "An error occurred while downloading from a JDK server. Please try again later.\n")
+			fmt.Fprintf(os.Stderr, i18n.Get(i18n.JdkServerDownloadError))
 		case app.JdkVerificationFailed:
-			fmt.Fprintln(os.Stderr, "Checksum verification for the downloaded JDK failed")
+			fmt.Fprintln(os.Stderr, i18n.Get(i18n.ChecksumVerificationFailed))
 		case app.GradlewChmodError:
 			var pe *os.PathError
 			errors.As(e.Err, &pe)
-			fmt.Fprintf(os.Stderr, "Unable to make %s file executable.\n", pe.Path)
+			fmt.Fprintf(os.Stderr, i18n.Get(i18n.UnableMakeFileExec, pe.Path))
 		case app.UnknownError:
-			fmt.Fprintf(os.Stderr, "Unexpected error occurred.\n")
+			fmt.Fprintf(os.Stderr, i18n.Get(i18n.UnexpectedError))
 		case app.JdksDirError:
 			var pe *os.PathError
 			errors.As(e.Err, &pe)
 
-			fmt.Fprintf(os.Stderr, "Unable to create a root directory %s to store downloaded JDKs.\n", pe.Path)
+			fmt.Fprintf(os.Stderr, i18n.Get(i18n.UnableCreateStoreJdkDir, pe.Path))
 		default:
-			fmt.Fprintf(os.Stderr, "Unexpected error occurred.\n")
+			fmt.Fprintf(os.Stderr, i18n.Get(i18n.UnexpectedError))
 		}
 	}
 
@@ -90,32 +91,26 @@ func HandleAppError(projectDir string, err error) (reportLog bool) {
 func HandleArgsValidation(err error) {
 	var e *Error
 	if !errors.As(err, &e) {
-		fmt.Fprintf(os.Stderr, "Unexpected error %s\n", err)
+		fmt.Fprintf(os.Stderr, i18n.Get(i18n.UnexpectedErrorWithArg, err))
 	}
 
 	switch e.Kind {
 	case UnrecognizedFlagsError:
 		var fe UnrecognizedFlags
 		errors.As(e.Err, &fe)
-		fmt.Fprintf(os.Stderr, "Unrecongnized flags: %s\n", strings.Join(fe, ", "))
+		fmt.Fprintf(os.Stderr, i18n.Get(i18n.UnrecognizedFlagsError, strings.Join(fe, ", ")))
 	case NoCommandError:
-		fmt.Fprintln(os.Stderr, "Expected a command")
+		fmt.Fprintln(os.Stderr, i18n.Get(i18n.NoCommandError))
 	case CommandNotFoundError:
 		var ce CommandError
 		errors.As(e.Err, &ce)
-		fmt.Fprintf(os.Stderr, "Command '%s' not found\n", ce.Command)
+		fmt.Fprintf(os.Stderr, i18n.Get(i18n.CommandNotFoundError, ce.Command))
 	case WrongNumberOfArgumentsError:
 		var ce CommandError
 		errors.As(e.Err, &ce)
 
 		if spec, ok := allCommandsSpec[ce.Command]; ok {
-			fmt.Fprintf(
-				os.Stderr,
-				"Expected %d argument[s]: %s for the %s command\n",
-				len(spec.args),
-				formatArgs(spec.args),
-				ce.Command,
-			)
+			fmt.Fprintf(os.Stderr, i18n.Get(i18n.CommandArgumentsError, len(spec.args), formatArgs(spec.args), ce.Command))
 		}
 	default:
 		// do nothing
@@ -154,7 +149,7 @@ func formatArgs(args map[string]Arg) string {
 }
 
 func PrintCommands(projectDir string, javaHomeSet bool, jdkPath string) {
-	fmt.Print("To run the project use the following commands:\n\n")
+	fmt.Print(i18n.Get(i18n.ToRunProject))
 
 	if runtime.GOOS == "windows" {
 		fmt.Printf("cd %s\n", projectDir)
@@ -163,7 +158,7 @@ func PrintCommands(projectDir string, javaHomeSet bool, jdkPath string) {
 			fmt.Println(".\\gradlew.bat run")
 		} else {
 			fmt.Printf("cmd /C \"set JAVA_HOME=%s&& .\\gradlew.bat run\"\n\n", jdkPath)
-			fmt.Printf("You can also set the JAVA_HOME environment variable permanently or add the following JDK in the IntelliJ IDEA: \n")
+			fmt.Printf(i18n.Get(i18n.JavaHomeJdkIdeaInstruction))
 			fmt.Println(jdkPath)
 		}
 	} else {
@@ -173,7 +168,7 @@ func PrintCommands(projectDir string, javaHomeSet bool, jdkPath string) {
 			fmt.Println("./gradlew run")
 		} else {
 			fmt.Printf("JAVA_HOME=%s ./gradlew run\n\n", jdkPath)
-			fmt.Printf("You can also set the JAVA_HOME environment variable permanently or add the following JDK in the IntelliJ IDEA: \n")
+			fmt.Printf(i18n.Get(i18n.JavaHomeJdkIdeaInstruction))
 			fmt.Println(jdkPath)
 		}
 	}

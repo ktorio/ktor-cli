@@ -2,14 +2,15 @@ package cli
 
 import (
 	"fmt"
+	"github.com/ktorio/ktor-cli/internal/app/i18n"
 	"io"
 	"strings"
 )
 
 func WriteUsage(w io.Writer) {
-	fmt.Fprintf(w, "Ktor is a tool mainly for generating Ktor projects.\n\n")
-	fmt.Fprintf(w, "Usage: ktor [options] <command> [arguments]\n\n")
-	fmt.Fprintln(w, "The options are:")
+	fmt.Fprintf(w, i18n.Get(i18n.ToolSummary))
+	fmt.Fprintf(w, i18n.Get(i18n.UsageLine))
+	fmt.Fprintln(w, i18n.Get(i18n.OptionsCaption))
 
 	maxLen := 0
 	for _, spec := range allFlagsSpec {
@@ -22,7 +23,7 @@ func WriteUsage(w io.Writer) {
 		fmt.Fprintf(w, "\t%-*s    %s\n", maxLen, formatFlags(&spec), spec.description)
 	}
 
-	fmt.Fprintln(w, "The commands are:")
+	fmt.Fprintln(w, i18n.Get(i18n.CommandsCaption))
 
 	maxLen = 0
 	for command := range allCommandsSpec {

@@ -2,6 +2,7 @@ package model
 
 import (
 	"fmt"
+	"github.com/ktorio/ktor-cli/internal/app/i18n"
 	"github.com/ktorio/ktor-cli/internal/app/network"
 	"os"
 	"path/filepath"
@@ -94,15 +95,15 @@ func DeleteChar(input string, pos int) string {
 
 func CheckProjectSettings(mdl *State) (errs []string) {
 	if !IsDirEmptyOrAbsent(mdl.ProjectDir) {
-		errs = append(errs, fmt.Sprintf("Directory %s isn't empty", mdl.ProjectDir))
+		errs = append(errs, fmt.Sprintf(i18n.Get(i18n.DirNotEmptyError, mdl.ProjectDir)))
 	}
 
 	if ok, p := HasNonExistentDirsInPath(mdl.ProjectDir); ok {
-		errs = append(errs, fmt.Sprintf("Directory %s doesn't exist", p))
+		errs = append(errs, fmt.Sprintf(i18n.Get(i18n.DirNotExist, p)))
 	}
 
 	if len(filepath.Base(mdl.ProjectDir)) > maxFilenameLen {
-		errs = append(errs, "Project directory is too long")
+		errs = append(errs, i18n.Get(i18n.ProjectDirLong))
 	}
 
 	for _, r := range mdl.ProjectName {

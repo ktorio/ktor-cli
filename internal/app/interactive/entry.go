@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/gdamore/tcell/v2"
+	"github.com/ktorio/ktor-cli/internal/app/i18n"
 	"github.com/ktorio/ktor-cli/internal/app/interactive/draw"
 	"github.com/ktorio/ktor-cli/internal/app/interactive/model"
 	"github.com/ktorio/ktor-cli/internal/app/network"
@@ -76,7 +77,7 @@ func Run(client *http.Client, ctx context.Context) (result model.Result, err err
 			plugins, err = network.FetchPlugins(client, settings.KtorVersion.DefaultId, ctx)
 
 			if err != nil {
-				mdl.ErrorLine = "Unable to fetch plugins from the generation server. Please restart the app."
+				mdl.ErrorLine = i18n.Get(i18n.UnableFetchPluginsError)
 				mdl.PluginsFetched = true
 				continue
 			}
@@ -155,7 +156,7 @@ func processEvent(ev tcell.Event, drawState *draw.State, mdl *model.State, resul
 
 			if draw.IsElementActive(drawState, draw.Tabs) && ev.Rune() == ' ' {
 				toggleSelectedPlugin(drawState, mdl)
-				mdl.StatusLine = fmt.Sprintf("%d plugins added", len(mdl.AddedPlugins))
+				mdl.StatusLine = fmt.Sprintf(i18n.Get(i18n.SelectedPluginsCount, len(mdl.AddedPlugins)))
 				return
 			}
 
@@ -256,7 +257,7 @@ func processEvent(ev tcell.Event, drawState *draw.State, mdl *model.State, resul
 		case key == tcell.KeyEnter && mod == tcell.ModNone:
 			if drawState.ActiveElement == draw.Tabs {
 				toggleSelectedPlugin(drawState, mdl)
-				mdl.StatusLine = fmt.Sprintf("%d plugins added", len(mdl.AddedPlugins))
+				mdl.StatusLine = fmt.Sprintf(i18n.Get(i18n.SelectedPluginsCount, len(mdl.AddedPlugins)))
 				return
 			} else if drawState.ActiveElement == draw.CreateButton {
 				if generateProject(result, mdl) {

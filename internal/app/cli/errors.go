@@ -10,7 +10,7 @@ type Error struct {
 }
 
 func (e Error) Error() string {
-	return fmt.Sprintf("CLI args error: %v", e.Kind)
+	return fmt.Sprintf("cli args error: %v", e.Kind)
 }
 
 const (

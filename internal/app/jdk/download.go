@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/ktorio/ktor-cli/internal/app"
 	"github.com/ktorio/ktor-cli/internal/app/config"
+	"github.com/ktorio/ktor-cli/internal/app/i18n"
 	"github.com/ktorio/ktor-cli/internal/app/progress"
 	"github.com/ktorio/ktor-cli/internal/app/utils"
 	"io"
@@ -23,7 +24,7 @@ func DownloadJdk(client *http.Client, d *Descriptor, logger *log.Logger) ([]byte
 	}
 
 	url := fmt.Sprintf("%s/downloads/latest/amazon-corretto-%s-%s-%s-jdk.%s", config.CorrettoBaseUrl(), d.Version, d.Arch, d.Platform, ext)
-	logger.Printf("Downloading %s from %s\n", d, url)
+	logger.Printf(i18n.Get(i18n.DownloadingJdk, d, url))
 
 	resp, err := client.Get(url)
 	if err != nil {
@@ -39,7 +40,7 @@ func DownloadJdk(client *http.Client, d *Descriptor, logger *log.Logger) ([]byte
 		}
 	}
 
-	reader, progressBar := progress.NewReader(resp.Body, "Downloading JDK... ", utils.ContentLength(resp), true)
+	reader, progressBar := progress.NewReader(resp.Body, i18n.Get(i18n.DownloadingJdkProgress), utils.ContentLength(resp), true)
 	b, err := io.ReadAll(reader)
 
 	if err != nil {
