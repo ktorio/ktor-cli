@@ -1,5 +1,6 @@
 # Ktor CLI
 The `ktor` tool allows generating [Ktor](https://ktor.io/) applications through the command line interface.
+
 For a web interface, visit https://start.ktor.io.
 
 ## Installing
