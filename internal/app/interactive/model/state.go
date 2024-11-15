@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"unicode"
 )
 
 const maxFilenameLen = 255
@@ -91,7 +92,7 @@ func DeleteChar(input string, pos int) string {
 	return string(result)
 }
 
-func CheckProjectDir(mdl *State) (errs []string) {
+func CheckProjectSettings(mdl *State) (errs []string) {
 	if !IsDirEmptyOrAbsent(mdl.ProjectDir) {
 		errs = append(errs, fmt.Sprintf("Directory %s isn't empty", mdl.ProjectDir))
 	}
@@ -104,11 +105,19 @@ func CheckProjectDir(mdl *State) (errs []string) {
 		errs = append(errs, "Project directory is too long")
 	}
 
+	for _, r := range mdl.ProjectName {
+		isLatin := (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z')
+		if !isLatin && !unicode.IsDigit(r) && r != '.' && r != '_' && r != '-' {
+			errs = append(errs, "Only Latin characters, digits, '_', '-' and '.' are allowed for the project name")
+			break
+		}
+	}
+
 	return
 }
 
-func CheckProjectDirAndUpdateError(mdl *State) {
-	errs := CheckProjectDir(mdl)
+func CheckProjectSettingsAndUpdateError(mdl *State) {
+	errs := CheckProjectSettings(mdl)
 	mdl.ErrorLine = strings.Join(errs, "; ")
 }
 
