@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/ktorio/ktor-cli/internal/app/config"
+	"github.com/ktorio/ktor-cli/internal/app/i18n"
 	"io"
 	"log"
 	"net/http"
@@ -22,7 +23,7 @@ func Verify(client *http.Client, d *Descriptor, r io.Reader, logger *log.Logger)
 	}
 
 	url := fmt.Sprintf("%s/downloads/latest_sha256/amazon-corretto-%s-%s-%s-jdk.%s", config.CorrettoBaseUrl(), d.Version, d.Arch, d.Platform, ext)
-	logger.Printf("Verifying %s...\n", d)
+	logger.Printf(i18n.Get(i18n.VerifyingJdk, d))
 
 	resp, err := client.Get(url)
 	if err != nil {

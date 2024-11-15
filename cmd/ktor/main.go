@@ -7,6 +7,7 @@ import (
 	"github.com/ktorio/ktor-cli/internal/app/cli"
 	"github.com/ktorio/ktor-cli/internal/app/cli/command"
 	"github.com/ktorio/ktor-cli/internal/app/config"
+	"github.com/ktorio/ktor-cli/internal/app/i18n"
 	"github.com/ktorio/ktor-cli/internal/app/interactive"
 	"github.com/ktorio/ktor-cli/internal/app/utils"
 	"io"
@@ -39,7 +40,7 @@ func main() {
 	}
 
 	if !hasHomeDir {
-		verboseLogger.Println("Cannot determine home directory")
+		verboseLogger.Println(i18n.Get(i18n.CannotDetermineHomeDir))
 	}
 
 	hasGlobalLog := false
@@ -47,7 +48,7 @@ func main() {
 		logHandle, err := utils.PrepareGlobalLog(homeDir)
 
 		if err != nil {
-			verboseLogger.Printf("Unable to initialize log file: %s\n", config.LogPath(homeDir))
+			verboseLogger.Printf(i18n.Get(i18n.ErrorInitLogFile, config.LogPath(homeDir)))
 		}
 
 		if err == nil {
@@ -60,7 +61,7 @@ func main() {
 
 	switch args.Command {
 	case cli.VersionCommand:
-		fmt.Printf("Ktor CLI version %s\n", getVersion())
+		fmt.Printf(i18n.Get(i18n.VersionInfo, getVersion()))
 	case cli.HelpCommand:
 		cli.WriteUsage(os.Stdout)
 	case cli.NewCommand:
@@ -79,7 +80,7 @@ func main() {
 			projectDir, err := filepath.Abs(projectName)
 
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "Unable to determine project directory for project %s\n", projectName)
+				fmt.Fprintf(os.Stderr, i18n.Get(i18n.CannotDetermineProjectDir, projectName))
 				os.Exit(1)
 			}
 
@@ -92,7 +93,7 @@ func main() {
 			reportLog := cli.HandleAppError("", err)
 
 			if hasGlobalLog && reportLog {
-				fmt.Fprintf(os.Stderr, "You can find more information in the log: %s\n", config.LogPath(homeDir))
+				fmt.Fprintf(os.Stderr, i18n.Get(i18n.LogHint, config.LogPath(homeDir)))
 			}
 
 			if hasGlobalLog {
@@ -103,7 +104,7 @@ func main() {
 		}
 
 		if result.Quit {
-			fmt.Println("Goodbye!")
+			fmt.Println(i18n.Get(i18n.ByeMessage))
 			return
 		}
 

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/ktorio/ktor-cli/internal/app"
 	"github.com/ktorio/ktor-cli/internal/app/config"
+	"github.com/ktorio/ktor-cli/internal/app/i18n"
 	"github.com/ktorio/ktor-cli/internal/app/progress"
 	"github.com/ktorio/ktor-cli/internal/app/utils"
 	"io"
@@ -65,7 +66,7 @@ func NewProject(client *http.Client, payload ProjectPayload, ctx context.Context
 
 	reader, progressBar := progress.NewReader(
 		resp.Body,
-		"Downloading project archive... ",
+		i18n.Get(i18n.DownloadingProjectArchiveProgress),
 		utils.ContentLength(resp),
 		true,
 	)

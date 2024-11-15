@@ -3,6 +3,7 @@ package draw
 import (
 	"fmt"
 	"github.com/gdamore/tcell/v2"
+	"github.com/ktorio/ktor-cli/internal/app/i18n"
 	"github.com/ktorio/ktor-cli/internal/app/interactive/model"
 	"github.com/ktorio/ktor-cli/internal/app/network"
 	"strings"
@@ -42,7 +43,7 @@ func Tui(scr tcell.Screen, st *State, mdl *model.State) {
 	drawMultilineText(scr, errX, errY, width, padding, DefaultStyle.Foreground(errorColor), mdl.ErrorLine)
 	drawInlineText(scr, width-len(mdl.StatusLine)-1, height-2, DefaultStyle.Foreground(statusColor), mdl.StatusLine)
 
-	posX, posY = drawInlineText(scr, posX, posY, strongStyle, "Project name:")
+	posX, posY = drawInlineText(scr, posX, posY, strongStyle, i18n.Get(i18n.ProjectNameCaption))
 	posX++
 
 	st.InputLens[ProjectNameInput] = width - posX - padding
@@ -54,7 +55,7 @@ func Tui(scr tcell.Screen, st *State, mdl *model.State) {
 
 	posY += 2
 	posX = padding
-	posX, posY = drawInlineText(scr, posX, posY, strongStyle, "Location:")
+	posX, posY = drawInlineText(scr, posX, posY, strongStyle, i18n.Get(i18n.LocationCaption))
 	posX++
 
 	st.InputLens[LocationInput] = width - posX - padding
@@ -66,7 +67,7 @@ func Tui(scr tcell.Screen, st *State, mdl *model.State) {
 
 	posY += 2
 	posX = padding
-	posX, posY = drawInlineText(scr, posX, posY, strongStyle, "Search for plugins:")
+	posX, posY = drawInlineText(scr, posX, posY, strongStyle, i18n.Get(i18n.SearchPluginsCaption))
 	posX++
 	st.InputLens[SearchInput] = width - posX - padding
 	drawInput(scr, st, posX, posY, mdl.Search, SearchInput)
@@ -123,10 +124,10 @@ func Tui(scr tcell.Screen, st *State, mdl *model.State) {
 	if st.ActiveElement == CreateButton {
 		createStyle = activeTabStyle
 	}
-	drawInlineText(scr, padding, height-2, createStyle, "CREATE PROJECT (CTRL+G)")
+	drawInlineText(scr, padding, height-2, createStyle, i18n.Get(i18n.CreateProjectButton))
 
 	if len(mdl.Groups) == 0 {
-		drawInlineText(scr, posX, posY, textStyle, "No plugins found by the search query")
+		drawInlineText(scr, posX, posY, textStyle, i18n.Get(i18n.NoPluginsFound))
 		return
 	}
 
@@ -142,7 +143,7 @@ func Tui(scr tcell.Screen, st *State, mdl *model.State) {
 		count := getVisiblePluginsCount(posY, height, plugins[off:], off)
 
 		if count == 0 {
-			mdl.ErrorLine = fmt.Sprintf("Terminal height %d is too small to display plugins", height)
+			mdl.ErrorLine = fmt.Sprintf(i18n.Get(i18n.TermHeightSmall, height))
 			return
 		}
 

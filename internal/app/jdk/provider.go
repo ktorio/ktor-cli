@@ -3,6 +3,7 @@ package jdk
 import (
 	"github.com/ktorio/ktor-cli/internal/app"
 	"github.com/ktorio/ktor-cli/internal/app/config"
+	"github.com/ktorio/ktor-cli/internal/app/i18n"
 	"log"
 	"net/http"
 	"os"
@@ -17,7 +18,7 @@ func FetchRecommendedJdk(client *http.Client, homeDir string, logger *log.Logger
 		return "", &app.Error{Err: err, Kind: app.JdksDirError}
 	}
 
-	logger.Printf("Fetching %s\n", getRecommendedJdk())
+	logger.Printf(i18n.Get(i18n.FetchingJdk, getRecommendedJdk()))
 	jdkPath, err := fetch(client, getRecommendedJdk(), config.JdksDir(homeDir), logger)
 	if err != nil {
 		return "", err
