@@ -155,7 +155,7 @@ func processEvent(ev tcell.Event, drawState *draw.State, mdl *model.State, resul
 
 			if draw.IsElementActive(drawState, draw.Tabs) && ev.Rune() == ' ' {
 				toggleSelectedPlugin(drawState, mdl)
-				mdl.StatusLine = fmt.Sprintf("%d plugins selected", len(mdl.AddedPlugins))
+				mdl.StatusLine = fmt.Sprintf("%d plugins added", len(mdl.AddedPlugins))
 				return
 			}
 
@@ -256,7 +256,7 @@ func processEvent(ev tcell.Event, drawState *draw.State, mdl *model.State, resul
 		case key == tcell.KeyEnter && mod == tcell.ModNone:
 			if drawState.ActiveElement == draw.Tabs {
 				toggleSelectedPlugin(drawState, mdl)
-				mdl.StatusLine = fmt.Sprintf("%d plugins selected", len(mdl.AddedPlugins))
+				mdl.StatusLine = fmt.Sprintf("%d plugins added", len(mdl.AddedPlugins))
 				return
 			} else if drawState.ActiveElement == draw.CreateButton {
 				if generateProject(result, mdl) {
