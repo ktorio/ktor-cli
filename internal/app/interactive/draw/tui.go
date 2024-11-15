@@ -61,6 +61,9 @@ func Tui(scr tcell.Screen, st *State, mdl *model.State) {
 	st.InputLens[LocationInput] = width - posX - padding
 	drawInput(scr, st, posX, posY, mdl.ProjectDir, LocationInput)
 
+	posY++
+	drawInlineText(scr, posX, posY, DefaultStyle.Foreground(tcell.ColorGrey), fmt.Sprintf("Project will be created in: %s", mdl.GetProjectPath()))
+
 	if !st.PluginsShown {
 		return
 	}

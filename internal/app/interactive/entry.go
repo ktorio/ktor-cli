@@ -267,9 +267,11 @@ func processEvent(ev tcell.Event, drawState *draw.State, mdl *model.State, resul
 
 			switch drawState.ActiveElement {
 			case draw.ProjectNameInput:
-				drawState.LocationShown = true
-				model.InitProjectDir(mdl)
-				model.CheckProjectSettingsAndUpdateError(mdl)
+				if !drawState.LocationShown {
+					drawState.LocationShown = true
+					model.InitProjectDir(mdl)
+					model.CheckProjectSettingsAndUpdateError(mdl)
+				}
 			case draw.LocationInput:
 				drawState.PluginsShown = true
 			default:
@@ -280,9 +282,11 @@ func processEvent(ev tcell.Event, drawState *draw.State, mdl *model.State, resul
 		case key == tcell.KeyTab:
 			switch drawState.ActiveElement {
 			case draw.ProjectNameInput:
-				drawState.LocationShown = true
-				model.InitProjectDir(mdl)
-				model.CheckProjectSettingsAndUpdateError(mdl)
+				if !drawState.LocationShown {
+					drawState.LocationShown = true
+					model.InitProjectDir(mdl)
+					model.CheckProjectSettingsAndUpdateError(mdl)
+				}
 			case draw.LocationInput:
 				drawState.PluginsShown = true
 			default:
@@ -298,7 +302,7 @@ func processEvent(ev tcell.Event, drawState *draw.State, mdl *model.State, resul
 
 func generateProject(result *model.Result, mdl *model.State) bool {
 	result.ProjectName = mdl.ProjectName
-	result.ProjectDir = mdl.ProjectDir
+	result.ProjectDir = mdl.GetProjectPath()
 
 	result.Plugins = []string{}
 	for id := range mdl.AddedPlugins {

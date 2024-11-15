@@ -94,15 +94,19 @@ func DeleteChar(input string, pos int) string {
 }
 
 func CheckProjectSettings(mdl *State) (errs []string) {
-	if !IsDirEmptyOrAbsent(mdl.ProjectDir) {
+	if len(mdl.ProjectName) == 0 {
+		errs = append(errs, "Project name is required")
+	}
+	
+	if !IsDirEmptyOrAbsent(mdl.GetProjectPath()) {
 		errs = append(errs, fmt.Sprintf(i18n.Get(i18n.DirNotEmptyError, mdl.ProjectDir)))
 	}
 
-	if ok, p := HasNonExistentDirsInPath(mdl.ProjectDir); ok {
+	if ok, p := HasNonExistentDirsInPath(mdl.GetProjectPath()); ok {
 		errs = append(errs, fmt.Sprintf(i18n.Get(i18n.DirNotExist, p)))
 	}
 
-	if len(filepath.Base(mdl.ProjectDir)) > maxFilenameLen {
+	if len(filepath.Base(mdl.GetProjectPath())) > maxFilenameLen {
 		errs = append(errs, i18n.Get(i18n.ProjectDirLong))
 	}
 
@@ -126,9 +130,13 @@ func InitProjectDir(mdl *State) {
 	wd, err := os.Getwd()
 
 	if err != nil {
-		mdl.ProjectDir = filepath.Join(".", mdl.ProjectName)
+		mdl.ProjectDir = "."
 		return
 	}
 
-	mdl.ProjectDir = filepath.Join(wd, mdl.ProjectName)
+	mdl.ProjectDir = wd
+}
+
+func (mdl *State) GetProjectPath() string {
+	return filepath.Join(mdl.ProjectDir, mdl.ProjectName)
 }
