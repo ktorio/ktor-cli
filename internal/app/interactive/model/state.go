@@ -97,9 +97,9 @@ func CheckProjectSettings(mdl *State) (errs []string) {
 	if len(mdl.ProjectName) == 0 {
 		errs = append(errs, "Project name is required")
 	}
-	
+
 	if !IsDirEmptyOrAbsent(mdl.GetProjectPath()) {
-		errs = append(errs, fmt.Sprintf(i18n.Get(i18n.DirNotEmptyError, mdl.ProjectDir)))
+		errs = append(errs, fmt.Sprintf(i18n.Get(i18n.DirNotEmptyError, mdl.GetProjectPath())))
 	}
 
 	if ok, p := HasNonExistentDirsInPath(mdl.GetProjectPath()); ok {
