@@ -2,6 +2,7 @@ package cli
 
 import (
 	"errors"
+	"fmt"
 	"github.com/ktorio/ktor-cli/internal/app/i18n"
 	"slices"
 	"strings"
@@ -71,7 +72,7 @@ func ProcessArgs(args *Args) (*Input, error) {
 	help := false
 	var unrecognized []string
 	var flags = make(map[Flag]bool)
-	for _, f := range args.Flags {
+	for i, f := range args.Flags {
 		if slices.Contains(allFlagsSpec[Version].aliases, f) {
 			version = true
 			break
@@ -82,7 +83,7 @@ func ProcessArgs(args *Args) (*Input, error) {
 			break
 		}
 
-		found, fl := searchFlag(f, allFlagsSpec)
+		fl, _, found := searchFlag(f, allFlagsSpec, i)
 
 		if !found && !slices.Contains(unrecognized, f) {
 			unrecognized = append(unrecognized, f)
@@ -129,14 +130,22 @@ func ProcessArgs(args *Args) (*Input, error) {
 			continue
 		}
 
-		if ok, f := searchFlag(arg, spec); ok {
+		if f, argPos, ok := searchFlag(arg, spec, i); ok {
 			if spec[f].hasArg {
-				if i+1 >= len(args.CommandArgs) {
-					return nil, &Error{Err: FlagError{Flag: arg}, Kind: NoArgumentForFlag}
-				}
+				if argPos == i {
+					parts := strings.Split(arg, "=")
+					if len(parts) < 2 || parts[1] == "" {
+						return nil, &Error{Err: FlagError{Flag: parts[0]}, Kind: NoArgumentForFlag}
+					}
+					commandOpts[f] = parts[1]
+				} else {
+					if argPos >= len(args.CommandArgs) {
+						return nil, &Error{Err: FlagError{Flag: arg}, Kind: NoArgumentForFlag}
+					}
 
-				commandOpts[f] = args.CommandArgs[i+1]
-				i++
+					commandOpts[f] = args.CommandArgs[argPos]
+					i++
+				}
 			} else {
 				commandOpts[f] = ""
 			}
@@ -166,12 +175,18 @@ func requiredArgsCount(args map[string]Arg) int {
 	return count
 }
 
-func searchFlag(f string, flagMap map[Flag]flagSpec) (bool, Flag) {
+func searchFlag(f string, flagMap map[Flag]flagSpec, argIndex int) (Flag, int, bool) {
 	for name, spec := range flagMap {
-		if slices.Contains(spec.aliases, f) {
-			return true, name
+		for _, al := range spec.aliases {
+			if al == f {
+				return name, argIndex + 1, true
+			}
+
+			if strings.HasPrefix(f, fmt.Sprintf("%s=", al)) {
+				return name, argIndex, true
+			}
 		}
 	}
 
-	return false, ""
+	return "", 0, false
 }

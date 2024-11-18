@@ -27,6 +27,16 @@ func TestProcessArgs(t *testing.T) {
 		[]string{"ktor", "openapi", "-o"},
 		&Error{Err: FlagError{Flag: "-o"}, Kind: NoArgumentForFlag},
 	)
+	checkProcessError(
+		t,
+		[]string{"ktor", "openapi", "--output"},
+		&Error{Err: FlagError{Flag: "--output"}, Kind: NoArgumentForFlag},
+	)
+	checkProcessError(
+		t,
+		[]string{"ktor", "openapi", "--output="},
+		&Error{Err: FlagError{Flag: "--output"}, Kind: NoArgumentForFlag},
+	)
 
 	checkProcessing(t, []string{"ktor", "--version"}, &Input{Command: VersionCommand})
 	checkProcessing(t, []string{"ktor", "-V"}, &Input{Command: VersionCommand})
@@ -47,6 +57,11 @@ func TestProcessArgs(t *testing.T) {
 		t,
 		[]string{"ktor", "-v", "openapi", "-o", "dir", "file.yml"},
 		&Input{Command: OpenAPI, CommandArgs: []string{"file.yml"}, CommandOptions: map[Flag]string{OutDir: "dir"}, Verbose: true},
+	)
+	checkProcessing(
+		t,
+		[]string{"ktor", "openapi", "--output=dir", "file.yml"},
+		&Input{Command: OpenAPI, CommandArgs: []string{"file.yml"}, CommandOptions: map[Flag]string{OutDir: "dir"}},
 	)
 }
 
