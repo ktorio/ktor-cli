@@ -2,8 +2,10 @@ package interactive
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"github.com/gdamore/tcell/v2"
+	"github.com/ktorio/ktor-cli/internal/app"
 	"github.com/ktorio/ktor-cli/internal/app/i18n"
 	"github.com/ktorio/ktor-cli/internal/app/interactive/draw"
 	"github.com/ktorio/ktor-cli/internal/app/interactive/model"
@@ -28,6 +30,16 @@ func Run(client *http.Client, ctx context.Context) (result model.Result, err err
 	mdl.ProjectName = settings.ProjectName.DefaultVal
 	model.InitProjectDir(mdl)
 
+	if !model.IsDirEmptyOrAbsent(mdl.GetProjectPath()) {
+		n, ok := model.FindVacantProjectName(mdl)
+
+		if !ok {
+			return result, &app.Error{Err: errors.New("cannot find vacant project name"), Kind: app.UnknownError}
+		}
+
+		mdl.ProjectName = n
+	}
+
 	scr, err := tcell.NewScreen()
 
 	if err != nil {
@@ -51,6 +63,7 @@ func Run(client *http.Client, ctx context.Context) (result model.Result, err err
 	defer quit()
 
 	scr.SetCursorStyle(tcell.CursorStyleBlinkingBar)
+	model.CheckProjectSettings(mdl)
 
 	for mdl.Running {
 		event := scr.PollEvent()
@@ -224,11 +237,11 @@ func processEvent(ev tcell.Event, drawState *draw.State, mdl *model.State, resul
 			}
 
 			switch {
-			case drawState.ActiveElement == draw.ProjectNameInput && drawState.LocationShown:
+			case drawState.ActiveElement == draw.ProjectNameInput:
 				draw.SwitchElement(drawState, 1)
 			case drawState.ActiveElement == draw.LocationInput && drawState.PluginsShown:
 				draw.SwitchElement(drawState, 1)
-			case drawState.LocationShown && drawState.PluginsShown:
+			case drawState.PluginsShown:
 				draw.SwitchElement(drawState, 1)
 			default:
 				// do nothing yet
@@ -264,13 +277,8 @@ func processEvent(ev tcell.Event, drawState *draw.State, mdl *model.State, resul
 
 			switch drawState.ActiveElement {
 			case draw.ProjectNameInput:
-				drawState.LocationShown = true
-
-				if !drawState.LocationShown {
-					drawState.LocationShown = true
-					model.InitProjectDir(mdl)
-					model.CheckProjectSettings(mdl)
-				}
+				model.InitProjectDir(mdl)
+				model.CheckProjectSettings(mdl)
 			case draw.LocationInput:
 				drawState.PluginsShown = true
 			default:
@@ -281,11 +289,8 @@ func processEvent(ev tcell.Event, drawState *draw.State, mdl *model.State, resul
 		case key == tcell.KeyTab:
 			switch drawState.ActiveElement {
 			case draw.ProjectNameInput:
-				if !drawState.LocationShown {
-					drawState.LocationShown = true
-					model.InitProjectDir(mdl)
-					model.CheckProjectSettings(mdl)
-				}
+				model.InitProjectDir(mdl)
+				model.CheckProjectSettings(mdl)
 			case draw.LocationInput:
 				drawState.PluginsShown = true
 			default:

@@ -1,6 +1,7 @@
 package model
 
 import (
+	"errors"
 	"fmt"
 	"github.com/ktorio/ktor-cli/internal/app/i18n"
 	"github.com/ktorio/ktor-cli/internal/app/network"
@@ -142,4 +143,15 @@ func InitProjectDir(mdl *State) {
 
 func (mdl *State) GetProjectPath() string {
 	return filepath.Join(mdl.ProjectDir, mdl.ProjectName)
+}
+
+func FindVacantProjectName(mdl *State) (string, bool) {
+	for i := 1; i < 1000; i++ {
+		newName := fmt.Sprintf("%s%d", mdl.ProjectName, i)
+		if _, err := os.Stat(filepath.Join(mdl.ProjectDir, newName)); errors.Is(err, os.ErrNotExist) {
+			return newName, true
+		}
+	}
+
+	return "", false
 }

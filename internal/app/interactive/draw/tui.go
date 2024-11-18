@@ -50,10 +50,6 @@ func Tui(scr tcell.Screen, st *State, mdl *model.State) {
 	st.InputLens[ProjectNameInput] = width - posX - padding
 	posX, posY = drawInput(scr, st, posX, posY, mdl.ProjectName, ProjectNameInput)
 
-	if !st.LocationShown {
-		return
-	}
-
 	posY += 2
 	posX = padding
 	posX, posY = drawInlineText(scr, posX, posY, strongStyle, i18n.Get(i18n.LocationCaption))

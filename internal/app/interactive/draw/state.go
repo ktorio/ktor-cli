@@ -14,7 +14,6 @@ type CursorGlobalInfo struct {
 type State struct {
 	CursorOffs      map[Element]int
 	ActiveElement   Element
-	LocationShown   bool
 	PluginsShown    bool
 	tabVisRanges    []Range
 	pluginVisRanges []Range
