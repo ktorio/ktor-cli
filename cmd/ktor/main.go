@@ -81,7 +81,7 @@ func main() {
 			projectDir, err := filepath.Abs(args.CommandArgs[0])
 
 			if err != nil {
-				fmt.Fprintf(os.Stderr, i18n.Get(i18n.CannotDetermineProjectDir, projectName))
+				fmt.Fprintf(os.Stderr, i18n.Get(i18n.CannotDetermineProjectDirOfProject, projectName))
 				os.Exit(1)
 			}
 
@@ -109,14 +109,14 @@ func main() {
 		}
 
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Unable to determine project directory %s\n", projectDir)
+			fmt.Fprintf(os.Stderr, i18n.Get(i18n.CannotDetermineProjectDir, projectDir))
 			os.Exit(1)
 		}
 
 		projectName := utils.CleanProjectName(filepath.Base(projectDir))
 
 		if _, err := os.Stat(specPath); errors.Is(err, os.ErrNotExist) {
-			fmt.Printf("OpenAPI spec file %s does not exist\n", specPath)
+			fmt.Printf(i18n.Get(i18n.OpenApiSpecNotExist, specPath))
 			os.Exit(1)
 		}
 
@@ -126,7 +126,7 @@ func main() {
 			cli.ExitWithError(err, projectDir, hasGlobalLog, homeDir)
 		}
 
-		fmt.Printf("Project %s has been generated in the directory %s\n", projectName, projectDir)
+		fmt.Printf(i18n.Get(i18n.ProjectCreated, projectName, projectDir))
 	}
 }
 

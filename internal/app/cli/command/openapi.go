@@ -6,6 +6,7 @@ import (
 	"github.com/ktorio/ktor-cli/internal/app"
 	"github.com/ktorio/ktor-cli/internal/app/cli"
 	"github.com/ktorio/ktor-cli/internal/app/config"
+	"github.com/ktorio/ktor-cli/internal/app/i18n"
 	"github.com/ktorio/ktor-cli/internal/app/jdk"
 	"github.com/ktorio/ktor-cli/internal/app/network"
 	"github.com/ktorio/ktor-cli/internal/app/openapi"
@@ -19,9 +20,9 @@ import (
 	"syscall"
 )
 
-func OpenApi(client *http.Client, specPath string, projectName, projectDir string, homeDir string, verboseLogger *log.Logger) error {
+func OpenApi(client *http.Client, specPath string, projectName, projectDir string, homeDir string, logger *log.Logger) error {
 	err := os.MkdirAll(projectDir, 0755)
-	verboseLogger.Printf("Creating directory %s\n", projectDir)
+	logger.Printf(i18n.Get(i18n.CreatingDir, projectDir))
 
 	var pe *os.PathError
 
@@ -46,7 +47,7 @@ func OpenApi(client *http.Client, specPath string, projectName, projectDir strin
 		}
 
 		f, err := os.Create(jarPath)
-		verboseLogger.Printf("Creating OpenAPI JAR file %s\n", jarPath)
+		logger.Printf(i18n.Get(i18n.CreateOpenApiJar, jarPath))
 
 		if err != nil {
 			return &app.Error{Err: err, Kind: app.OpenApiDownloadJarError}
@@ -61,14 +62,14 @@ func OpenApi(client *http.Client, specPath string, projectName, projectDir strin
 		}
 	}
 
-	src, jdkPath, err := cli.ObtainJdk(client, verboseLogger, homeDir)
+	src, jdkPath, err := cli.ObtainJdk(client, logger, homeDir)
 
 	if err != nil {
 		return err
 	}
 
 	if src == jdk.Downloaded {
-		fmt.Printf("JDK has been downloaded to %s\n", jdkPath)
+		fmt.Printf(i18n.Get(i18n.JdkDownloaded, jdkPath))
 	}
 
 	settings, err := network.FetchSettings(client)
@@ -82,7 +83,7 @@ func OpenApi(client *http.Client, specPath string, projectName, projectDir strin
 	c := []string{javaExec, "-jar", jarPath, "generate", "-g", "kotlin-server", "-i", specPath,
 		"--artifact-id", projectName, "--package-name", utils.GetPackage(settings.CompanyWebsite.DefaultVal), "-o", projectDir}
 
-	verboseLogger.Printf("Executing command: %s\n", strings.Join(c, " "))
+	logger.Printf(i18n.Get(i18n.ExecutingCommand, strings.Join(c, " ")))
 
 	cmd := exec.Command(javaExec, c[1:]...)
 
@@ -103,6 +104,6 @@ func OpenApi(client *http.Client, specPath string, projectName, projectDir strin
 		return &app.Error{Err: err, Kind: app.UnknownError}
 	}
 
-	verboseLogger.Println(string(stdout))
+	logger.Println(string(stdout))
 	return nil
 }

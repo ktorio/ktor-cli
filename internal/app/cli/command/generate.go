@@ -31,13 +31,13 @@ func Generate(client *http.Client, projectDir, projectName string, plugins []str
 
 	switch jdkSrc {
 	case jdk.FromJavaHome:
-		fmt.Printf("JDK is detected in JAVA_HOME=%s\n", jdkPath)
+		fmt.Printf(i18n.Get(i18n.JDKDetectedJavaHome, jdkPath))
 		cli.PrintCommands(projectDir, true, "")
 	case jdk.FromConfig:
-		fmt.Printf("Detected JDK %s\n", jdkPath)
+		fmt.Printf(i18n.Get(i18n.JdkDetected, jdkPath))
 		cli.PrintCommands(projectDir, false, jdkPath)
 	case jdk.Locally:
-		fmt.Printf("JDK found locally %s\n", jdkPath)
+		fmt.Printf(i18n.Get(i18n.JdkFoundLocally, jdkPath))
 		cli.PrintCommands(projectDir, false, jdkPath)
 	case jdk.Downloaded:
 		if err != nil {

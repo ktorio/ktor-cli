@@ -22,7 +22,7 @@ func ExitWithError(err error, projectDir string, hasGlobalLog bool, homeDir stri
 	reportLog := HandleAppError(projectDir, err)
 
 	if hasGlobalLog && reportLog {
-		fmt.Fprintf(os.Stderr, "You can find more information in the log: %s\n", config.LogPath(homeDir))
+		fmt.Fprintf(os.Stderr, i18n.Get(i18n.LogHint, config.LogPath(homeDir)))
 	}
 
 	if hasGlobalLog {
@@ -142,7 +142,7 @@ func HandleArgsValidation(err error) {
 	case NoArgumentForFlag:
 		var fe FlagError
 		errors.As(e.Err, &fe)
-		fmt.Fprintf(os.Stderr, "Flag %s requires an argument\n", fe.Flag)
+		fmt.Fprintf(os.Stderr, i18n.Get(i18n.FlagRequiresArgument, fe.Flag))
 	default:
 		// do nothing
 	}

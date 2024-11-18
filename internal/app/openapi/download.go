@@ -2,6 +2,7 @@ package openapi
 
 import (
 	"github.com/ktorio/ktor-cli/internal/app"
+	"github.com/ktorio/ktor-cli/internal/app/i18n"
 	"github.com/ktorio/ktor-cli/internal/app/network"
 	"github.com/ktorio/ktor-cli/internal/app/progress"
 	"github.com/ktorio/ktor-cli/internal/app/utils"
@@ -24,7 +25,7 @@ func DownloadJar(client *http.Client, jarUrl string) ([]byte, error) {
 
 	reader, progressBar := progress.NewReader(
 		resp.Body,
-		"Downloading OpenAPI utility... ",
+		i18n.Get(i18n.DownloadingOpenApiJarProgress),
 		utils.ContentLength(resp),
 		true,
 	)

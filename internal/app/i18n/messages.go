@@ -4,6 +4,7 @@ type Message int
 
 const (
 	CannotDetermineHomeDir Message = iota
+	CannotDetermineProjectDirOfProject
 	CannotDetermineProjectDir
 	ErrorInitLogFile
 	VersionInfo
@@ -72,5 +73,16 @@ const (
 	DownloadOpenAPIJarError
 	OpenApiExecuteJarError
 	ExternalCommandError
+	OpenApiSpecNotExist
+	CreateOpenApiJar
+	ExecutingCommand
+	FlagRequiresArgument
+	DownloadingOpenApiJarProgress
+	NewCommandDescr
+	VersionCommandDescr
+	HelpCommandDescr
+	OpenApiCommandDescr
+	VerboseOptionDescr
+	OutputDirOptionDescr
 	ProjectCreatedIn
 )

@@ -2,6 +2,7 @@ package cli
 
 import (
 	"errors"
+	"github.com/ktorio/ktor-cli/internal/app/i18n"
 	"slices"
 	"strings"
 )
@@ -16,10 +17,10 @@ const (
 )
 
 var allCommandsSpec = map[Command]commandSpec{
-	OpenAPI:        {args: map[string]Arg{"spec.yml": {required: true}}, description: "generate Ktor project by given OpenAPI specification"},
-	NewCommand:     {args: map[string]Arg{"project-name": {required: false}}, description: "generate new Ktor project. If the project name is omitted, an interactive mode will be invoked."},
-	VersionCommand: {args: map[string]Arg{}, description: "print version"},
-	HelpCommand:    {args: map[string]Arg{}, description: "show the help"},
+	OpenAPI:        {args: map[string]Arg{"spec.yml": {required: true}}, description: i18n.Get(i18n.OpenApiCommandDescr)},
+	NewCommand:     {args: map[string]Arg{"project-name": {required: false}}, description: i18n.Get(i18n.NewCommandDescr)},
+	VersionCommand: {args: map[string]Arg{}, description: i18n.Get(i18n.VersionCommandDescr)},
+	HelpCommand:    {args: map[string]Arg{}, description: i18n.Get(i18n.HelpCommandDescr)},
 }
 
 type Arg struct {
@@ -41,14 +42,14 @@ const (
 )
 
 var allFlagsSpec = map[Flag]flagSpec{
-	Version: {aliases: []string{"-V", "--version"}, description: "print version"},
-	Help:    {aliases: []string{"-h", "--help"}, description: "show the help"},
-	Verbose: {aliases: []string{"-v", "--verbose"}, description: "enable verbose mode"},
+	Version: {aliases: []string{"-V", "--version"}, description: i18n.Get(i18n.VersionCommandDescr)},
+	Help:    {aliases: []string{"-h", "--help"}, description: i18n.Get(i18n.HelpCommandDescr)},
+	Verbose: {aliases: []string{"-v", "--verbose"}, description: i18n.Get(i18n.VerboseOptionDescr)},
 }
 
 var commandFlagSpec = map[Command]map[Flag]flagSpec{
 	OpenAPI: {
-		OutDir: {aliases: []string{"-o", "--output"}, description: "output directory", hasArg: true},
+		OutDir: {aliases: []string{"-o", "--output"}, description: i18n.Get(i18n.OutputDirOptionDescr), hasArg: true},
 	},
 }
 
