@@ -77,7 +77,7 @@ func Run(client *http.Client, ctx context.Context) (result model.Result, err err
 			plugins, err = network.FetchPlugins(client, settings.KtorVersion.DefaultId, ctx)
 
 			if err != nil {
-				mdl.ErrorLine = i18n.Get(i18n.UnableFetchPluginsError)
+				mdl.SetError(model.UnableFetchPluginsError, i18n.Get(i18n.UnableFetchPluginsError))
 				mdl.PluginsFetched = true
 				continue
 			}
@@ -119,10 +119,7 @@ func processEvent(ev tcell.Event, drawState *draw.State, mdl *model.State, resul
 	case *tcell.EventResize:
 		if !firstResize {
 			firstResize = true
-			break
 		}
-
-		mdl.ErrorLine = ""
 	case *tcell.EventKey:
 		mod, key := ev.Modifiers(), ev.Key()
 
@@ -267,10 +264,12 @@ func processEvent(ev tcell.Event, drawState *draw.State, mdl *model.State, resul
 
 			switch drawState.ActiveElement {
 			case draw.ProjectNameInput:
+				drawState.LocationShown = true
+
 				if !drawState.LocationShown {
 					drawState.LocationShown = true
 					model.InitProjectDir(mdl)
-					model.CheckProjectSettingsAndUpdateError(mdl)
+					model.CheckProjectSettings(mdl)
 				}
 			case draw.LocationInput:
 				drawState.PluginsShown = true
@@ -285,7 +284,7 @@ func processEvent(ev tcell.Event, drawState *draw.State, mdl *model.State, resul
 				if !drawState.LocationShown {
 					drawState.LocationShown = true
 					model.InitProjectDir(mdl)
-					model.CheckProjectSettingsAndUpdateError(mdl)
+					model.CheckProjectSettings(mdl)
 				}
 			case draw.LocationInput:
 				drawState.PluginsShown = true
@@ -309,7 +308,7 @@ func generateProject(result *model.Result, mdl *model.State) bool {
 		result.Plugins = append(result.Plugins, id)
 	}
 
-	if errs := model.CheckProjectSettings(mdl); len(errs) == 0 {
+	if hasError := model.CheckProjectSettings(mdl); !hasError {
 		mdl.Running = false
 		return true
 	}
@@ -358,7 +357,7 @@ func onInputChanged(drawState *draw.State, mdl *model.State, input string) {
 		return
 	}
 
-	model.CheckProjectSettingsAndUpdateError(mdl)
+	model.CheckProjectSettings(mdl)
 }
 
 func toggleSelectedPlugin(drawState *draw.State, mdl *model.State) {

@@ -6,7 +6,6 @@ import (
 	"github.com/ktorio/ktor-cli/internal/app/network"
 	"os"
 	"path/filepath"
-	"strings"
 	"unicode"
 )
 
@@ -16,7 +15,7 @@ type IdSet map[string]struct{}
 
 type State struct {
 	Running            bool
-	ErrorLine          string
+	errorMap           map[ErrorKind]string
 	StatusLine         string
 	Search             string
 	PluginsFetched     bool
@@ -44,6 +43,7 @@ func NewState() *State {
 		PluginsByGroup:     make(map[string][]network.Plugin),
 		IndirectPlugins:    make(map[string]IdSet),
 		AddedPlugins:       make(IdSet),
+		errorMap:           make(map[ErrorKind]string),
 		ShouldFetchPlugins: true,
 	}
 }
@@ -93,37 +93,40 @@ func DeleteChar(input string, pos int) string {
 	return string(result)
 }
 
-func CheckProjectSettings(mdl *State) (errs []string) {
+func CheckProjectSettings(mdl *State) bool {
+	mdl.RemoveErrors(ProjectDirNotEmptyError, DirNotExistError, ProjectDirTooLongError, ProjectNameEmptyError, ProjectNameAllowedChars)
+	hasError := false
+
 	if len(mdl.ProjectName) == 0 {
-		errs = append(errs, "Project name is required")
+		hasError = true
+		mdl.SetError(ProjectNameEmptyError, i18n.Get(i18n.ProjectNameRequired))
 	}
 
 	if !IsDirEmptyOrAbsent(mdl.GetProjectPath()) {
-		errs = append(errs, fmt.Sprintf(i18n.Get(i18n.DirNotEmptyError, mdl.GetProjectPath())))
+		hasError = true
+		mdl.SetError(ProjectDirNotEmptyError, fmt.Sprintf(i18n.Get(i18n.DirNotEmptyError, mdl.GetProjectPath())))
 	}
 
 	if ok, p := HasNonExistentDirsInPath(mdl.GetProjectPath()); ok {
-		errs = append(errs, fmt.Sprintf(i18n.Get(i18n.DirNotExist, p)))
+		hasError = true
+		mdl.SetError(DirNotExistError, fmt.Sprintf(i18n.Get(i18n.DirNotExist, p)))
 	}
 
 	if len(filepath.Base(mdl.GetProjectPath())) > maxFilenameLen {
-		errs = append(errs, i18n.Get(i18n.ProjectDirLong))
+		hasError = true
+		mdl.SetError(ProjectDirTooLongError, i18n.Get(i18n.ProjectDirLong))
 	}
 
 	for _, r := range mdl.ProjectName {
 		isLatin := (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z')
 		if !isLatin && !unicode.IsDigit(r) && r != '.' && r != '_' && r != '-' {
-			errs = append(errs, "Only Latin characters, digits, '_', '-' and '.' are allowed for the project name")
+			hasError = true
+			mdl.SetError(ProjectNameAllowedChars, i18n.Get(i18n.ProjectNameAllowedChars))
 			break
 		}
 	}
 
-	return
-}
-
-func CheckProjectSettingsAndUpdateError(mdl *State) {
-	errs := CheckProjectSettings(mdl)
-	mdl.ErrorLine = strings.Join(errs, "; ")
+	return hasError
 }
 
 func InitProjectDir(mdl *State) {
