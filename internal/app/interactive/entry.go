@@ -269,7 +269,7 @@ func processEvent(ev tcell.Event, drawState *draw.State, mdl *model.State, resul
 				if !drawState.LocationShown {
 					drawState.LocationShown = true
 					model.InitProjectDir(mdl)
-					model.CheckProjectDir(mdl)
+					model.CheckProjectSettings(mdl)
 				}
 			case draw.LocationInput:
 				drawState.PluginsShown = true
@@ -284,7 +284,7 @@ func processEvent(ev tcell.Event, drawState *draw.State, mdl *model.State, resul
 				if !drawState.LocationShown {
 					drawState.LocationShown = true
 					model.InitProjectDir(mdl)
-					model.CheckProjectDir(mdl)
+					model.CheckProjectSettings(mdl)
 				}
 			case draw.LocationInput:
 				drawState.PluginsShown = true
@@ -308,7 +308,7 @@ func generateProject(result *model.Result, mdl *model.State) bool {
 		result.Plugins = append(result.Plugins, id)
 	}
 
-	if hasError := model.CheckProjectDir(mdl); !hasError {
+	if hasError := model.CheckProjectSettings(mdl); !hasError {
 		mdl.Running = false
 		return true
 	}
@@ -357,7 +357,7 @@ func onInputChanged(drawState *draw.State, mdl *model.State, input string) {
 		return
 	}
 
-	model.CheckProjectDir(mdl)
+	model.CheckProjectSettings(mdl)
 }
 
 func toggleSelectedPlugin(drawState *draw.State, mdl *model.State) {

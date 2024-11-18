@@ -54,8 +54,8 @@ var en = map[Message]string{
 	SearchPluginsCaption:              "Search for plugins:",
 	CreateProjectButton:               "CREATE PROJECT (CTRL+G)",
 	NoPluginsFound:                    "No plugins found for the search query.",
-	DirNotEmptyError:                  "Directory %s is not empty.",
-	DirNotExist:                       "Directory %s does not exist.",
+	DirNotEmptyError:                  "Directory %s is not empty",
+	DirNotExist:                       "Directory %s does not exist",
 	ProjectDirLong:                    "Project directory name is too long.",
 	DownloadingJdk:                    "Downloading %s from %s...\n",
 	DownloadingJdkProgress:            "Downloading JDK... ",
@@ -65,4 +65,6 @@ var en = map[Message]string{
 	UnableFetchPluginsError:           "Failed to fetch plugins from the generation server. Restart the app.",
 	FetchingJdk:                       "Fetching %s...\n",
 	DownloadingProjectArchiveProgress: "Downloading project archive... ",
+	ProjectNameRequired:               "Project name is empty",
+	ProjectNameAllowedChars:           "Only Latin characters, digits, '_', '-' and '.' are allowed for the project name",
 }

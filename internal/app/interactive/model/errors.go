@@ -13,6 +13,8 @@ const (
 	ProjectDirNotEmptyError
 	DirNotExistError
 	ProjectDirTooLongError
+	ProjectNameEmptyError
+	ProjectNameAllowedChars
 )
 
 func (mdl *State) SetError(k ErrorKind, s string) {

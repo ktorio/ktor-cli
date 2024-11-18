@@ -6,7 +6,6 @@ import (
 	"github.com/ktorio/ktor-cli/internal/app/network"
 	"os"
 	"path/filepath"
-	"strings"
 	"unicode"
 )
 
@@ -95,12 +94,12 @@ func DeleteChar(input string, pos int) string {
 }
 
 func CheckProjectSettings(mdl *State) bool {
-	mdl.RemoveErrors(ProjectDirNotEmptyError, DirNotExistError, ProjectDirTooLongError)
+	mdl.RemoveErrors(ProjectDirNotEmptyError, DirNotExistError, ProjectDirTooLongError, ProjectNameEmptyError, ProjectNameAllowedChars)
 	hasError := false
 
 	if len(mdl.ProjectName) == 0 {
 		hasError = true
-		errs = append(errs, "Project name is required")
+		mdl.SetError(ProjectNameEmptyError, i18n.Get(i18n.ProjectNameRequired))
 	}
 
 	if !IsDirEmptyOrAbsent(mdl.GetProjectPath()) {
@@ -122,7 +121,7 @@ func CheckProjectSettings(mdl *State) bool {
 		isLatin := (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z')
 		if !isLatin && !unicode.IsDigit(r) && r != '.' && r != '_' && r != '-' {
 			hasError = true
-			errs = append(errs, "Only Latin characters, digits, '_', '-' and '.' are allowed for the project name")
+			mdl.SetError(ProjectNameAllowedChars, i18n.Get(i18n.ProjectNameAllowedChars))
 			break
 		}
 	}

@@ -67,4 +67,6 @@ const (
 	UnableFetchPluginsError
 	FetchingJdk
 	DownloadingProjectArchiveProgress
+	ProjectNameRequired
+	ProjectNameAllowedChars
 )
