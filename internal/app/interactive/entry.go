@@ -2,10 +2,8 @@ package interactive
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"github.com/gdamore/tcell/v2"
-	"github.com/ktorio/ktor-cli/internal/app"
 	"github.com/ktorio/ktor-cli/internal/app/i18n"
 	"github.com/ktorio/ktor-cli/internal/app/interactive/draw"
 	"github.com/ktorio/ktor-cli/internal/app/interactive/model"
@@ -31,10 +29,10 @@ func Run(client *http.Client, ctx context.Context) (result model.Result, err err
 	model.InitProjectDir(mdl)
 
 	if !model.IsDirEmptyOrAbsent(mdl.GetProjectPath()) {
-		n, ok := model.FindVacantProjectName(mdl)
+		n, err := model.FindVacantProjectName(mdl)
 
-		if !ok {
-			return result, &app.Error{Err: errors.New("cannot find vacant project name"), Kind: app.UnknownError}
+		if err != nil {
+			return result, err
 		}
 
 		mdl.ProjectName = n
