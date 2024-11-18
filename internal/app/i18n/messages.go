@@ -18,7 +18,7 @@ const (
 	GenServerTimeoutError
 	NetworkError
 	InternalError
-	ProjectDirExist
+	ProjectDirExistAndNotEmpty
 	NoPermsCreateProjectDir
 	ProjectExtractError
 	JdkExtractError
@@ -69,5 +69,8 @@ const (
 	DownloadingProjectArchiveProgress
 	ProjectNameRequired
 	ProjectNameAllowedChars
+	DownloadOpenAPIJarError
+	OpenApiExecuteJarError
+	ExternalCommandError
 	ProjectCreatedIn
 )

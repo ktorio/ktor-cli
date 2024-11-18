@@ -12,7 +12,6 @@ import (
 	"os"
 	"runtime"
 	"strings"
-	"syscall"
 )
 
 func ExitWithError(err error, projectDir string, hasGlobalLog bool, homeDir string) {
@@ -48,13 +47,12 @@ func HandleAppError(projectDir string, err error) (reportLog bool) {
 			fmt.Fprintf(os.Stderr, i18n.Get(i18n.GenServerTimeoutError))
 		case app.NetworkError:
 			fmt.Fprintf(os.Stderr, i18n.Get(i18n.NetworkError))
-			fmt.Fprintf(os.Stderr, "Unexpected network error occurred. Please check your Internet connection.\n")
 		case app.OpenApiDownloadJarError:
-			fmt.Fprintf(os.Stderr, "Unexpected error occurred while downloading OpenAPI utility. Please try again later.\n")
+			fmt.Fprintf(os.Stderr, i18n.Get(i18n.DownloadOpenAPIJarError))
 		case app.OpenApiExecuteJarError:
-			fmt.Fprintf(os.Stderr, "Unable to execute OpenAPI utility.\n")
+			fmt.Fprintf(os.Stderr, i18n.Get(i18n.OpenApiExecuteJarError))
 		case app.ExternalCommandError:
-			fmt.Fprintf(os.Stderr, "Unexpected error occcured while executing an external command.\n")
+			fmt.Fprintf(os.Stderr, i18n.Get(i18n.ExternalCommandError))
 		case app.InternalError:
 			fmt.Fprintf(os.Stderr, i18n.Get(i18n.InternalError))
 		case app.ProjectDirError:
@@ -64,9 +62,9 @@ func HandleAppError(projectDir string, err error) (reportLog bool) {
 
 			switch {
 			case errors.Is(pe.Err, os.ErrExist):
-				fmt.Fprintf(os.Stderr, i18n.Get(i18n.ProjectDirExist, pe.Path)) // "The project directory %s already exists and not empty.\n"
+				fmt.Fprintf(os.Stderr, i18n.Get(i18n.ProjectDirExistAndNotEmpty, pe.Path))
 			case errors.Is(pe.Err, os.ErrPermission):
-				fmt.Fprintf(os.Stderr, i18n.Get(i18n.NoPermsCreateProjectDir, pe.Path)) // "Not enough permissions to create project directory %s.\n", pe.Path)
+				fmt.Fprintf(os.Stderr, i18n.Get(i18n.NoPermsCreateProjectDir, pe.Path))
 			}
 		case app.ProjectExtractError:
 			fmt.Fprintf(os.Stderr, i18n.Get(i18n.ProjectExtractError, projectDir))
