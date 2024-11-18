@@ -1,10 +1,5 @@
 package model
 
-import (
-	"slices"
-	"strings"
-)
-
 type ErrorKind int
 
 const (
@@ -14,7 +9,7 @@ const (
 	DirNotExistError
 	ProjectDirTooLongError
 	ProjectNameEmptyError
-	ProjectNameAllowedChars
+	ProjectNameAllowedCharsError
 )
 
 func (mdl *State) SetError(k ErrorKind, s string) {
@@ -27,13 +22,12 @@ func (mdl *State) RemoveErrors(ks ...ErrorKind) {
 	}
 }
 
-func (mdl *State) FormatErrors() string {
+func (mdl *State) GetErrors(ks ...ErrorKind) []string {
 	var errs []string
-	for _, e := range mdl.errorMap {
-		errs = append(errs, e)
+	for _, k := range ks {
+		if e, ok := mdl.errorMap[k]; ok {
+			errs = append(errs, e)
+		}
 	}
-
-	slices.Sort(errs)
-
-	return strings.Join(errs, "; ")
+	return errs
 }

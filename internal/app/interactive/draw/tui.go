@@ -7,7 +7,6 @@ import (
 	"github.com/ktorio/ktor-cli/internal/app/interactive/model"
 	"github.com/ktorio/ktor-cli/internal/app/network"
 	"strings"
-	"unicode"
 )
 
 var scrWidth = 0
@@ -31,24 +30,19 @@ func Tui(scr tcell.Screen, st *State, mdl *model.State) {
 	posX := padding
 	posY := padding
 
-	errStr := mdl.FormatErrors()
-	errX := width - len(errStr) - padding
-	if errX < width/2 {
-		errX = width / 2
-	}
-	errY := height - 4
-	if _, y := multilinePos(errX, width, errStr); y > 0 {
-		errY -= y
-	}
-
-	drawMultilineText(scr, errX, errY, width, padding, DefaultStyle.Foreground(errorColor), errStr)
 	drawInlineText(scr, width-len(mdl.StatusLine)-1, height-2, DefaultStyle.Foreground(statusColor), mdl.StatusLine)
 
 	posX, posY = drawInlineText(scr, posX, posY, strongStyle, i18n.Get(i18n.ProjectNameCaption))
 	posX++
+	projectInputStartX := posX
 
 	st.InputLens[ProjectNameInput] = width - posX - padding
-	posX, posY = drawInput(scr, st, posX, posY, mdl.ProjectName, ProjectNameInput)
+	posX, posY = drawInput(scr, st, projectInputStartX, posY, mdl.ProjectName, ProjectNameInput)
+
+	if errs := mdl.GetErrors(model.ProjectNameEmptyError, model.ProjectNameAllowedCharsError); len(errs) > 0 {
+		drawInlineTextEllipsis(scr, projectInputStartX, posY+1, width, padding, errorStyle, strings.Join(errs, ". "))
+		posY++
+	}
 
 	if !st.LocationShown {
 		return
@@ -63,7 +57,12 @@ func Tui(scr tcell.Screen, st *State, mdl *model.State) {
 	drawInput(scr, st, posX, posY, mdl.ProjectDir, LocationInput)
 
 	posY++
-	drawInlineText(scr, posX, posY, subTextStyle, fmt.Sprintf("Project will be created in: %s", mdl.GetProjectPath()))
+	drawInlineTextEllipsis(scr, posX, posY, width, padding, subTextStyle, fmt.Sprintf(i18n.Get(i18n.ProjectCreatedIn, mdl.GetProjectPath())))
+
+	if errs := mdl.GetErrors(model.ProjectDirNotEmptyError, model.DirNotExistError, model.ProjectDirTooLongError); len(errs) > 0 {
+		drawInlineTextEllipsis(scr, posX, posY+1, width, padding, errorStyle, strings.Join(errs, ". "))
+		posY++
+	}
 
 	if !st.PluginsShown {
 		return
@@ -71,6 +70,12 @@ func Tui(scr tcell.Screen, st *State, mdl *model.State) {
 
 	posY += 2
 	posX = padding
+
+	if errs := mdl.GetErrors(model.UnableFetchPluginsError); len(errs) > 0 {
+		drawInlineTextEllipsis(scr, posX, posY, width, padding, errorStyle, strings.Join(errs, ". "))
+		return
+	}
+
 	posX, posY = drawInlineText(scr, posX, posY, strongStyle, i18n.Get(i18n.SearchPluginsCaption))
 	posX++
 	st.InputLens[SearchInput] = width - posX - padding
@@ -147,7 +152,9 @@ func Tui(scr tcell.Screen, st *State, mdl *model.State) {
 		count := getVisiblePluginsCount(posY, height, plugins[off:], off)
 
 		if count == 0 {
+			msg := fmt.Sprintf(i18n.Get(i18n.TermHeightSmall, height))
 			mdl.SetError(model.TerminalHeightError, fmt.Sprintf(i18n.Get(i18n.TermHeightSmall, height)))
+			drawInlineTextEllipsis(scr, padding, posY, width, padding, errorStyle, msg)
 			return
 		} else {
 			mdl.RemoveErrors(model.TerminalHeightError)
@@ -253,42 +260,6 @@ func Tui(scr tcell.Screen, st *State, mdl *model.State) {
 	}
 }
 
-func multilinePos(x, width int, text string) (int, int) {
-	startX := x
-	y := 0
-	for range []rune(text) {
-		x++
-
-		if x >= width {
-			x = startX
-			y++
-		}
-	}
-
-	return x, y
-}
-
-func drawMultilineText(scr tcell.Screen, x, y, width, padding int, style tcell.Style, text string) {
-	startX := x
-	spaceThresh := 10
-	textLen := len(text)
-	for _, r := range []rune(text) {
-		if unicode.IsSpace(r) && (x+spaceThresh >= width-padding) && x-textLen-padding >= width {
-			x = startX
-			y++
-			continue
-		}
-
-		if x >= width-padding {
-			x = startX
-			y++
-		}
-
-		scr.SetContent(x, y, r, nil, style)
-		x++
-	}
-}
-
 func drawInlineText(scr tcell.Screen, x, y int, style tcell.Style, text string) (int, int) {
 	for _, r := range []rune(text) {
 		scr.SetContent(x, y, r, nil, style)
@@ -296,6 +267,31 @@ func drawInlineText(scr tcell.Screen, x, y int, style tcell.Style, text string) 
 	}
 
 	return x, y
+}
+
+func drawInlineTextEllipsis(scr tcell.Screen, x, y, width, padding int, style tcell.Style, text string) {
+	c := 0
+	complete := true
+	for i, r := range []rune(text) {
+		c = i
+
+		ellipsisLen := len("...")
+
+		if i+x+len(text[i+1:])+padding < width {
+			ellipsisLen = 0
+		}
+
+		if i+x+padding+ellipsisLen >= width {
+			complete = false
+			break
+		}
+
+		scr.SetContent(i+x, y, r, nil, style)
+	}
+
+	if !complete {
+		drawInlineText(scr, c+x, y, style, "...")
+	}
 }
 
 func drawInput(scr tcell.Screen, st *State, posX, posY int, input string, el Element) (int, int) {

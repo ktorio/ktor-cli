@@ -94,7 +94,7 @@ func DeleteChar(input string, pos int) string {
 }
 
 func CheckProjectSettings(mdl *State) bool {
-	mdl.RemoveErrors(ProjectDirNotEmptyError, DirNotExistError, ProjectDirTooLongError, ProjectNameEmptyError, ProjectNameAllowedChars)
+	mdl.RemoveErrors(ProjectDirNotEmptyError, DirNotExistError, ProjectDirTooLongError, ProjectNameEmptyError, ProjectNameAllowedCharsError)
 	hasError := false
 
 	if len(mdl.ProjectName) == 0 {
@@ -121,7 +121,7 @@ func CheckProjectSettings(mdl *State) bool {
 		isLatin := (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z')
 		if !isLatin && !unicode.IsDigit(r) && r != '.' && r != '_' && r != '-' {
 			hasError = true
-			mdl.SetError(ProjectNameAllowedChars, i18n.Get(i18n.ProjectNameAllowedChars))
+			mdl.SetError(ProjectNameAllowedCharsError, i18n.Get(i18n.ProjectNameAllowedChars))
 			break
 		}
 	}
