@@ -9,6 +9,7 @@ import (
 	"github.com/ktorio/ktor-cli/internal/app/config"
 	"github.com/ktorio/ktor-cli/internal/app/i18n"
 	"github.com/ktorio/ktor-cli/internal/app/interactive"
+	"github.com/ktorio/ktor-cli/internal/app/ktor"
 	"github.com/ktorio/ktor-cli/internal/app/utils"
 	"io"
 	"log"
@@ -61,12 +62,26 @@ func main() {
 
 	switch args.Command {
 	case cli.AddCommand:
+		log.SetOutput(os.Stderr)
 		mod := args.CommandArgs[0]
 		projectDir := "."
 
+		mc, dist, ok := ktor.FindModule(mod)
+
+		if !ok {
+			log.Fatal(fmt.Sprintf("Cannot find Ktor module %s", mod))
+		}
+
+		if dist > 0 {
+			log.Fatal(fmt.Sprintf("Did you mean module %s?\n", mc.Artifact))
+		}
+
+		fmt.Println(dist)
+		fmt.Printf("%#v", mc)
+
+		// TODO: Use the Maven coords
 		err = command.Add(mod, projectDir)
 
-		log.SetOutput(os.Stderr)
 		if err != nil {
 			log.Fatal(err)
 		}
