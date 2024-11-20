@@ -1,0 +1,1 @@
+ktor-serialization-kotlinx-json:3.0.0

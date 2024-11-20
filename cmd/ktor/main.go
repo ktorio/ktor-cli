@@ -10,7 +10,9 @@ import (
 	"github.com/ktorio/ktor-cli/internal/app/config"
 	"github.com/ktorio/ktor-cli/internal/app/i18n"
 	"github.com/ktorio/ktor-cli/internal/app/interactive"
+	"github.com/ktorio/ktor-cli/internal/app/ktor"
 	"github.com/ktorio/ktor-cli/internal/app/utils"
+	"golang.org/x/exp/slices"
 	"io"
 	"log"
 	"net"
@@ -25,6 +27,14 @@ import (
 var Version string
 
 func main() {
+	defer func() {
+		if e := recover(); e != nil {
+			fmt.Printf("Unrecoverable error occurred: %s\n", e)
+			fmt.Println("This looks like a bug so please file an issue at https://youtrack.jetbrains.com/newIssue?project=ktor.")
+			fmt.Printf("Please put the following stack trace into the issue's description: \n\n%s", string(debug.Stack()))
+		}
+	}()
+
 	args, err := cli.ProcessArgs(cli.ParseArgs(os.Args))
 
 	if err != nil {
@@ -71,10 +81,57 @@ func main() {
 	}
 
 	switch args.Command {
+	case cli.AddCommand:
+		log.SetOutput(os.Stderr)
+		modules := args.CommandArgs
+		projectDir := "."
+
+		for _, mod := range modules {
+			mc, modResult, candidates := ktor.FindModule(mod)
+
+			fmt.Printf("Changes for module '%s':\n", mod)
+
+			switch modResult {
+			case ktor.ModuleNotFound:
+				log.Fatal(fmt.Sprintf("Cannot recongnize Ktor module %s", mod))
+			case ktor.ModuleAmbiguity:
+				var names []string
+				for _, c := range candidates {
+					if !slices.Contains(names, c.Artifact) {
+						names = append(names, c.Artifact)
+					}
+				}
+				log.Fatal(fmt.Sprintf("Module ambiguity. Candidates: %s", strings.Join(names, ", ")))
+			case ktor.AlikeModuleFound:
+				log.Fatal(fmt.Sprintf("Cannot recognize the '%s' module.\nDid you mean '%s'?\n", mod, mc.Artifact))
+			case ktor.ModuleFound:
+				depPlugins := ktor.DependentPlugins(mc)
+				var serPlugin *ktor.GradlePlugin
+				if len(depPlugins) > 0 {
+					serPlugin = &depPlugins[0]
+				}
+
+				err = command.Add(mc, projectDir, serPlugin)
+
+				if err != nil {
+					log.Fatal(err)
+				}
+			}
+		}
 	case cli.VersionCommand:
 		fmt.Printf(i18n.Get(i18n.VersionInfo, getVersion()))
 	case cli.HelpCommand:
 		cli.WriteUsage(os.Stdout)
+	case cli.CompletionCommand:
+		log.SetOutput(os.Stderr)
+		shell := args.CommandArgs[0]
+		s, err := command.Complete(shell)
+
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		fmt.Print(s)
 	case cli.NewCommand:
 		if len(args.CommandArgs) > 0 {
 			projectName := utils.CleanProjectName(filepath.Base(args.CommandArgs[0]))

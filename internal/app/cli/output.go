@@ -136,7 +136,7 @@ func HandleArgsValidation(err error) {
 		var ce CommandError
 		errors.As(e.Err, &ce)
 
-		if spec, ok := allCommandsSpec[ce.Command]; ok {
+		if spec, ok := AllCommandsSpec[ce.Command]; ok {
 			fmt.Fprintf(os.Stderr, i18n.Get(i18n.CommandArgumentsError, ce.Command, len(spec.args), formatArgs(spec.args)))
 		}
 	case NoArgumentForFlag:
