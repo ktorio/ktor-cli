@@ -60,6 +60,16 @@ func main() {
 	ctx := context.WithValue(context.Background(), "user-agent", fmt.Sprintf("KtorCLI/%s", getVersion()))
 
 	switch args.Command {
+	case cli.AddCommand:
+		mod := args.CommandArgs[0]
+		projectDir := "."
+
+		err = command.Add(mod, projectDir)
+
+		log.SetOutput(os.Stderr)
+		if err != nil {
+			log.Fatal(err)
+		}
 	case cli.VersionCommand:
 		fmt.Printf(i18n.Get(i18n.VersionInfo, getVersion()))
 	case cli.HelpCommand:

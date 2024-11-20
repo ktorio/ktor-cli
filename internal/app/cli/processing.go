@@ -11,10 +11,12 @@ const (
 	NewCommand     Command = "new"
 	VersionCommand Command = "version"
 	HelpCommand    Command = "help"
+	AddCommand     Command = "add"
 )
 
 var allCommandsSpec = map[Command]commandSpec{
 	NewCommand:     {args: map[string]Arg{"project-name": {required: false}}, description: "generate new Ktor project. If the project name is omitted run an interactive mode."},
+	AddCommand:     {args: map[string]Arg{"module": {required: true}}, description: "add Ktor module to a project"},
 	VersionCommand: {args: map[string]Arg{}, description: "print version"},
 	HelpCommand:    {args: map[string]Arg{}, description: "show the help"},
 }
