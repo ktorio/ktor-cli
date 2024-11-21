@@ -3,6 +3,7 @@ package ktor
 import (
 	"fmt"
 	"github.com/agnivade/levenshtein"
+	"slices"
 	"strings"
 )
 
@@ -60,10 +61,15 @@ var defs = map[string]string{
 	"velocity":            "Velocity",
 	"webjars":             "Webjars",
 	"websockets":          "Websockets",
-	"test-host":           "testApplication",
+	//TODO: testImplementation: "test-host":           "testApplication",
+	"serialization-kotlinx-cbor":     "Cbor",
+	"serialization-kotlinx-json":     "Json",
+	"serialization-kotlinx-protobuf": "ProtoBuf",
+	"serialization-kotlinx-xml":      "Xml",
+	"serialization-gson":             "Gson",
+	"serialization-jackson":          "Jackson",
+	"websocket-serialization":        "sendSerialized",
 }
-
-// TODO: Add shared dependencies
 
 const ktorGroup = "io.ktor"
 
@@ -130,18 +136,33 @@ func FindModule(name string) (MavenCoords, int, bool) {
 	return MavenCoords{}, 0, false
 }
 
+type mcCandidate struct {
+	mc   MavenCoords
+	dist int
+}
+
 func findIn(mp map[string]MavenCoords, name string, maxDistance int) (MavenCoords, int, bool) {
 	if mc, ok := mp[name]; ok {
 		return mc, 0, true
 	}
 
+	var candidates []mcCandidate
+
 	for m, mc := range mp {
-		distance := levenshtein.ComputeDistance(strings.ToLower(name), m)
+		distance := levenshtein.ComputeDistance(strings.ToLower(name), strings.ToLower(m))
 
 		if distance <= maxDistance {
-			return mc, distance, true
+			candidates = append(candidates, mcCandidate{mc: mc, dist: distance})
 		}
 	}
 
-	return MavenCoords{}, 0, false
+	if len(candidates) == 0 {
+		return MavenCoords{}, 0, false
+	}
+
+	cd := slices.MinFunc(candidates, func(a, b mcCandidate) int {
+		return a.dist - b.dist
+	})
+
+	return cd.mc, cd.dist, true
 }

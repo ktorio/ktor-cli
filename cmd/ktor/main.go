@@ -76,6 +76,7 @@ func main() {
 			log.Fatal(fmt.Sprintf("Cannot recognize the '%s' module.\nDid you mean '%s'?\n", mod, mc.Artifact))
 		}
 
+		fmt.Println(mc, dist, ok)
 		err = command.Add(mc, projectDir)
 
 		if err != nil {
