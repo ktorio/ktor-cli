@@ -80,6 +80,6 @@ var en = map[Message]string{
 	NewCommandDescr:                    "Generate a new Ktor project. If a project name is omitted, the interactive mode will be invoked.",
 	VersionCommandDescr:                "print version",
 	HelpCommandDescr:                   "show the help",
-	VerboseOptionDescr:                 "enable verbose mode",
+	VerboseOptionDescr:                 "Enable verbose mode.",
 	OutputDirOptionDescr:               "project output directory",
 }
