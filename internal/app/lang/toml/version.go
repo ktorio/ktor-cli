@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/antlr4-go/antlr/v4"
 	"github.com/ktorio/ktor-cli/internal/app/ktor"
+	"github.com/ktorio/ktor-cli/internal/app/lang"
 	parser "github.com/ktorio/ktor-cli/internal/app/lang/parsers/toml"
 	"strings"
 )
@@ -23,27 +24,87 @@ func AddLib(versionsPath string, mc ktor.MavenCoords) (string, error) {
 	rewriter := antlr.NewTokenStreamRewriter(stream)
 
 	doc := p.Document()
-	t, ok := findTable(doc, "libraries")
+	libTable, ok := findTable(doc, "libraries")
 
 	if !ok {
 		return "", errors.New("unable to find the [libraries] section")
 	}
 
-	dep, vr, ok := findKtorDep(doc, t)
+	dep, vr, ok := findKtorDep(doc, libTable)
 
 	if !ok {
-		return "", errors.New("unable to find any Ktor libs")
-	}
+		entries, err := findTableEntries(doc, "versions")
 
-	indent := ""
-	for _, t := range stream.GetHiddenTokensToLeft(dep.GetStart().GetTokenIndex(), antlr.TokenHiddenChannel) {
-		indent += t.GetText()
+		if err != nil {
+			return "", err
+		}
+
+		key := ""
+		for _, e := range entries {
+			if kv := e.Key_value(); kv != nil && kv.Key() != nil && strings.HasPrefix(kv.Key().Simple_key().GetText(), "ktor") {
+				key = kv.Key().Simple_key().GetText()
+				break
+			}
+		}
+
+		if key == "" {
+			return "", errors.New("toml: cannot find Ktor version")
+		}
+
+		lib := fmt.Sprintf("%s = { module = \"%s\", version.ref = \"%s\" }", mc.Artifact, mc.String(), key)
+		rewriter.InsertAfterDefault(libTable.GetStop().GetTokenIndex(), "\n"+lang.HiddenTokensToLeft(stream, libTable.GetStop().GetTokenIndex())+lib)
+
+		return rewriter.GetTextDefault(), nil
 	}
 
 	lib := fmt.Sprintf("%s = { module = \"%s\", version.ref = %s }", mc.Artifact, mc.String(), vr)
-	rewriter.InsertAfterDefault(dep.GetStop().GetTokenIndex(), "\n"+indent+lib)
+	rewriter.InsertAfterDefault(dep.GetStop().GetTokenIndex(), "\n"+lang.HiddenTokensToLeft(stream, dep.GetStart().GetTokenIndex())+lib)
 
 	return rewriter.GetTextDefault(), nil
+}
+
+func findTableEntries(doc antlr.ParseTree, table string) ([]parser.IExpressionContext, error) {
+	tableIndex := -1
+
+	for i, ch := range doc.GetChildren() {
+		if ch.GetChildCount() == 0 {
+			continue
+		}
+
+		t, ok := ch.GetChild(0).(parser.ITableContext)
+
+		if !ok {
+			continue
+		}
+
+		if t.GetText() != fmt.Sprintf("[%s]", table) {
+			continue
+		}
+
+		tableIndex = i
+		break
+	}
+
+	if tableIndex == -1 {
+		return nil, errors.New(fmt.Sprintf("toml: unable to find the [%s] section", table))
+	}
+
+	var exprs []parser.IExpressionContext
+	for _, ch := range doc.GetChildren()[tableIndex+1:] {
+		if ch.GetChildCount() == 0 {
+			continue
+		}
+
+		if _, ok := ch.GetChild(0).(parser.ITableContext); ok { // next table
+			break
+		}
+
+		if expr, ok := ch.(parser.IExpressionContext); ok {
+			exprs = append(exprs, expr)
+		}
+	}
+
+	return exprs, nil
 }
 
 func findKtorDep(doc parser.IDocumentContext, table parser.ITableContext) (parser.IExpressionContext, string, bool) {

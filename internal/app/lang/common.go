@@ -40,6 +40,14 @@ func FindChild[T any](tree antlr.Tree) (T, bool) {
 	return zero, false
 }
 
+func HiddenTokensToLeft(stream *antlr.CommonTokenStream, tokenIndex int) string {
+	indent := ""
+	for _, t := range stream.GetHiddenTokensToLeft(tokenIndex, antlr.TokenHiddenChannel) {
+		indent += t.GetText()
+	}
+	return indent
+}
+
 func ToIndentedStringTree(tree antlr.Tree, ruleNames []string, level int) string {
 	if tree == nil {
 		return ""

@@ -1,6 +1,7 @@
 package command
 
 import (
+	"errors"
 	"github.com/ktorio/ktor-cli/internal/app/ktor"
 	"os"
 	"path/filepath"
@@ -9,7 +10,11 @@ import (
 )
 
 func TestAddProjectDependencies(t *testing.T) {
-	testDir := filepath.Join("internal", "app", "lang", "testData")
+	testDir := filepath.Join("internal", "app", "cli", "command", "testData")
+
+	if _, err := os.Stat(testDir); errors.Is(err, os.ErrNotExist) {
+		testDir = "testData"
+	}
 
 	entries, err := os.ReadDir(testDir)
 
