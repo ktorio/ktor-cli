@@ -79,7 +79,7 @@ var en = map[Message]string{
 	OpenApiCommandDescr:                "Generate a Ktor project with a given OpenAPI specification.",
 	NewCommandDescr:                    "Generate a new Ktor project. If a project name is omitted, the interactive mode will be invoked.",
 	VersionCommandDescr:                "Display the ktor CLI tool version.",
-	HelpCommandDescr:                   "show the help",
+	HelpCommandDescr:                   "Show the ktor CLI tool usage text.",
 	VerboseOptionDescr:                 "Enable verbose mode.",
 	OutputDirOptionDescr:               "Project output directory.",
 }
