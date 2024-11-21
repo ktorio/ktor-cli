@@ -62,7 +62,7 @@ var en = map[Message]string{
 	ExtractingJdkFiles:                "Extracting JDK files to %s\n",
 	ExtractingJdkProgress:             "Extracting JDK... ",
 	ByeMessage:                        "Goodbye!",
-	UnableFetchPluginsError:           "Failed to fetch plugins from the server. Please restart the app.",
+	UnableFetchPluginsError:           "Failed to fetch plugins from the server. Restart the app.",
 	FetchingJdk:                       "Fetching %s...\n",
 	DownloadingProjectArchiveProgress: "Downloading project archive... ",
 	ProjectNameRequired:               "Project name is empty",
