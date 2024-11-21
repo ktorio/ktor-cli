@@ -63,6 +63,8 @@ var defs = map[string]string{
 	"test-host":           "testApplication",
 }
 
+// TODO: Add shared dependencies
+
 const ktorGroup = "io.ktor"
 
 var modules map[string]MavenCoords

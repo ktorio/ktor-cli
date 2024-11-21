@@ -45,19 +45,16 @@ func ToIndentedStringTree(tree antlr.Tree, ruleNames []string, level int) string
 		return ""
 	}
 
-	// Indentation for the current level
 	indent := ""
 	for i := 0; i < level; i++ {
-		indent += "  " // Two spaces for each level
+		indent += "  "
 	}
 
 	switch t := tree.(type) {
 	case antlr.TerminalNode:
-		// Leaf node (token)
 		token := t.GetSymbol()
 		return fmt.Sprintf("%sTOKEN: %s\n", indent, token.GetText())
 	case antlr.RuleNode:
-		// Non-terminal node (rule)
 		ruleName := ruleNames[t.GetRuleContext().GetRuleIndex()]
 		result := fmt.Sprintf("%sRULE: %s\n", indent, ruleName)
 		for i := 0; i < t.GetChildCount(); i++ {
@@ -65,7 +62,6 @@ func ToIndentedStringTree(tree antlr.Tree, ruleNames []string, level int) string
 		}
 		return result
 	default:
-		// Generic node (unlikely)
 		return fmt.Sprintf("%sUNKNOWN NODE\n", indent)
 	}
 }
