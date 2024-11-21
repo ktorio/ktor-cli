@@ -62,9 +62,10 @@ var en = map[Message]string{
 	ExtractingJdkFiles:                "Extracting JDK files to %s\n",
 	ExtractingJdkProgress:             "Extracting JDK... ",
 	ByeMessage:                        "Goodbye!",
-	UnableFetchPluginsError:           "Failed to fetch plugins from the generation server. Restart the app.",
+	UnableFetchPluginsError:           "Failed to fetch plugins from the server. Restart the app.",
 	FetchingJdk:                       "Fetching %s...\n",
 	DownloadingProjectArchiveProgress: "Downloading project archive... ",
 	ProjectNameRequired:               "Project name is empty",
 	ProjectNameAllowedChars:           "Only Latin characters, digits, '_', '-' and '.' are allowed for the project name",
+	ProjectCreatedIn:                  "Project will be created in: %s",
 }

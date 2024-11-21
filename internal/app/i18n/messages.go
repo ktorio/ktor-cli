@@ -69,4 +69,5 @@ const (
 	DownloadingProjectArchiveProgress
 	ProjectNameRequired
 	ProjectNameAllowedChars
+	ProjectCreatedIn
 )
