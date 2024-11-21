@@ -64,7 +64,7 @@ To create a new project in the interactive mode, simply use the `new` command wi
 ktor new
 ```
 
-## Generate project from OpenAPI specification
+## Generate a project from an OpenAPI specification
 
 To generate a project in the current directory from the given [OpenAPI specification](https://swagger.io/specification/), use an `openapi` command:
 ```shell
