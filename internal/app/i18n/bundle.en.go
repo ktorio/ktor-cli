@@ -81,5 +81,5 @@ var en = map[Message]string{
 	VersionCommandDescr:                "print version",
 	HelpCommandDescr:                   "show the help",
 	VerboseOptionDescr:                 "Enable verbose mode.",
-	OutputDirOptionDescr:               "project output directory",
+	OutputDirOptionDescr:               "Project output directory.",
 }
