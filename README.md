@@ -66,7 +66,7 @@ ktor new
 
 ## Generate a project from an OpenAPI specification
 
-To generate a project in the current directory from the given [OpenAPI specification](https://swagger.io/specification/), use an `openapi` command:
+To generate a project in the current directory from a given [OpenAPI specification](https://swagger.io/specification/), use the `openapi` command:
 ```shell
 ktor openapi petstore.yaml
 ```
