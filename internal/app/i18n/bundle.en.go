@@ -76,7 +76,7 @@ var en = map[Message]string{
 	ExecutingCommand:                   "Executing command: %s\n",
 	FlagRequiresArgument:               "Flag %s requires one argument\n",
 	DownloadingOpenApiJarProgress:      "Downloading OpenAPI utility... ",
-	OpenApiCommandDescr:                "generate Ktor project by given OpenAPI specification",
+	OpenApiCommandDescr:                "Generate a Ktor project with a given OpenAPI specification.",
 	NewCommandDescr:                    "generate new Ktor project. If the project name is omitted, an interactive mode will be invoked.",
 	VersionCommandDescr:                "print version",
 	HelpCommandDescr:                   "show the help",
