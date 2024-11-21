@@ -4,11 +4,12 @@ import (
 	"errors"
 	"fmt"
 	"github.com/antlr4-go/antlr/v4"
+	"github.com/ktorio/ktor-cli/internal/app/ktor"
 	parser "github.com/ktorio/ktor-cli/internal/app/lang/parsers/toml"
 	"strings"
 )
 
-func AddLib(versionsPath, group, artifact string) (string, error) {
+func AddLib(versionsPath string, mc ktor.MavenCoords) (string, error) {
 	input, err := antlr.NewFileStream(versionsPath)
 
 	if err != nil {
@@ -39,7 +40,7 @@ func AddLib(versionsPath, group, artifact string) (string, error) {
 		indent += t.GetText()
 	}
 
-	lib := fmt.Sprintf("%s = { module = \"%s:%s\", version.ref = %s }", artifact, group, artifact, vr)
+	lib := fmt.Sprintf("%s = { module = \"%s\", version.ref = %s }", mc.Artifact, mc.String(), vr)
 	rewriter.InsertAfterDefault(dep.GetStop().GetTokenIndex(), "\n"+indent+lib)
 
 	return rewriter.GetTextDefault(), nil

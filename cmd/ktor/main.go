@@ -73,14 +73,10 @@ func main() {
 		}
 
 		if dist > 0 {
-			log.Fatal(fmt.Sprintf("Did you mean module %s?\n", mc.Artifact))
+			log.Fatal(fmt.Sprintf("Cannot recognize the '%s' module.\nDid you mean '%s'?\n", mod, mc.Artifact))
 		}
 
-		fmt.Println(dist)
-		fmt.Printf("%#v", mc)
-
-		// TODO: Use the Maven coords
-		err = command.Add(mod, projectDir)
+		err = command.Add(mc, projectDir)
 
 		if err != nil {
 			log.Fatal(err)

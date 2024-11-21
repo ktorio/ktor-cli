@@ -1,6 +1,7 @@
 package ktor
 
 import (
+	"fmt"
 	"github.com/agnivade/levenshtein"
 	"strings"
 )
@@ -93,6 +94,10 @@ func init() {
 
 type MavenCoords struct {
 	Artifact, Group string
+}
+
+func (mc *MavenCoords) String() string {
+	return fmt.Sprintf("%s:%s", mc.Group, mc.Artifact)
 }
 
 func FindModule(name string) (MavenCoords, int, bool) {

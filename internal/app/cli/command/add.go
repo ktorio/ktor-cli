@@ -5,6 +5,7 @@ import (
 	"github.com/hexops/gotextdiff"
 	"github.com/hexops/gotextdiff/myers"
 	"github.com/hexops/gotextdiff/span"
+	"github.com/ktorio/ktor-cli/internal/app/ktor"
 	"github.com/ktorio/ktor-cli/internal/app/lang/kotlin"
 	"github.com/ktorio/ktor-cli/internal/app/lang/toml"
 	"os"
@@ -26,9 +27,9 @@ func (e AddModuleError) Error() string {
 	return fmt.Sprintf("cannot add module. error #%d: %v", e.Kind, e.Err)
 }
 
-func Add(mod string, projectDir string) error {
+func Add(mc ktor.MavenCoords, projectDir string) error {
 	versionsPath := filepath.Join(projectDir, "gradle", "libs.versions.toml")
-	modified, err := toml.AddLib(versionsPath, "io.ktor", "ktor-server-"+mod)
+	modified, err := toml.AddLib(versionsPath, mc)
 
 	if err != nil {
 		return err
@@ -37,7 +38,7 @@ func Add(mod string, projectDir string) error {
 	fmt.Println(getDiff(versionsPath, modified))
 
 	buildPath := filepath.Join(projectDir, "build.gradle.kts")
-	modified, err = kotlin.AddDependency(buildPath, fmt.Sprintf("ktor-server-%s", mod))
+	modified, err = kotlin.AddDependency(buildPath, mc.Artifact)
 
 	if err != nil {
 		return err
