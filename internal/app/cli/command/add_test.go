@@ -34,7 +34,14 @@ func TestAddProjectDependencies(t *testing.T) {
 			t.Fatalf("Expected ktor-module.txt file in the %s", projDir)
 		}
 
-		files, err := addDependency(ktor.MavenCoords{Artifact: strings.TrimSpace(string(b)), Group: "io.ktor"}, projDir)
+		parts := strings.Split(strings.TrimSpace(string(b)), ":")
+		version := ""
+		artifact := parts[0]
+		if len(parts) > 1 {
+			version = parts[1]
+		}
+
+		files, err := addDependency(ktor.MavenCoords{Artifact: artifact, Group: "io.ktor", Version: version}, projDir)
 
 		if err != nil {
 			t.Fatal(err)

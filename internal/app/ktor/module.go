@@ -101,7 +101,7 @@ func init() {
 }
 
 type MavenCoords struct {
-	Artifact, Group string
+	Artifact, Group, Version string
 }
 
 func (mc *MavenCoords) String() string {

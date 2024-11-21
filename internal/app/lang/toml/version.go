@@ -27,13 +27,19 @@ func AddLib(versionsPath string, mc ktor.MavenCoords) (string, error) {
 	libTable, ok := findTable(doc, "libraries")
 
 	if !ok {
-		return "", errors.New("unable to find the [libraries] section")
+		return "", errors.New("toml: unable to find the [libraries] section")
 	}
 
 	dep, vr, ok := findKtorDep(doc, libTable)
 
 	if !ok {
-		entries, err := findTableEntries(doc, "versions")
+		versionsTable, ok := findTable(doc, "versions")
+
+		if !ok {
+			return "", errors.New("toml: unable to find the [versions] section")
+		}
+
+		entries, err := findTableEntries(doc, versionsTable)
 
 		if err != nil {
 			return "", err
@@ -48,7 +54,9 @@ func AddLib(versionsPath string, mc ktor.MavenCoords) (string, error) {
 		}
 
 		if key == "" {
-			return "", errors.New("toml: cannot find Ktor version")
+			key = "ktor"
+			v := fmt.Sprintf("%s = \"%s\"", key, mc.Version)
+			rewriter.InsertAfterDefault(versionsTable.GetStop().GetTokenIndex(), "\n"+lang.HiddenTokensToLeft(stream, versionsTable.GetStart().GetTokenIndex())+v)
 		}
 
 		lib := fmt.Sprintf("%s = { module = \"%s\", version.ref = \"%s\" }", mc.Artifact, mc.String(), key)
@@ -63,27 +71,22 @@ func AddLib(versionsPath string, mc ktor.MavenCoords) (string, error) {
 	return rewriter.GetTextDefault(), nil
 }
 
-func findTableEntries(doc antlr.ParseTree, table string) ([]parser.IExpressionContext, error) {
-	tableIndex := -1
-
-	for i, ch := range doc.GetChildren() {
-		if ch.GetChildCount() == 0 {
-			continue
-		}
-
-		t, ok := ch.GetChild(0).(parser.ITableContext)
-
-		if !ok {
-			continue
-		}
-
-		if t.GetText() != fmt.Sprintf("[%s]", table) {
-			continue
-		}
-
-		tableIndex = i
-		break
+func ruleIndex(tree antlr.Tree) int {
+	if tree.GetParent() == nil {
+		return -1
 	}
+
+	for i, ch := range tree.GetParent().GetChildren() {
+		if ch == tree {
+			return i
+		}
+	}
+
+	return -1
+}
+
+func findTableEntries(doc antlr.ParseTree, table antlr.Tree) ([]parser.IExpressionContext, error) {
+	tableIndex := ruleIndex(table.GetParent())
 
 	if tableIndex == -1 {
 		return nil, errors.New(fmt.Sprintf("toml: unable to find the [%s] section", table))
@@ -95,7 +98,7 @@ func findTableEntries(doc antlr.ParseTree, table string) ([]parser.IExpressionCo
 			continue
 		}
 
-		if _, ok := ch.GetChild(0).(parser.ITableContext); ok { // next table
+		if _, ok := ch.GetChild(0).(parser.ITableContext); ok { // if next table is met
 			break
 		}
 
