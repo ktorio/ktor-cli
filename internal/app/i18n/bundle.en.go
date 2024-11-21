@@ -71,7 +71,7 @@ var en = map[Message]string{
 	DownloadOpenAPIJarError:            "Error downloading OpenAPI utility. Please try again later.\n",
 	OpenApiExecuteJarError:             "Failed to execute OpenAPI utility.\n",
 	ExternalCommandError:               "Error executing an external command.\n",
-	OpenApiSpecNotExist:                "OpenAPI spec file %s does not exist\n",
+	OpenApiSpecNotExist:                "OpenAPI spec file %s does not exist.\n",
 	CreateOpenApiJar:                   "Creating OpenAPI JAR file %s\n",
 	ExecutingCommand:                   "Executing command: %s\n",
 	FlagRequiresArgument:               "Flag %s requires one argument\n",
