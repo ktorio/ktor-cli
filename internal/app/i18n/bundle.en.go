@@ -78,7 +78,7 @@ var en = map[Message]string{
 	DownloadingOpenApiJarProgress:      "Downloading OpenAPI utility... ",
 	OpenApiCommandDescr:                "Generate a Ktor project with a given OpenAPI specification.",
 	NewCommandDescr:                    "Generate a new Ktor project. If a project name is omitted, the interactive mode will be invoked.",
-	VersionCommandDescr:                "print version",
+	VersionCommandDescr:                "Display the ktor CLI tool version.",
 	HelpCommandDescr:                   "show the help",
 	VerboseOptionDescr:                 "Enable verbose mode.",
 	OutputDirOptionDescr:               "Project output directory.",
