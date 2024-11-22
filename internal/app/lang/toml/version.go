@@ -45,14 +45,14 @@ func FindCatalogLib(p *parser.TomlParser, mavenCoords ktor.MavenCoords) (string,
 				continue
 			}
 
-			artefact := unquote(tkv.Value().String_().GetText())
+			artefact := lang.Unquote(tkv.Value().String_().GetText())
 
 			if !strings.HasPrefix(artefact, "io.ktor") {
 				continue
 			}
 
 			if mc, ok := ktor.ParseMavenCoords(artefact); ok && mavenCoords.RoughlySame(mc) {
-				return unquote(kv.Key().GetText()), true
+				return lang.Unquote(kv.Key().GetText()), true
 			}
 		}
 	}
@@ -204,14 +204,6 @@ func findTableKvByKey(kv parser.IKey_valueContext, key string) (parser.IInline_t
 	}
 
 	return nil, false
-}
-
-func unquote(s string) string {
-	if strings.HasPrefix(s, `"`) && strings.HasSuffix(s, `"`) {
-		runes := []rune(s)
-		return string(runes[1 : len(runes)-1])
-	}
-	return s
 }
 
 func findVersionRef(kv parser.IKey_valueContext) (string, bool) {

@@ -3,7 +3,16 @@ package lang
 import (
 	"fmt"
 	"github.com/antlr4-go/antlr/v4"
+	"strings"
 )
+
+func Unquote(s string) string {
+	if strings.HasPrefix(s, `"`) && strings.HasSuffix(s, `"`) {
+		runes := []rune(s)
+		return string(runes[1 : len(runes)-1])
+	}
+	return s
+}
 
 func FindParent[T any](tree antlr.Tree) (T, bool) {
 	var zero T

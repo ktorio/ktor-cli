@@ -51,6 +51,17 @@ func addDependency(mc ktor.MavenCoords, projectDir string) ([]FileContent, error
 	buildPath := filepath.Join(projectDir, "build.gradle.kts")
 	var changes []FileContent
 
+	buildParser, err := kotlin.NewParser(buildPath)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if bom, ok := kotlin.FindBom(buildParser); ok {
+		changes = append(changes, FileContent{Path: buildPath, Content: kotlin.AddRawDepAfter(buildParser, bom, mc)})
+		return changes, nil
+	}
+
 	versionsParser, err := toml.NewParser(versionsPath)
 
 	if err != nil {
@@ -59,7 +70,7 @@ func addDependency(mc ktor.MavenCoords, projectDir string) ([]FileContent, error
 
 	key, ok := toml.FindCatalogLib(versionsParser, mc)
 
-	buildParser, err := kotlin.NewParser(buildPath)
+	buildParser, err = kotlin.NewParser(buildPath)
 
 	if err != nil {
 		return changes, err

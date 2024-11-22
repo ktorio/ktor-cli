@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/antlr4-go/antlr/v4"
+	"github.com/ktorio/ktor-cli/internal/app/ktor"
 	"github.com/ktorio/ktor-cli/internal/app/lang"
 	parser "github.com/ktorio/ktor-cli/internal/app/lang/parsers/kotlin"
 	"strings"
@@ -19,6 +20,86 @@ func NewParser(fp string) (*parser.KotlinParser, error) {
 	lexer := parser.NewKotlinLexer(&input.InputStream)
 	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
 	return parser.NewKotlinParser(stream), nil
+}
+
+func AddRawDepAfter(p *parser.KotlinParser, st parser.IStatementContext, mc ktor.MavenCoords) string {
+	stream := p.GetTokenStream().(*antlr.CommonTokenStream)
+	rewriter := antlr.NewTokenStreamRewriter(stream)
+	indent := lang.HiddenTokensToLeft(stream, st.GetStart().GetTokenIndex())
+	rewriter.InsertAfterDefault(st.GetStop().GetTokenIndex(), "\n"+indent+fmt.Sprintf("implementation(%s:%s)", mc.Group, mc.Artifact))
+	return rewriter.GetTextDefault()
+}
+
+func FindBom(p *parser.KotlinParser) (parser.IStatementContext, bool) {
+	sts, ok := findDepsStatements(p.Script())
+
+	if !ok {
+		return nil, false
+	}
+
+	for _, st := range sts {
+		pus, ok := lang.FindChild[parser.IPostfixUnaryExpressionContext](st)
+
+		if !ok {
+			continue
+		}
+
+		if pus.GetChildCount() == 0 {
+			continue
+		}
+
+		pe, ok := pus.GetChild(0).(parser.IPrimaryExpressionContext)
+
+		if !ok {
+			continue
+		}
+
+		if pe.SimpleIdentifier().GetText() != "implementation" {
+			continue
+		}
+
+		pus2, ok := pus.GetChild(1).(parser.IPostfixUnarySuffixContext)
+
+		if !ok || pus2.CallSuffix() == nil {
+			continue
+		}
+
+		for _, va := range findValueArguments(pus2.CallSuffix()) {
+			ps, ok := lang.FindChild[parser.IPostfixUnaryExpressionContext](va)
+
+			if !ok {
+				continue
+			}
+
+			if id := ps.PrimaryExpression().SimpleIdentifier(); id == nil || id.GetText() != "platform" {
+				continue
+			}
+
+			pus2, ok = ps.GetChild(1).(parser.IPostfixUnarySuffixContext)
+
+			if !ok || pus2.CallSuffix() == nil {
+				continue
+			}
+
+			for _, va := range findValueArguments(pus2.CallSuffix()) {
+				if strings.HasPrefix(lang.Unquote(va.GetText()), "io.ktor:ktor-bom") {
+					return st, true
+				}
+			}
+		}
+	}
+
+	return nil, false
+}
+
+func findValueArguments(cf parser.ICallSuffixContext) []parser.IValueArgumentContext {
+	vas := cf.ValueArguments()
+
+	if vas == nil {
+		return nil
+	}
+
+	return vas.AllValueArgument()
 }
 
 func FindCatalogDep(p *parser.KotlinParser, catalogKey string) bool {
@@ -39,7 +120,6 @@ func FindCatalogDep(p *parser.KotlinParser, catalogKey string) bool {
 
 func AddDependency(p *parser.KotlinParser, versionKey string) (string, error) {
 	stream := p.GetTokenStream().(*antlr.CommonTokenStream)
-	rewriter := antlr.NewTokenStreamRewriter(stream)
 
 	sts, ok := findDepsStatements(p.Script())
 
@@ -59,6 +139,7 @@ func AddDependency(p *parser.KotlinParser, versionKey string) (string, error) {
 	}
 
 	obj := strings.ReplaceAll(versionKey, "-", ".")
+	rewriter := antlr.NewTokenStreamRewriter(stream)
 	rewriter.InsertAfterDefault(st.GetStop().GetTokenIndex(), "\n"+indent+fmt.Sprintf("implementation(libs.%s)", obj))
 
 	return rewriter.GetTextDefault(), nil
