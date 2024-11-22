@@ -104,8 +104,38 @@ type MavenCoords struct {
 	Artifact, Group, Version string
 }
 
+func ParseMavenCoords(s string) (MavenCoords, bool) {
+	parts := strings.Split(s, ":")
+
+	if len(parts) == 1 {
+		return MavenCoords{Artifact: parts[0]}, true
+	}
+
+	if len(parts) == 2 {
+		return MavenCoords{Group: parts[0], Artifact: parts[1]}, true
+	}
+
+	if len(parts) == 3 {
+		return MavenCoords{Group: parts[0], Artifact: parts[1], Version: parts[2]}, true
+	}
+
+	return MavenCoords{}, false
+}
+
 func (mc *MavenCoords) String() string {
 	return fmt.Sprintf("%s:%s", mc.Group, mc.Artifact)
+}
+
+func (mc *MavenCoords) RoughlySame(other MavenCoords) bool {
+	if mc.Group != other.Group {
+		return false
+	}
+
+	if strings.HasPrefix(mc.Artifact, other.Artifact) || strings.HasPrefix(other.Artifact, mc.Artifact) {
+		return true
+	}
+
+	return false
 }
 
 func FindModule(name string) (MavenCoords, int, bool) {

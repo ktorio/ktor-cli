@@ -47,10 +47,34 @@ func Add(mc ktor.MavenCoords, projectDir string) error {
 }
 
 func addDependency(mc ktor.MavenCoords, projectDir string) ([]FileContent, error) {
+	versionsPath := filepath.Join(projectDir, "gradle", "libs.versions.toml")
+	buildPath := filepath.Join(projectDir, "build.gradle.kts")
 	var changes []FileContent
 
-	versionsPath := filepath.Join(projectDir, "gradle", "libs.versions.toml")
-	modified, err := toml.AddLib(versionsPath, mc)
+	versionsParser, err := toml.NewParser(versionsPath)
+
+	if err != nil {
+		return changes, err
+	}
+
+	key, ok := toml.FindCatalogLib(versionsParser, mc)
+
+	buildParser, err := kotlin.NewParser(buildPath)
+
+	if err != nil {
+		return changes, err
+	}
+
+	if ok {
+		ok = kotlin.FindCatalogDep(buildParser, key)
+
+		if ok {
+			return changes, nil
+		}
+	}
+
+	versionsParser, _ = toml.NewParser(versionsPath)
+	modified, err := toml.AddLib(versionsParser, mc)
 
 	if err != nil {
 		return changes, err
@@ -58,8 +82,9 @@ func addDependency(mc ktor.MavenCoords, projectDir string) ([]FileContent, error
 
 	changes = append(changes, FileContent{Path: versionsPath, Content: modified})
 
-	buildPath := filepath.Join(projectDir, "build.gradle.kts")
-	modified, err = kotlin.AddDependency(buildPath, mc.Artifact)
+	buildParser, _ = kotlin.NewParser(buildPath)
+	buildParser.GetTokenStream().Reset()
+	modified, err = kotlin.AddDependency(buildParser, mc.Artifact)
 
 	if err != nil {
 		return changes, err

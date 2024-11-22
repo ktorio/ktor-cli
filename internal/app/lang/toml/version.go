@@ -10,17 +10,58 @@ import (
 	"strings"
 )
 
-func AddLib(versionsPath string, mc ktor.MavenCoords) (string, error) {
-	input, err := antlr.NewFileStream(versionsPath)
+func NewParser(fp string) (*parser.TomlParser, error) {
+	input, err := antlr.NewFileStream(fp)
 
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	lexer := parser.NewTomlLexer(&input.InputStream)
 	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
 
-	p := parser.NewTomlParser(stream)
+	return parser.NewTomlParser(stream), nil
+}
+
+func FindCatalogLib(p *parser.TomlParser, mavenCoords ktor.MavenCoords) (string, bool) {
+	doc := p.Document()
+
+	libTable, ok := findTable(doc, "libraries")
+
+	if !ok {
+		return "", false
+	}
+
+	entries, err := findTableEntries(doc, libTable)
+
+	if err != nil {
+		return "", false
+	}
+
+	for _, e := range entries {
+		if kv := e.Key_value(); kv != nil && kv.Value().Inline_table() != nil {
+			tkv, ok := findTableKvByKey(kv, "module")
+			if !ok {
+				continue
+			}
+
+			artefact := unquote(tkv.Value().String_().GetText())
+
+			if !strings.HasPrefix(artefact, "io.ktor") {
+				continue
+			}
+
+			if mc, ok := ktor.ParseMavenCoords(artefact); ok && mavenCoords.RoughlySame(mc) {
+				return unquote(kv.Key().GetText()), true
+			}
+		}
+	}
+
+	return "", false
+}
+
+func AddLib(p *parser.TomlParser, mc ktor.MavenCoords) (string, error) {
+	stream := p.GetTokenStream().(*antlr.CommonTokenStream)
 	rewriter := antlr.NewTokenStreamRewriter(stream)
 
 	doc := p.Document()
@@ -147,6 +188,32 @@ func findKtorDep(doc parser.IDocumentContext, table parser.ITableContext) (parse
 	return nil, "", false
 }
 
+func findTableKvByKey(kv parser.IKey_valueContext, key string) (parser.IInline_table_keyvals_non_emptyContext, bool) {
+	it := kv.Value().Inline_table()
+
+	if it == nil {
+		return nil, false
+	}
+
+	kvs := it.Inline_table_keyvals()
+
+	for vals := kvs.Inline_table_keyvals_non_empty(); vals != nil; vals = vals.Inline_table_keyvals_non_empty() {
+		if vals.Key().GetText() == key {
+			return vals, true
+		}
+	}
+
+	return nil, false
+}
+
+func unquote(s string) string {
+	if strings.HasPrefix(s, `"`) && strings.HasSuffix(s, `"`) {
+		runes := []rune(s)
+		return string(runes[1 : len(runes)-1])
+	}
+	return s
+}
+
 func findVersionRef(kv parser.IKey_valueContext) (string, bool) {
 	it := kv.Value().Inline_table()
 
@@ -165,7 +232,7 @@ func findVersionRef(kv parser.IKey_valueContext) (string, bool) {
 	return "", false
 }
 
-func findTable(doc parser.IDocumentContext, name string) (parser.ITableContext, bool) {
+func findTable(doc antlr.Tree, name string) (parser.ITableContext, bool) {
 	for _, ch := range doc.GetChildren() {
 		if ch.GetChildCount() == 0 {
 			continue

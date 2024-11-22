@@ -9,28 +9,48 @@ import (
 	"strings"
 )
 
-func AddDependency(buildPath, versionKey string) (string, error) {
-	input, err := antlr.NewFileStream(buildPath)
+func NewParser(fp string) (*parser.KotlinParser, error) {
+	input, err := antlr.NewFileStream(fp)
 
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	lexer := parser.NewKotlinLexer(&input.InputStream)
 	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
-	p := parser.NewKotlinParser(stream)
+	return parser.NewKotlinParser(stream), nil
+}
+
+func FindCatalogDep(p *parser.KotlinParser, catalogKey string) bool {
+	sts, ok := findDepsStatements(p.Script())
+
+	if !ok {
+		return false
+	}
+
+	for _, st := range sts {
+		if st.GetText() == fmt.Sprintf("implementation(libs.%s)", strings.ReplaceAll(catalogKey, "-", ".")) {
+			return true
+		}
+	}
+
+	return false
+}
+
+func AddDependency(p *parser.KotlinParser, versionKey string) (string, error) {
+	stream := p.GetTokenStream().(*antlr.CommonTokenStream)
 	rewriter := antlr.NewTokenStreamRewriter(stream)
 
 	sts, ok := findDepsStatements(p.Script())
 
 	if !ok {
-		return "", errors.New("could not find dependencies")
+		return "", errors.New("kotlin: could not find dependencies")
 	}
 
 	st, _, ok := findKtorDep(sts)
 
 	if !ok {
-		return "", errors.New("could not find catalog Ktor dependencies")
+		return "", errors.New("kotlin: could not find catalog Ktor dependencies")
 	}
 
 	indent := ""
