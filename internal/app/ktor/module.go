@@ -71,6 +71,16 @@ var defs = map[string]string{
 	"websocket-serialization":        "sendSerialized",
 }
 
+var shared = map[string]struct{}{
+	"serialization-kotlinx-cbor":     {},
+	"serialization-kotlinx-json":     {},
+	"serialization-kotlinx-protobuf": {},
+	"serialization-kotlinx-xml":      {},
+	"serialization-gson":             {},
+	"serialization-jackson":          {},
+	"websocket-serialization":        {},
+}
+
 const ktorGroup = "io.ktor"
 
 var modules map[string]MavenCoords
@@ -81,7 +91,7 @@ var modulesBySymbol map[string]MavenCoords
 func init() {
 	modules = make(map[string]MavenCoords)
 	for name := range defs {
-		modules[name] = MavenCoords{Artifact: "ktor-server-" + name, Group: ktorGroup}
+		modules[name] = MavenCoords{Artifact: getPrefix(name) + name, Group: ktorGroup}
 	}
 
 	serverModules = make(map[string]MavenCoords)
@@ -96,8 +106,16 @@ func init() {
 
 	modulesBySymbol = make(map[string]MavenCoords)
 	for name, symbol := range defs {
-		modulesBySymbol[symbol] = MavenCoords{Artifact: "ktor-server-" + name, Group: ktorGroup}
+		modulesBySymbol[symbol] = MavenCoords{Artifact: getPrefix(name) + name, Group: ktorGroup}
 	}
+}
+
+func getPrefix(name string) string {
+	if _, ok := shared[name]; ok {
+		return "ktor-"
+	}
+
+	return "ktor-server-"
 }
 
 type MavenCoords struct {

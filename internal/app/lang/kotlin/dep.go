@@ -26,7 +26,10 @@ func AddRawDepAfter(p *parser.KotlinParser, st parser.IStatementContext, mc ktor
 	stream := p.GetTokenStream().(*antlr.CommonTokenStream)
 	rewriter := antlr.NewTokenStreamRewriter(stream)
 	indent := lang.HiddenTokensToLeft(stream, st.GetStart().GetTokenIndex())
-	rewriter.InsertAfterDefault(st.GetStop().GetTokenIndex(), "\n"+indent+fmt.Sprintf("implementation(%s:%s)", mc.Group, mc.Artifact))
+	rewriter.InsertAfterDefault(
+		st.GetStop().GetTokenIndex(),
+		"\n"+indent+fmt.Sprintf("implementation(%s)", lang.Quote(mc.Group+":"+mc.Artifact)),
+	)
 	return rewriter.GetTextDefault()
 }
 

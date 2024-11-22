@@ -6,6 +6,14 @@ import (
 	"strings"
 )
 
+func Quote(s string) string {
+	if strings.HasPrefix(s, "\"") && strings.HasSuffix(s, "\"") {
+		return s
+	}
+
+	return "\"" + s + "\""
+}
+
 func Unquote(s string) string {
 	if strings.HasPrefix(s, `"`) && strings.HasSuffix(s, `"`) {
 		runes := []rune(s)
