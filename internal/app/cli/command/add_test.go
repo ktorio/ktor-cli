@@ -2,9 +2,12 @@ package command
 
 import (
 	"errors"
+	"fmt"
 	"github.com/ktorio/ktor-cli/internal/app/ktor"
+	"io/fs"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 )
@@ -47,24 +50,63 @@ func TestAddProjectDependencies(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		for _, f := range files {
-			rel, err := filepath.Rel(filepath.Dir(projDir), f.Path)
+		err = filepath.WalkDir(projDir, func(p string, d fs.DirEntry, err error) error {
+			if err != nil {
+				return err
+			}
+
+			if !strings.HasSuffix(p, ".expected") {
+				return nil
+			}
+
+			srcPath := strings.TrimSuffix(p, ".expected")
+
+			srcBytes, err := os.ReadFile(srcPath)
 
 			if err != nil {
-				t.Fatal(err)
+				return err
 			}
 
-			expectedPath := f.Path + ".expected"
-
-			b, err := os.ReadFile(expectedPath)
+			expBytes, err := os.ReadFile(p)
 
 			if err != nil {
-				t.Fatal(err)
+				return err
 			}
 
-			if string(b) != f.Content {
-				t.Fatalf("File %s has unexpected content:\n%s", rel, getDiff(expectedPath, f.Content))
+			fc := findFileContent(files, srcPath)
+			if slices.Equal(srcBytes, expBytes) && fc == nil {
+				return nil
 			}
+
+			if fc == nil {
+				return errors.New(fmt.Sprintf("%s: content for file %s not found", e.Name(), filepath.Base(srcPath)))
+			}
+
+			if string(expBytes) != fc.Content {
+				rel, err := filepath.Rel(filepath.Dir(projDir), srcPath)
+
+				if err != nil {
+					return err
+				}
+
+				t.Fatalf("File %s has unexpected content:\n%s", rel, getDiff(p, fc.Content))
+			}
+
+			return nil
+		})
+
+		if err != nil {
+			t.Fatal(err)
 		}
 	}
+}
+
+func findFileContent(files []FileContent, fp string) *FileContent {
+	for _, fc := range files {
+		if fc.Path == fp {
+			return &fc
+		}
+	}
+
+	return nil
 }

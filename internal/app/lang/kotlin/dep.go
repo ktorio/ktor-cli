@@ -130,7 +130,7 @@ func AddDependency(p *parser.KotlinParser, versionKey string) (string, error) {
 		return "", errors.New("kotlin: could not find dependencies")
 	}
 
-	st, _, ok := findKtorDep(sts)
+	st, _, ok := findDep(sts, "libs.ktor")
 
 	if !ok {
 		return "", errors.New("kotlin: could not find catalog Ktor dependencies")
@@ -148,7 +148,7 @@ func AddDependency(p *parser.KotlinParser, versionKey string) (string, error) {
 	return rewriter.GetTextDefault(), nil
 }
 
-func findKtorDep(depStatements []parser.IStatementContext) (parser.IStatementContext, parser.IValueArgumentContext, bool) {
+func findDep(depStatements []parser.IStatementContext, depPrefix string) (parser.IStatementContext, parser.IValueArgumentContext, bool) {
 	for _, st := range depStatements {
 		e, ok := lang.FindChild[parser.IPostfixUnaryExpressionContext](st)
 
@@ -179,13 +179,18 @@ func findKtorDep(depStatements []parser.IStatementContext) (parser.IStatementCon
 		}
 
 		for _, va := range lang.ChildrenOfType[parser.IValueArgumentContext](vargs) {
-			if strings.HasPrefix(va.GetText(), "libs.ktor") {
+			if strings.HasPrefix(va.GetText(), depPrefix) {
 				return st, va, true
 			}
 		}
 	}
 
 	return nil, nil, false
+}
+
+func FindRawDep(sts parser.IStatementsContext, mc ktor.MavenCoords) bool {
+	_, _, ok := findDep(sts.AllStatement(), lang.Quote(mc.Group+":"+mc.Artifact))
+	return ok
 }
 
 func findDepsStatements(script parser.IScriptContext) ([]parser.IStatementContext, bool) {

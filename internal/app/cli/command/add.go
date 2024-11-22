@@ -7,6 +7,7 @@ import (
 	"github.com/hexops/gotextdiff/span"
 	"github.com/ktorio/ktor-cli/internal/app/ktor"
 	"github.com/ktorio/ktor-cli/internal/app/lang/kotlin"
+	parser "github.com/ktorio/ktor-cli/internal/app/lang/parsers/kotlin"
 	"github.com/ktorio/ktor-cli/internal/app/lang/toml"
 	"os"
 	"path/filepath"
@@ -58,6 +59,10 @@ func addDependency(mc ktor.MavenCoords, projectDir string) ([]FileContent, error
 	}
 
 	if bom, ok := kotlin.FindBom(buildParser); ok {
+		if sts, ok := bom.GetParent().(parser.IStatementsContext); ok && kotlin.FindRawDep(sts, mc) {
+			return changes, nil
+		}
+
 		changes = append(changes, FileContent{Path: buildPath, Content: kotlin.AddRawDepAfter(buildParser, bom, mc)})
 		return changes, nil
 	}
