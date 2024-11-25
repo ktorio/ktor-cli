@@ -56,24 +56,23 @@ func addDependency(mc ktor.MavenCoords, projectDir string) ([]FileContent, error
 	buildPath := filepath.Join(projectDir, "build.gradle.kts")
 	var changes []FileContent
 
+	build, err := gradle.ParseBuildFile(buildPath)
+	if err != nil {
+		return changes, nil
+	}
+
 	buildParser, err := kotlin.NewParser(buildPath)
 
 	if err != nil {
 		return nil, err
 	}
 
-	if bom, ok := kotlin.FindBom(buildParser); ok {
+	if bom, ok := gradle.FindBom(build); ok {
 		if sts, ok := bom.GetParent().(parser.IStatementsContext); ok && kotlin.FindRawDep(sts, mc) {
 			return changes, nil
 		}
 
 		changes = append(changes, FileContent{Path: buildPath, Content: kotlin.AddRawDepAfter(buildParser, bom, mc)})
-		return changes, nil
-	}
-
-	build, err := gradle.ParseBuildFile(buildPath)
-
-	if err != nil {
 		return changes, nil
 	}
 

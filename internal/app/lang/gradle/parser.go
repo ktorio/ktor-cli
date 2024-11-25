@@ -5,6 +5,7 @@ import (
 	"github.com/ktorio/ktor-cli/internal/app/lang"
 	"github.com/ktorio/ktor-cli/internal/app/lang/kotlin"
 	parser "github.com/ktorio/ktor-cli/internal/app/lang/parsers/kotlin"
+	"strings"
 )
 
 type DepKind int
@@ -27,7 +28,9 @@ type Dependencies struct {
 type Dep struct {
 	Kind        DepKind
 	IsTest      bool
+	IsBom       bool
 	CatalogPath string
+	Statement   parser.IStatementContext
 }
 
 func ParseBuildFile(fp string) (*BuildRoot, error) {
@@ -105,11 +108,30 @@ func ParseBuildFile(fp string) (*BuildRoot, error) {
 					continue
 				}
 
-				root.Dependencies.List = append(root.Dependencies.List, Dep{
+				d := Dep{
 					IsTest:      pe.SimpleIdentifier().GetText() == "testImplementation",
 					Kind:        VersionCatalogDep,
 					CatalogPath: ps.GetText(),
-				})
+					Statement:   depSt,
+				}
+				root.Dependencies.List = append(root.Dependencies.List, d)
+
+				if id := ps.PrimaryExpression().SimpleIdentifier(); id == nil || id.GetText() != "platform" {
+					continue
+				}
+
+				pus2, ok = ps.GetChild(1).(parser.IPostfixUnarySuffixContext)
+
+				if !ok || pus2.CallSuffix() == nil {
+					continue
+				}
+
+				for _, va := range findValueArguments(pus2.CallSuffix()) {
+					if strings.HasPrefix(lang.Unquote(va.GetText()), "io.ktor:ktor-bom") {
+						d.IsBom = true
+						break
+					}
+				}
 			}
 		}
 	}
