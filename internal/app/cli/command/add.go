@@ -1,16 +1,20 @@
 package command
 
 import (
+	"errors"
 	"fmt"
+	"github.com/antlr4-go/antlr/v4"
 	"github.com/hexops/gotextdiff"
 	"github.com/hexops/gotextdiff/myers"
 	"github.com/hexops/gotextdiff/span"
 	"github.com/ktorio/ktor-cli/internal/app/ktor"
+	"github.com/ktorio/ktor-cli/internal/app/lang/gradle"
 	"github.com/ktorio/ktor-cli/internal/app/lang/kotlin"
 	parser "github.com/ktorio/ktor-cli/internal/app/lang/parsers/kotlin"
 	"github.com/ktorio/ktor-cli/internal/app/lang/toml"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 type ErrorKind int
@@ -64,6 +68,42 @@ func addDependency(mc ktor.MavenCoords, projectDir string) ([]FileContent, error
 		}
 
 		changes = append(changes, FileContent{Path: buildPath, Content: kotlin.AddRawDepAfter(buildParser, bom, mc)})
+		return changes, nil
+	}
+
+	build, err := gradle.ParseBuildFile(buildPath)
+
+	if err != nil {
+		return changes, nil
+	}
+
+	hasKtorDeps := false
+	for _, dep := range build.Dependencies.List {
+		switch dep.Kind {
+		case gradle.VersionCatalogDep:
+			if strings.HasPrefix(dep.CatalogPath, "libs.ktor") {
+				hasKtorDeps = true
+				break
+			}
+		}
+	}
+
+	if _, err := os.Stat(versionsPath); errors.Is(err, os.ErrNotExist) && !hasKtorDeps {
+		tomlContent := fmt.Sprintf(`[versions]
+ktor = "%s"
+
+[libraries]
+%s = { module = "%s:%s", version.ref = "ktor" }
+`, mc.Version, mc.Artifact, mc.Group, mc.Artifact)
+
+		changes = append(changes, FileContent{Path: versionsPath, Content: tomlContent})
+
+		rewriter := antlr.NewTokenStreamRewriter(build.Stream)
+		indent := strings.Repeat(" ", 4)
+		rewriter.InsertAfterDefault(build.Dependencies.Statements.GetStop().GetTokenIndex(), "\n"+indent+fmt.Sprintf("implementation(libs.%s)\n", strings.ReplaceAll(mc.Artifact, "-", ".")))
+
+		changes = append(changes, FileContent{Path: buildPath, Content: rewriter.GetTextDefault()})
+
 		return changes, nil
 	}
 

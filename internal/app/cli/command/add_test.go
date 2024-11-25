@@ -64,7 +64,7 @@ func TestAddProjectDependencies(t *testing.T) {
 			srcBytes, err := os.ReadFile(srcPath)
 
 			if err != nil {
-				return err
+				srcBytes = []byte{}
 			}
 
 			expBytes, err := os.ReadFile(p)

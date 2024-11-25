@@ -1,0 +1,5 @@
+[versions]
+ktor = "3.0.0"
+
+[libraries]
+ktor-server-content-negotiation = { module = "io.ktor:ktor-server-content-negotiation", version.ref = "ktor" }
