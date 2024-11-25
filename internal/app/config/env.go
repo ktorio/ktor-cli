@@ -26,7 +26,7 @@ func OpenApiJarUrl() string {
 		return e
 	}
 
-	return "https://oss.sonatype.org/content/repositories/snapshots/org/openapitools/openapi-generator-cli/7.10.0-SNAPSHOT/openapi-generator-cli-7.10.0-20241106.082455-66.jar"
+	return "https://oss.sonatype.org/content/repositories/snapshots/org/openapitools/openapi-generator-cli/7.11.0-SNAPSHOT/openapi-generator-cli-7.11.0-20241121.114349-2.jar"
 }
 
 func KtorDir(homeDir string) string {
