@@ -9,8 +9,6 @@ import (
 	"github.com/hexops/gotextdiff/span"
 	"github.com/ktorio/ktor-cli/internal/app/ktor"
 	"github.com/ktorio/ktor-cli/internal/app/lang/gradle"
-	"github.com/ktorio/ktor-cli/internal/app/lang/kotlin"
-	parser "github.com/ktorio/ktor-cli/internal/app/lang/parsers/kotlin"
 	"github.com/ktorio/ktor-cli/internal/app/lang/toml"
 	"os"
 	"path/filepath"
@@ -61,29 +59,20 @@ func addDependency(mc ktor.MavenCoords, projectDir string) ([]FileContent, error
 		return changes, nil
 	}
 
-	buildParser, err := kotlin.NewParser(buildPath)
-
-	if err != nil {
-		return nil, err
-	}
-
 	if bom, ok := gradle.FindBom(build); ok {
-		if sts, ok := bom.GetParent().(parser.IStatementsContext); ok && kotlin.FindRawDep(sts, mc) {
+		if gradle.FindRawDep(build, mc) {
 			return changes, nil
 		}
 
-		changes = append(changes, FileContent{Path: buildPath, Content: kotlin.AddRawDepAfter(buildParser, bom, mc)})
+		changes = append(changes, FileContent{Path: buildPath, Content: gradle.AddRawDepAfter(build, bom, mc)})
 		return changes, nil
 	}
 
 	hasKtorDeps := false
 	for _, dep := range build.Dependencies.List {
-		switch dep.Kind {
-		case gradle.VersionCatalogDep:
-			if strings.HasPrefix(dep.CatalogPath, "libs.ktor") {
-				hasKtorDeps = true
-				break
-			}
+		if dep.Kind == gradle.VersionCatalogDep && strings.HasPrefix(dep.Path, "libs.ktor") {
+			hasKtorDeps = true
+			break
 		}
 	}
 
@@ -114,14 +103,8 @@ ktor = "%s"
 
 	key, ok := toml.FindCatalogLib(versionsParser, mc)
 
-	buildParser, err = kotlin.NewParser(buildPath)
-
-	if err != nil {
-		return changes, err
-	}
-
 	if ok {
-		ok = kotlin.FindCatalogDep(buildParser, key)
+		ok = gradle.FindCatalogDep(build, key)
 
 		if ok {
 			return changes, nil
@@ -137,9 +120,7 @@ ktor = "%s"
 
 	changes = append(changes, FileContent{Path: versionsPath, Content: modified})
 
-	buildParser, _ = kotlin.NewParser(buildPath)
-	buildParser.GetTokenStream().Reset()
-	modified, err = kotlin.AddDependency(buildParser, mc.Artifact)
+	modified, err = gradle.AddDependency(build, mc.Artifact)
 
 	if err != nil {
 		return changes, err

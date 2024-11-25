@@ -12,6 +12,7 @@ type DepKind int
 
 const (
 	VersionCatalogDep DepKind = iota
+	HardcodedRep
 )
 
 type BuildRoot struct {
@@ -26,11 +27,11 @@ type Dependencies struct {
 }
 
 type Dep struct {
-	Kind        DepKind
-	IsTest      bool
-	IsBom       bool
-	CatalogPath string
-	Statement   parser.IStatementContext
+	Kind      DepKind
+	IsTest    bool
+	IsBom     bool
+	Path      string
+	Statement parser.IStatementContext
 }
 
 func ParseBuildFile(fp string) (*BuildRoot, error) {
@@ -101,6 +102,11 @@ func ParseBuildFile(fp string) (*BuildRoot, error) {
 				continue
 			}
 
+			d := Dep{
+				IsTest:    pe.SimpleIdentifier().GetText() == "testImplementation",
+				Statement: depSt,
+			}
+
 			for _, va := range findValueArguments(pus2.CallSuffix()) {
 				ps, ok := lang.FindChild[parser.IPostfixUnaryExpressionContext](va)
 
@@ -108,13 +114,13 @@ func ParseBuildFile(fp string) (*BuildRoot, error) {
 					continue
 				}
 
-				d := Dep{
-					IsTest:      pe.SimpleIdentifier().GetText() == "testImplementation",
-					Kind:        VersionCatalogDep,
-					CatalogPath: ps.GetText(),
-					Statement:   depSt,
+				k := HardcodedRep
+				if strings.HasPrefix(va.GetText(), "libs.") {
+					k = VersionCatalogDep
 				}
-				root.Dependencies.List = append(root.Dependencies.List, d)
+
+				d.Kind = k
+				d.Path = lang.Unquote(va.GetText())
 
 				if id := ps.PrimaryExpression().SimpleIdentifier(); id == nil || id.GetText() != "platform" {
 					continue
@@ -133,6 +139,8 @@ func ParseBuildFile(fp string) (*BuildRoot, error) {
 					}
 				}
 			}
+
+			root.Dependencies.List = append(root.Dependencies.List, d)
 		}
 	}
 
