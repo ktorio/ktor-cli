@@ -95,13 +95,13 @@ ktor = "%s"
 		return changes, nil
 	}
 
-	versionsParser, err := toml.NewParser(versionsPath)
+	tomlDoc, err := toml.ParseToml(versionsPath)
 
 	if err != nil {
 		return changes, err
 	}
 
-	key, ok := toml.FindCatalogLib(versionsParser, mc)
+	key, ok := toml.FindCatalogLib(tomlDoc, mc)
 
 	if ok {
 		ok = gradle.FindCatalogDep(build, key)
@@ -111,8 +111,7 @@ ktor = "%s"
 		}
 	}
 
-	versionsParser, _ = toml.NewParser(versionsPath)
-	modified, err := toml.AddLib(versionsParser, mc)
+	modified, err := toml.AddLib(tomlDoc, mc)
 
 	if err != nil {
 		return changes, err

@@ -5,8 +5,8 @@ ktor-version = "3.0.1"
 logback-version = "1.4.14"
 
 [libraries]
-ktor-server-core = { module = "io.ktor:ktor-server-core-jvm", version.ref = "ktor-version" }
 ktor-server-content-negotiation = { module = "io.ktor:ktor-server-content-negotiation", version.ref = "ktor-version" }
+ktor-server-core = { module = "io.ktor:ktor-server-core-jvm", version.ref = "ktor-version" }
 ktor-server-netty = { module = "io.ktor:ktor-server-netty-jvm", version.ref = "ktor-version" }
 logback-classic = { module = "ch.qos.logback:logback-classic", version.ref = "logback-version" }
 ktor-server-config-yaml = { module = "io.ktor:ktor-server-config-yaml-jvm", version.ref = "ktor-version" }
