@@ -9,7 +9,7 @@ import (
 	"strings"
 )
 
-func AddRawDepAfter(build *BuildRoot, st parser.IStatementContext, mc ktor.MavenCoords) {
+func AddRawDepAfter(build *BuildRoot, st parser.IStatementContext, mc ktor.MavenCoords, suffix string) {
 	indent := lang.HiddenTokensToLeft(build.Stream, st.GetStart().GetTokenIndex())
 
 	fn := "implementation"
@@ -18,7 +18,7 @@ func AddRawDepAfter(build *BuildRoot, st parser.IStatementContext, mc ktor.Maven
 	}
 	build.Rewriter.InsertAfterDefault(
 		st.GetStop().GetTokenIndex(),
-		"\n"+indent+fmt.Sprintf("%s(%s)", fn, lang.Quote(mc.Group+":"+mc.Artifact)),
+		"\n"+indent+fmt.Sprintf("%s(%s)", fn, lang.Quote(mc.Group+":"+mc.Artifact+suffix)),
 	)
 }
 
