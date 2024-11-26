@@ -25,9 +25,9 @@ func FindKtorPlugin(plugins []Plugin) (*Plugin, bool) {
 	return nil, false
 }
 
-func HasPlugin(plugins []Plugin, pluginId string) bool {
+func HasSerializationPlugin(plugins []Plugin) bool {
 	for _, p := range plugins {
-		if p.Prefix == "kotlin" && p.Id == pluginId {
+		if (p.Prefix == "kotlin" && p.Id == "plugin.serialization") || (p.Prefix == "id" && p.Id == "org.jetbrains.kotlin.plugin.serialization") {
 			return true
 		}
 	}

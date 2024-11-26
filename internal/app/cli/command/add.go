@@ -64,7 +64,7 @@ func addDependency(mc ktor.MavenCoords, projectDir string, serPlugin *ktor.Gradl
 	_, hasKtorPlugin := gradle.FindKtorPlugin(build.Plugins.List)
 
 	if hasBom || hasKtorPlugin {
-		if serPlugin != nil && !gradle.HasPlugin(build.Plugins.List, "plugin.serialization") {
+		if serPlugin != nil && !gradle.HasSerializationPlugin(build.Plugins.List) {
 			for _, p := range build.Plugins.List {
 				if p.Prefix == "kotlin" && p.Id == "jvm" {
 					indent := lang.HiddenTokensToLeft(build.Stream, p.Statement.GetStart().GetTokenIndex())
