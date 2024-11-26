@@ -4,8 +4,8 @@ import (
 	parser "github.com/ktorio/ktor-cli/internal/app/lang/parsers/kotlin"
 )
 
-func FindBom(build *BuildRoot) (parser.IStatementContext, bool) {
-	for _, dep := range build.Dependencies.List {
+func FindBom(deps []Dep) (parser.IStatementContext, bool) {
+	for _, dep := range deps {
 		if dep.IsBom {
 			return dep.Statement, true
 		}

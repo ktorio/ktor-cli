@@ -5,8 +5,8 @@ import (
 	"strings"
 )
 
-func FindCatalogDep(build *BuildRoot, catalogKey string) bool {
-	for _, dep := range build.Dependencies.List {
+func FindCatalogDep(deps []Dep, catalogKey string) bool {
+	for _, dep := range deps {
 		if dep.Kind == VersionCatalogDep && dep.Path == "libs."+strings.ReplaceAll(catalogKey, "-", ".") {
 			return true
 		}
@@ -15,8 +15,18 @@ func FindCatalogDep(build *BuildRoot, catalogKey string) bool {
 	return false
 }
 
-func FindRawDep(build *BuildRoot, mavenCoords ktor.MavenCoords) bool {
-	for _, dep := range build.Dependencies.List {
+func HasPlugin(plugins []Plugin, pluginId string) bool {
+	for _, p := range plugins {
+		if p.IsKotlin && p.KotlinId == pluginId {
+			return true
+		}
+	}
+
+	return false
+}
+
+func FindRawDep(deps []Dep, mavenCoords ktor.MavenCoords) bool {
+	for _, dep := range deps {
 		if dep.Kind != HardcodedRep {
 			continue
 		}

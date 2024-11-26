@@ -3,7 +3,6 @@ package gradle
 import (
 	"errors"
 	"fmt"
-	"github.com/antlr4-go/antlr/v4"
 	"github.com/ktorio/ktor-cli/internal/app/ktor"
 	"github.com/ktorio/ktor-cli/internal/app/lang"
 	parser "github.com/ktorio/ktor-cli/internal/app/lang/parsers/kotlin"
@@ -33,8 +32,7 @@ func AddDependency(build *BuildRoot, versionKey string) (string, error) {
 
 	obj := strings.ReplaceAll(versionKey, "-", ".")
 	indent := lang.HiddenTokensToLeft(build.Stream, ktorSt.GetStart().GetTokenIndex())
-	rewriter := antlr.NewTokenStreamRewriter(build.Stream)
-	rewriter.InsertAfterDefault(ktorSt.GetStop().GetTokenIndex(), "\n"+indent+fmt.Sprintf("implementation(libs.%s)", obj))
+	build.Rewriter.InsertAfterDefault(ktorSt.GetStop().GetTokenIndex(), "\n"+indent+fmt.Sprintf("implementation(libs.%s)", obj))
 
-	return rewriter.GetTextDefault(), nil
+	return build.Rewriter.GetTextDefault(), nil
 }

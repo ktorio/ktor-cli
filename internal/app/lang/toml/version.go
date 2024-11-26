@@ -144,8 +144,8 @@ func NewParser(fp string) (*parser.TomlParser, error) {
 	return parser.NewTomlParser(stream), nil
 }
 
-func FindCatalogLib(doc *Document, mavenCoords ktor.MavenCoords) (string, bool) {
-	for _, t := range doc.Tables.List {
+func FindCatalogLib(tables []Table, mavenCoords ktor.MavenCoords) (string, bool) {
+	for _, t := range tables {
 		for _, e := range t.Entries {
 			if e.Kind != ValueMap {
 				continue

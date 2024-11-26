@@ -60,8 +60,8 @@ func addDependency(mc ktor.MavenCoords, projectDir string, serPlugin *ktor.Gradl
 		return changes, nil
 	}
 
-	if bom, ok := gradle.FindBom(build); ok {
-		if serPlugin != nil {
+	if bom, ok := gradle.FindBom(build.Dependencies.List); ok {
+		if serPlugin != nil && !gradle.HasPlugin(build.Plugins.List, "plugin.serialization") {
 			for _, p := range build.Plugins.List {
 				if p.IsKotlin && p.KotlinId == "jvm" {
 					indent := lang.HiddenTokensToLeft(build.Stream, p.Statement.GetStart().GetTokenIndex())
@@ -72,7 +72,7 @@ func addDependency(mc ktor.MavenCoords, projectDir string, serPlugin *ktor.Gradl
 			}
 		}
 
-		if gradle.FindRawDep(build, mc) {
+		if gradle.FindRawDep(build.Dependencies.List, mc) {
 			return changes, nil
 		}
 
@@ -115,10 +115,10 @@ ktor = "%s"
 		return changes, err
 	}
 
-	key, ok := toml.FindCatalogLib(tomlDoc, mc)
+	key, ok := toml.FindCatalogLib(tomlDoc.Tables.List, mc)
 
 	if ok {
-		ok = gradle.FindCatalogDep(build, key)
+		ok = gradle.FindCatalogDep(build.Dependencies.List, key)
 
 		if ok {
 			return changes, nil
