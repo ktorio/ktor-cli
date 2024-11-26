@@ -1,10 +1,12 @@
 package gradle
 
 import (
+	"bytes"
 	"github.com/antlr4-go/antlr/v4"
 	"github.com/ktorio/ktor-cli/internal/app/lang"
-	"github.com/ktorio/ktor-cli/internal/app/lang/kotlin"
 	parser "github.com/ktorio/ktor-cli/internal/app/lang/parsers/kotlin"
+	"io"
+	"os"
 	"strings"
 )
 
@@ -50,12 +52,17 @@ type Dep struct {
 }
 
 func ParseBuildFile(fp string) (*BuildRoot, error) {
-	p, err := kotlin.NewParser(fp)
-	root := BuildRoot{}
+	reader, err := fixTrailingNewLine(fp)
 
 	if err != nil {
-		return &root, err
+		return nil, err
 	}
+
+	input := antlr.NewIoStream(reader)
+	lexer := parser.NewKotlinLexer(input)
+	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
+	p := parser.NewKotlinParser(stream)
+	root := BuildRoot{}
 
 	root.Stream = p.GetTokenStream().(*antlr.CommonTokenStream)
 	root.Parser = p
@@ -215,6 +222,20 @@ func ParseBuildFile(fp string) (*BuildRoot, error) {
 	}
 
 	return &root, nil
+}
+
+func fixTrailingNewLine(fp string) (io.Reader, error) {
+	fBytes, err := os.ReadFile(fp)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if len(fBytes) > 0 && fBytes[len(fBytes)-1] != '\n' {
+		fBytes = append(fBytes, '\n')
+	}
+
+	return bytes.NewReader(fBytes), nil
 }
 
 func findValueArguments(cf parser.ICallSuffixContext) []parser.IValueArgumentContext {
