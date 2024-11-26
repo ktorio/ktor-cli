@@ -21,47 +21,47 @@ var defs = map[string]string{
 
 	// plugins
 
-	"auth":                "Auth",
-	"auth-jwt":            "awt",
-	"auth-ldap":           "ldap",
-	"auto-head-response":  "AutoHeadResponse",
-	"body-limit":          "RequestBodyLimit",
-	"cachingHeaders":      "CachingHeaders",
-	"call-id":             "CallId",
-	"call-logging":        "CallLogging",
-	"compression":         "Compression",
-	"conditional-headers": "ConditionalHeaders",
-	"content-negotiation": "ContentNegotiation",
-	"cors":                "CORS",
-	"csrf":                "CSRF",
-	"data-conversion":     "DataConversion",
-	"double-receive":      "DoubleReceive",
-	"forwarded-header":    "ForwardedHeaders",
-	"freemarker":          "FreeMarker",
-	"hsts":                "HSTS",
-	"html-builder":        "respondHtml",
-	"http-redirect":       "HttpsRedirect",
-	"i18n":                "I18n",
-	"jte":                 "Jte",
-	"method-override":     "XHttpMethodOverride",
-	"metrics":             "DropwizardMetrics",
-	"metrics-micrometer":  "MicrometerMetrics",
-	"mustache":            "Mustache",
-	"openapi":             "openAPI",
-	"partial-content":     "PartialContent",
-	"pebble":              "Pebble",
-	"rate-limit":          "RateLimit",
-	"request-validation":  "RequestValidation",
-	"resources":           "Resources",
-	"sessions":            "Sessions",
-	"status-pages":        "StatusPages",
-	"sse":                 "SSE",
-	"swagger":             "swaggerUI",
-	"thymeleaf":           "Thymeleaf",
-	"velocity":            "Velocity",
-	"webjars":             "Webjars",
-	"websockets":          "Websockets",
-	//TODO: testImplementation: "test-host":           "testApplication",
+	"auth":                           "Auth",
+	"auth-jwt":                       "awt",
+	"auth-ldap":                      "ldap",
+	"auto-head-response":             "AutoHeadResponse",
+	"body-limit":                     "RequestBodyLimit",
+	"cachingHeaders":                 "CachingHeaders",
+	"call-id":                        "CallId",
+	"call-logging":                   "CallLogging",
+	"compression":                    "Compression",
+	"conditional-headers":            "ConditionalHeaders",
+	"content-negotiation":            "ContentNegotiation",
+	"cors":                           "CORS",
+	"csrf":                           "CSRF",
+	"data-conversion":                "DataConversion",
+	"double-receive":                 "DoubleReceive",
+	"forwarded-header":               "ForwardedHeaders",
+	"freemarker":                     "FreeMarker",
+	"hsts":                           "HSTS",
+	"html-builder":                   "respondHtml",
+	"http-redirect":                  "HttpsRedirect",
+	"i18n":                           "I18n",
+	"jte":                            "Jte",
+	"method-override":                "XHttpMethodOverride",
+	"metrics":                        "DropwizardMetrics",
+	"metrics-micrometer":             "MicrometerMetrics",
+	"mustache":                       "Mustache",
+	"openapi":                        "openAPI",
+	"partial-content":                "PartialContent",
+	"pebble":                         "Pebble",
+	"rate-limit":                     "RateLimit",
+	"request-validation":             "RequestValidation",
+	"resources":                      "Resources",
+	"sessions":                       "Sessions",
+	"status-pages":                   "StatusPages",
+	"sse":                            "SSE",
+	"swagger":                        "swaggerUI",
+	"thymeleaf":                      "Thymeleaf",
+	"velocity":                       "Velocity",
+	"webjars":                        "Webjars",
+	"websockets":                     "Websockets",
+	"test-host":                      "testApplication",
 	"serialization-kotlinx-cbor":     "Cbor",
 	"serialization-kotlinx-json":     "Json",
 	"serialization-kotlinx-protobuf": "ProtoBuf",
@@ -81,6 +81,10 @@ var shared = map[string]struct{}{
 	"websocket-serialization":        {},
 }
 
+var testing = map[string]struct{}{
+	"test-host": {},
+}
+
 const ktorGroup = "io.ktor"
 
 var modules map[string]MavenCoords
@@ -91,22 +95,26 @@ var modulesBySymbol map[string]MavenCoords
 func init() {
 	modules = make(map[string]MavenCoords)
 	for name := range defs {
-		modules[name] = MavenCoords{Artifact: getPrefix(name) + name, Group: ktorGroup}
+		_, isTest := testing[name]
+		modules[name] = MavenCoords{Artifact: getPrefix(name) + name, Group: ktorGroup, IsTest: isTest}
 	}
 
 	serverModules = make(map[string]MavenCoords)
 	for name := range defs {
-		serverModules["server-"+name] = MavenCoords{Artifact: "ktor-server-" + name, Group: ktorGroup}
+		_, isTest := testing[name]
+		serverModules["server-"+name] = MavenCoords{Artifact: "ktor-server-" + name, Group: ktorGroup, IsTest: isTest}
 	}
 
 	ktorServerModules = make(map[string]MavenCoords)
 	for name := range defs {
-		ktorServerModules["ktor-server-"+name] = MavenCoords{Artifact: "ktor-server-" + name, Group: ktorGroup}
+		_, isTest := testing[name]
+		ktorServerModules["ktor-server-"+name] = MavenCoords{Artifact: "ktor-server-" + name, Group: ktorGroup, IsTest: isTest}
 	}
 
 	modulesBySymbol = make(map[string]MavenCoords)
 	for name, symbol := range defs {
-		modulesBySymbol[symbol] = MavenCoords{Artifact: getPrefix(name) + name, Group: ktorGroup}
+		_, isTest := testing[name]
+		modulesBySymbol[symbol] = MavenCoords{Artifact: getPrefix(name) + name, Group: ktorGroup, IsTest: isTest}
 	}
 }
 
@@ -120,6 +128,7 @@ func getPrefix(name string) string {
 
 type MavenCoords struct {
 	Artifact, Group, Version string
+	IsTest                   bool
 }
 
 type GradlePlugin struct {

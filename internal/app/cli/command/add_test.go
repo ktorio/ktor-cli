@@ -44,7 +44,7 @@ func TestAddProjectDependencies(t *testing.T) {
 			version = parts[1]
 		}
 
-		mc := ktor.MavenCoords{Artifact: artifact, Group: "io.ktor", Version: version}
+		mc := ktor.MavenCoords{Artifact: artifact, Group: "io.ktor", Version: version, IsTest: artifact == "ktor-server-test-host"}
 		depPlugins := ktor.DependentPlugins(mc)
 		var serPlugin *ktor.GradlePlugin
 		if len(depPlugins) > 0 {

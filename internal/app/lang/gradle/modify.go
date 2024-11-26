@@ -11,9 +11,14 @@ import (
 
 func AddRawDepAfter(build *BuildRoot, st parser.IStatementContext, mc ktor.MavenCoords) {
 	indent := lang.HiddenTokensToLeft(build.Stream, st.GetStart().GetTokenIndex())
+
+	fn := "implementation"
+	if mc.IsTest {
+		fn = "testImplementation"
+	}
 	build.Rewriter.InsertAfterDefault(
 		st.GetStop().GetTokenIndex(),
-		"\n"+indent+fmt.Sprintf("implementation(%s)", lang.Quote(mc.Group+":"+mc.Artifact)),
+		"\n"+indent+fmt.Sprintf("%s(%s)", fn, lang.Quote(mc.Group+":"+mc.Artifact)),
 	)
 }
 

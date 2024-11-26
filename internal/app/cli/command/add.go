@@ -82,7 +82,7 @@ func addDependency(mc ktor.MavenCoords, projectDir string, serPlugin *ktor.Gradl
 		if hasBom {
 			gradle.AddRawDepAfter(build, bom, mc)
 		} else {
-			if kDep, ok := gradle.FindKtorDep(build.Dependencies.List); ok {
+			if kDep, ok := gradle.FindKtorDep(build.Dependencies.List, mc.IsTest); ok {
 				gradle.AddRawDepAfter(build, kDep.Statement, mc)
 			}
 		}

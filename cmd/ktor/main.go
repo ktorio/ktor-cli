@@ -76,7 +76,7 @@ func main() {
 			log.Fatal(fmt.Sprintf("Cannot recognize the '%s' module.\nDid you mean '%s'?\n", mod, mc.Artifact))
 		}
 
-		fmt.Println(mc, dist, ok)
+		fmt.Println(mc)
 		depPlugins := ktor.DependentPlugins(mc)
 		var serPlugin *ktor.GradlePlugin
 		if len(depPlugins) > 0 {

@@ -35,7 +35,8 @@ func HasPlugin(plugins []Plugin, pluginId string) bool {
 	return false
 }
 
-func FindKtorDep(deps []Dep) (*Dep, bool) {
+func FindKtorDep(deps []Dep, preferTest bool) (*Dep, bool) {
+	var lastKtorDep *Dep
 	for _, dep := range deps {
 		if dep.Kind == HardcodedRep {
 			mc, ok := ktor.ParseMavenCoords(dep.Path)
@@ -45,6 +46,14 @@ func FindKtorDep(deps []Dep) (*Dep, bool) {
 			}
 
 			if mc.Group == "io.ktor" {
+				lastKtorDep = &dep
+
+				if !preferTest {
+					return &dep, true
+				}
+			}
+
+			if preferTest && dep.IsTest {
 				return &dep, true
 			}
 		}
@@ -54,6 +63,10 @@ func FindKtorDep(deps []Dep) (*Dep, bool) {
 				return &dep, true
 			}
 		}
+	}
+
+	if lastKtorDep != nil {
+		return lastKtorDep, true
 	}
 
 	return nil, false
