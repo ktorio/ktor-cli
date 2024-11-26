@@ -122,6 +122,11 @@ type MavenCoords struct {
 	Artifact, Group, Version string
 }
 
+type GradlePlugin struct {
+	Id              string
+	IsSerialization bool
+}
+
 func ParseMavenCoords(s string) (MavenCoords, bool) {
 	parts := strings.Split(s, ":")
 
@@ -154,6 +159,16 @@ func (mc *MavenCoords) RoughlySame(other MavenCoords) bool {
 	}
 
 	return false
+}
+
+func DependentPlugins(mc MavenCoords) []GradlePlugin {
+	var plugs []GradlePlugin
+
+	if strings.HasPrefix(mc.Artifact, "ktor-serialization-kotlinx") {
+		plugs = append(plugs, GradlePlugin{Id: "org.jetbrains.kotlin.plugin.serialization", IsSerialization: true})
+	}
+
+	return plugs
 }
 
 func FindModule(name string) (MavenCoords, int, bool) {

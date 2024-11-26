@@ -8,6 +8,7 @@ import (
 	"github.com/hexops/gotextdiff/myers"
 	"github.com/hexops/gotextdiff/span"
 	"github.com/ktorio/ktor-cli/internal/app/ktor"
+	"github.com/ktorio/ktor-cli/internal/app/lang"
 	"github.com/ktorio/ktor-cli/internal/app/lang/gradle"
 	"github.com/ktorio/ktor-cli/internal/app/lang/toml"
 	"os"
@@ -35,8 +36,8 @@ func (e AddModuleError) Error() string {
 	return fmt.Sprintf("cannot add module. error #%d: %v", e.Kind, e.Err)
 }
 
-func Add(mc ktor.MavenCoords, projectDir string) error {
-	files, err := addDependency(mc, projectDir)
+func Add(mc ktor.MavenCoords, projectDir string, serPlugin *ktor.GradlePlugin) error {
+	files, err := addDependency(mc, projectDir, serPlugin)
 
 	if err != nil {
 		return err
@@ -49,7 +50,7 @@ func Add(mc ktor.MavenCoords, projectDir string) error {
 	return nil
 }
 
-func addDependency(mc ktor.MavenCoords, projectDir string) ([]FileContent, error) {
+func addDependency(mc ktor.MavenCoords, projectDir string, serPlugin *ktor.GradlePlugin) ([]FileContent, error) {
 	versionsPath := filepath.Join(projectDir, "gradle", "libs.versions.toml")
 	buildPath := filepath.Join(projectDir, "build.gradle.kts")
 	var changes []FileContent
@@ -60,11 +61,24 @@ func addDependency(mc ktor.MavenCoords, projectDir string) ([]FileContent, error
 	}
 
 	if bom, ok := gradle.FindBom(build); ok {
+		if serPlugin != nil {
+			for _, p := range build.Plugins.List {
+				if p.IsKotlin && p.KotlinId == "jvm" {
+					indent := lang.HiddenTokensToLeft(build.Stream, p.Statement.GetStart().GetTokenIndex())
+					code := fmt.Sprintf("kotlin(\"plugin.serialization\") version \"%s\"", p.Version)
+					build.Rewriter.InsertAfterDefault(p.Statement.GetStop().GetTokenIndex(), "\n"+indent+code)
+					break
+				}
+			}
+		}
+
 		if gradle.FindRawDep(build, mc) {
 			return changes, nil
 		}
 
-		changes = append(changes, FileContent{Path: buildPath, Content: gradle.AddRawDepAfter(build, bom, mc)})
+		gradle.AddRawDepAfter(build, bom, mc)
+
+		changes = append(changes, FileContent{Path: buildPath, Content: build.Rewriter.GetTextDefault()})
 		return changes, nil
 	}
 
@@ -88,7 +102,7 @@ ktor = "%s"
 
 		rewriter := antlr.NewTokenStreamRewriter(build.Stream)
 		indent := strings.Repeat(" ", 4)
-		rewriter.InsertAfterDefault(build.Dependencies.Statements.GetStop().GetTokenIndex(), "\n"+indent+fmt.Sprintf("implementation(libs.%s)\n", strings.ReplaceAll(mc.Artifact, "-", ".")))
+		rewriter.InsertAfterDefault(build.Dependencies.Element.GetStop().GetTokenIndex(), "\n"+indent+fmt.Sprintf("implementation(libs.%s)\n", strings.ReplaceAll(mc.Artifact, "-", ".")))
 
 		changes = append(changes, FileContent{Path: buildPath, Content: rewriter.GetTextDefault()})
 

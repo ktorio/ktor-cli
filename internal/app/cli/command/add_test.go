@@ -44,7 +44,14 @@ func TestAddProjectDependencies(t *testing.T) {
 			version = parts[1]
 		}
 
-		files, err := addDependency(ktor.MavenCoords{Artifact: artifact, Group: "io.ktor", Version: version}, projDir)
+		mc := ktor.MavenCoords{Artifact: artifact, Group: "io.ktor", Version: version}
+		depPlugins := ktor.DependentPlugins(mc)
+		var serPlugin *ktor.GradlePlugin
+		if len(depPlugins) > 0 {
+			serPlugin = &depPlugins[0]
+		}
+
+		files, err := addDependency(mc, projDir, serPlugin)
 
 		if err != nil {
 			t.Fatal(err)

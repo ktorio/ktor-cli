@@ -10,14 +10,12 @@ import (
 	"strings"
 )
 
-func AddRawDepAfter(build *BuildRoot, st parser.IStatementContext, mc ktor.MavenCoords) string {
-	rewriter := antlr.NewTokenStreamRewriter(build.Stream)
+func AddRawDepAfter(build *BuildRoot, st parser.IStatementContext, mc ktor.MavenCoords) {
 	indent := lang.HiddenTokensToLeft(build.Stream, st.GetStart().GetTokenIndex())
-	rewriter.InsertAfterDefault(
+	build.Rewriter.InsertAfterDefault(
 		st.GetStop().GetTokenIndex(),
 		"\n"+indent+fmt.Sprintf("implementation(%s)", lang.Quote(mc.Group+":"+mc.Artifact)),
 	)
-	return rewriter.GetTextDefault()
 }
 
 func AddDependency(build *BuildRoot, versionKey string) (string, error) {

@@ -17,13 +17,28 @@ const (
 
 type BuildRoot struct {
 	Dependencies Dependencies
+	Plugins      Plugins
 	Stream       *antlr.CommonTokenStream
+	Rewriter     *antlr.TokenStreamRewriter
 	Parser       *parser.KotlinParser
 }
 
+type Plugins struct {
+	List []Plugin
+}
+
+type Plugin struct {
+	Statement  parser.IStatementContext
+	IsKotlin   bool
+	KotlinId   string
+	IsCatalog  bool
+	CatalogKey string
+	Version    string
+}
+
 type Dependencies struct {
-	List       []Dep
-	Statements parser.IStatementsContext
+	List    []Dep
+	Element parser.IStatementsContext
 }
 
 type Dep struct {
@@ -44,6 +59,7 @@ func ParseBuildFile(fp string) (*BuildRoot, error) {
 
 	root.Stream = p.GetTokenStream().(*antlr.CommonTokenStream)
 	root.Parser = p
+	root.Rewriter = antlr.NewTokenStreamRewriter(root.Stream)
 
 	for _, st := range p.Script().AllStatement() {
 		e, ok := lang.FindChild[parser.IPostfixUnaryExpressionContext](st)
@@ -55,10 +71,6 @@ func ParseBuildFile(fp string) (*BuildRoot, error) {
 		id, ok := e.GetChild(0).GetChild(0).(parser.ISimpleIdentifierContext)
 
 		if !ok {
-			continue
-		}
-
-		if id.GetText() != "dependencies" {
 			continue
 		}
 
@@ -74,74 +86,132 @@ func ParseBuildFile(fp string) (*BuildRoot, error) {
 			continue
 		}
 
-		root.Dependencies.Statements = lit.Statements()
-		for _, depSt := range lit.Statements().AllStatement() {
-			pus, ok := lang.FindChild[parser.IPostfixUnaryExpressionContext](depSt)
-
-			if !ok {
-				continue
-			}
-
-			if pus.GetChildCount() == 0 {
-				continue
-			}
-
-			pe, ok := pus.GetChild(0).(parser.IPrimaryExpressionContext)
-
-			if !ok {
-				continue
-			}
-
-			if pe.SimpleIdentifier().GetText() != "implementation" && pe.SimpleIdentifier().GetText() != "testImplementation" {
-				continue
-			}
-
-			pus2, ok := pus.GetChild(1).(parser.IPostfixUnarySuffixContext)
-
-			if !ok || pus2.CallSuffix() == nil {
-				continue
-			}
-
-			d := Dep{
-				IsTest:    pe.SimpleIdentifier().GetText() == "testImplementation",
-				Statement: depSt,
-			}
-
-			for _, va := range findValueArguments(pus2.CallSuffix()) {
-				ps, ok := lang.FindChild[parser.IPostfixUnaryExpressionContext](va)
+		if id.GetText() == "dependencies" {
+			root.Dependencies.Element = lit.Statements()
+			for _, depSt := range lit.Statements().AllStatement() {
+				pus, ok := lang.FindChild[parser.IPostfixUnaryExpressionContext](depSt)
 
 				if !ok {
 					continue
 				}
 
-				k := HardcodedRep
-				if strings.HasPrefix(va.GetText(), "libs.") {
-					k = VersionCatalogDep
-				}
-
-				d.Kind = k
-				d.Path = lang.Unquote(va.GetText())
-
-				if id := ps.PrimaryExpression().SimpleIdentifier(); id == nil || id.GetText() != "platform" {
+				if pus.GetChildCount() == 0 {
 					continue
 				}
 
-				pus2, ok = ps.GetChild(1).(parser.IPostfixUnarySuffixContext)
+				pe, ok := pus.GetChild(0).(parser.IPrimaryExpressionContext)
+
+				if !ok {
+					continue
+				}
+
+				if pe.SimpleIdentifier().GetText() != "implementation" && pe.SimpleIdentifier().GetText() != "testImplementation" {
+					continue
+				}
+
+				pus2, ok := pus.GetChild(1).(parser.IPostfixUnarySuffixContext)
+
+				if !ok || pus2.CallSuffix() == nil {
+					continue
+				}
+
+				d := Dep{
+					IsTest:    pe.SimpleIdentifier().GetText() == "testImplementation",
+					Statement: depSt,
+				}
+
+				for _, va := range findValueArguments(pus2.CallSuffix()) {
+					ps, ok := lang.FindChild[parser.IPostfixUnaryExpressionContext](va)
+
+					if !ok {
+						continue
+					}
+
+					k := HardcodedRep
+					if strings.HasPrefix(va.GetText(), "libs.") {
+						k = VersionCatalogDep
+					}
+
+					d.Kind = k
+					d.Path = lang.Unquote(va.GetText())
+
+					if id := ps.PrimaryExpression().SimpleIdentifier(); id == nil || id.GetText() != "platform" {
+						continue
+					}
+
+					pus2, ok = ps.GetChild(1).(parser.IPostfixUnarySuffixContext)
+
+					if !ok || pus2.CallSuffix() == nil {
+						continue
+					}
+
+					for _, va := range findValueArguments(pus2.CallSuffix()) {
+						if strings.HasPrefix(lang.Unquote(va.GetText()), "io.ktor:ktor-bom") {
+							d.IsBom = true
+							break
+						}
+					}
+				}
+
+				root.Dependencies.List = append(root.Dependencies.List, d)
+			}
+		} else if id.GetText() == "plugins" {
+			for _, depSt := range lit.Statements().AllStatement() {
+				ifc, ok := lang.FindChild[parser.IInfixFunctionCallContext](depSt)
+
+				plugin := Plugin{Statement: depSt}
+				if ok && ifc.GetChildCount() > 2 {
+					if id, ok := ifc.GetChild(1).(parser.ISimpleIdentifierContext); ok && id.GetText() == "version" {
+						if lit, ok := lang.FindChild[parser.IStringLiteralContext](ifc.GetChild(2)); ok {
+							plugin.Version = lang.Unquote(lit.GetText())
+						}
+					}
+				}
+
+				pus, ok := lang.FindChild[parser.IPostfixUnaryExpressionContext](depSt)
+
+				if !ok {
+					continue
+				}
+
+				if pus.GetChildCount() == 0 {
+					continue
+				}
+
+				pe, ok := pus.GetChild(0).(parser.IPrimaryExpressionContext)
+
+				if !ok {
+					continue
+				}
+
+				if pe.SimpleIdentifier().GetText() == "alias" {
+					plugin.IsCatalog = true
+					plugin.IsKotlin = false
+				}
+
+				if pe.SimpleIdentifier().GetText() == "kotlin" {
+					plugin.IsCatalog = false
+					plugin.IsKotlin = true
+				}
+
+				pus2, ok := pus.GetChild(1).(parser.IPostfixUnarySuffixContext)
 
 				if !ok || pus2.CallSuffix() == nil {
 					continue
 				}
 
 				for _, va := range findValueArguments(pus2.CallSuffix()) {
-					if strings.HasPrefix(lang.Unquote(va.GetText()), "io.ktor:ktor-bom") {
-						d.IsBom = true
-						break
+					if plugin.IsKotlin {
+						plugin.KotlinId = lang.Unquote(va.GetText())
+					} else if plugin.IsCatalog {
+						plugin.CatalogKey = va.GetText()
 					}
 				}
-			}
 
-			root.Dependencies.List = append(root.Dependencies.List, d)
+				root.Plugins.List = append(root.Plugins.List, plugin)
+			}
 		}
+
 	}
 
 	return &root, nil

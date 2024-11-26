@@ -77,7 +77,13 @@ func main() {
 		}
 
 		fmt.Println(mc, dist, ok)
-		err = command.Add(mc, projectDir)
+		depPlugins := ktor.DependentPlugins(mc)
+		var serPlugin *ktor.GradlePlugin
+		if len(depPlugins) > 0 {
+			serPlugin = &depPlugins[0]
+		}
+
+		err = command.Add(mc, projectDir, serPlugin)
 
 		if err != nil {
 			log.Fatal(err)
