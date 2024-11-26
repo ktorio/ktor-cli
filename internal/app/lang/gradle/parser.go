@@ -30,12 +30,11 @@ type Plugins struct {
 }
 
 type Plugin struct {
-	Statement  parser.IStatementContext
-	IsKotlin   bool
-	KotlinId   string
-	IsCatalog  bool
-	CatalogKey string
-	Version    string
+	Statement parser.IStatementContext
+	Prefix    string
+	Id        string
+	IsCatalog bool
+	Version   string
 }
 
 type Dependencies struct {
@@ -193,13 +192,15 @@ func ParseBuildFile(fp string) (*BuildRoot, error) {
 
 				if pe.SimpleIdentifier().GetText() == "alias" {
 					plugin.IsCatalog = true
-					plugin.IsKotlin = false
+					//plugin.IsKotlin = false
 				}
 
 				if pe.SimpleIdentifier().GetText() == "kotlin" {
 					plugin.IsCatalog = false
-					plugin.IsKotlin = true
+					//plugin.IsKotlin = true
 				}
+
+				plugin.Prefix = pe.SimpleIdentifier().GetText()
 
 				pus2, ok := pus.GetChild(1).(parser.IPostfixUnarySuffixContext)
 
@@ -208,11 +209,13 @@ func ParseBuildFile(fp string) (*BuildRoot, error) {
 				}
 
 				for _, va := range findValueArguments(pus2.CallSuffix()) {
-					if plugin.IsKotlin {
-						plugin.KotlinId = lang.Unquote(va.GetText())
-					} else if plugin.IsCatalog {
-						plugin.CatalogKey = va.GetText()
-					}
+					plugin.Id = lang.Unquote(va.GetText())
+
+					//if plugin.IsKotlin {
+					//	plugin.Id = lang.Unquote(va.GetText())
+					//} else if plugin.IsCatalog {
+					//	plugin.CatalogKey = va.GetText()
+					//}
 				}
 
 				root.Plugins.List = append(root.Plugins.List, plugin)

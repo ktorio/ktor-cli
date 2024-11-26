@@ -60,10 +60,13 @@ func addDependency(mc ktor.MavenCoords, projectDir string, serPlugin *ktor.Gradl
 		return changes, nil
 	}
 
-	if bom, ok := gradle.FindBom(build.Dependencies.List); ok {
+	bom, hasBom := gradle.FindBom(build.Dependencies.List)
+	_, hasKtorPlugin := gradle.FindKtorPlugin(build.Plugins.List)
+
+	if hasBom || hasKtorPlugin {
 		if serPlugin != nil && !gradle.HasPlugin(build.Plugins.List, "plugin.serialization") {
 			for _, p := range build.Plugins.List {
-				if p.IsKotlin && p.KotlinId == "jvm" {
+				if p.Prefix == "kotlin" && p.Id == "jvm" {
 					indent := lang.HiddenTokensToLeft(build.Stream, p.Statement.GetStart().GetTokenIndex())
 					code := fmt.Sprintf("kotlin(\"plugin.serialization\") version \"%s\"", p.Version)
 					build.Rewriter.InsertAfterDefault(p.Statement.GetStop().GetTokenIndex(), "\n"+indent+code)
@@ -76,7 +79,13 @@ func addDependency(mc ktor.MavenCoords, projectDir string, serPlugin *ktor.Gradl
 			return changes, nil
 		}
 
-		gradle.AddRawDepAfter(build, bom, mc)
+		if hasBom {
+			gradle.AddRawDepAfter(build, bom, mc)
+		} else {
+			if kDep, ok := gradle.FindKtorDep(build.Dependencies.List); ok {
+				gradle.AddRawDepAfter(build, kDep.Statement, mc)
+			}
+		}
 
 		changes = append(changes, FileContent{Path: buildPath, Content: build.Rewriter.GetTextDefault()})
 		return changes, nil
