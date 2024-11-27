@@ -6,6 +6,8 @@ import (
 	"strings"
 )
 
+var DefaultIndent = strings.Repeat(" ", 4)
+
 func Quote(s string) string {
 	if strings.HasPrefix(s, "\"") && strings.HasSuffix(s, "\"") {
 		return s

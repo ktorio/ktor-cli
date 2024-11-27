@@ -19,7 +19,7 @@ repositories {
 }
 
 dependencies {
-    implementation(libs.ktor.server.core)
+    implementation(libs.ktor.server.core2)
     implementation(libs.ktor.server.netty)
     implementation(libs.logback.classic)
     implementation(libs.ktor.server.config.yaml)

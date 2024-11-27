@@ -7,6 +7,5 @@ repositories {
 }
 
 dependencies {
-    implementation("io.ktor:ktor-server-webjars")
     implementation(platform("io.ktor:ktor-bom:2.3.13"))
 }

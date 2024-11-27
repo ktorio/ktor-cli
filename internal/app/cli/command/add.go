@@ -3,7 +3,6 @@ package command
 import (
 	"errors"
 	"fmt"
-	"github.com/antlr4-go/antlr/v4"
 	"github.com/hexops/gotextdiff"
 	"github.com/hexops/gotextdiff/myers"
 	"github.com/hexops/gotextdiff/span"
@@ -60,83 +59,121 @@ func addDependency(mc ktor.MavenCoords, projectDir string, serPlugin *ktor.Gradl
 		return changes, nil
 	}
 
+	// Looking for a hardcoded dependency
+	for _, dep := range build.Dependencies.List {
+		if dep.Kind != gradle.HardcodedDep {
+			continue
+		}
+
+		if coords, ok := ktor.ParseMavenCoords(dep.Path); ok && mc.RoughlySame(coords) {
+			return changes, nil
+		}
+	}
+
+	tomlDoc, tomlErr := toml.ParseToml(versionsPath)
+
+	// Check if catalog dependency is already present
+	if tomlErr == nil {
+		libEntry, ok := toml.FindLib(tomlDoc, mc)
+
+		if ok {
+			if _, ok := gradle.FindCatalogDep(build, libEntry.Key); ok {
+				return changes, nil
+			}
+		}
+	}
+
 	bom, hasBom := gradle.FindBom(build.Dependencies.List)
 	_, hasKtorPlugin := gradle.FindKtorPlugin(build.Plugins.List)
 
+	// Add serialization plugin
+	if serPlugin != nil {
+		if (hasBom || hasKtorPlugin) && !gradle.HasSerializationPlugin(build.Plugins.List) {
+			if kotlinPlugin, ok := gradle.FindKotlinPlugin(build.Plugins.List); ok {
+				lang.InsertLnAfter(
+					build.Rewriter,
+					kotlinPlugin.Statement.GetStop(),
+					lang.HiddenTokensToLeft(build.Stream, kotlinPlugin.Statement.GetStart().GetTokenIndex()),
+					gradle.KotlinPrefixedPlugin(ktor.SerPluginKotlinId, kotlinPlugin.Version),
+				)
+			}
+		} else if tomlErr == nil {
+			_, hasSerPlugin := toml.FindPlugin(tomlDoc, ktor.SerPluginId)
+			kotlinPluginEntry, hasKotlinPlugin := toml.FindPlugin(tomlDoc, ktor.KotlinJvmPluginId)
+
+			if !hasSerPlugin && hasKotlinPlugin {
+				if vRef, ok := kotlinPluginEntry.Get("version.ref"); ok {
+					key := "kotlin-serialization"
+
+					lang.InsertLnAfter(
+						tomlDoc.Rewriter,
+						kotlinPluginEntry.Expression.GetStop(),
+						lang.HiddenTokensToLeft(tomlDoc.Stream, kotlinPluginEntry.Expression.GetStart().GetTokenIndex()),
+						toml.PluginEntry(key, ktor.SerPluginId, vRef),
+					)
+
+					if len(build.Plugins.List) > 0 {
+						lastPlugin := build.Plugins.List[len(build.Plugins.List)-1]
+
+						lang.InsertLnAfter(
+							build.Rewriter,
+							lastPlugin.Statement.GetStop(),
+							lang.HiddenTokensToLeft(build.Stream, lastPlugin.Statement.GetStart().GetTokenIndex()),
+							gradle.CatalogPlugin(key),
+						)
+					}
+				}
+			}
+		}
+	}
+
+	// Add dependency with BOM defined
 	if hasBom || hasKtorPlugin {
-		if serPlugin != nil && !gradle.HasSerializationPlugin(build.Plugins.List) {
-			for _, p := range build.Plugins.List {
-				if p.Prefix == "kotlin" && p.Id == "jvm" {
-					indent := lang.HiddenTokensToLeft(build.Stream, p.Statement.GetStart().GetTokenIndex())
-					code := fmt.Sprintf("kotlin(\"plugin.serialization\") version \"%s\"", p.Version)
-					build.Rewriter.InsertAfterDefault(p.Statement.GetStop().GetTokenIndex(), "\n"+indent+code)
-					break
-				}
+		if kDep, ok := gradle.FindKtorDep(build.Dependencies.List, mc.IsTest); ok {
+			suffix := ""
+			if strings.HasSuffix(kDep.Path, "-jvm") {
+				suffix = "-jvm"
 			}
-		}
 
-		if gradle.FindRawDep(build.Dependencies.List, mc) {
-			return changes, nil
-		}
+			lang.InsertLnAfter(
+				build.Rewriter,
+				kDep.Statement.GetStop(),
+				lang.HiddenTokensToLeft(build.Stream, kDep.Statement.GetStart().GetTokenIndex()),
+				gradle.RawDependencyNoVersion(mc, suffix),
+			)
 
-		if hasBom {
-			gradle.AddRawDepAfter(build, bom, mc, "")
-		} else {
-			if kDep, ok := gradle.FindKtorDep(build.Dependencies.List, mc.IsTest); ok {
-				suffix := ""
-				if strings.HasSuffix(kDep.Path, "-jvm") {
-					suffix = "-jvm"
-				}
-
-				gradle.AddRawDepAfter(build, kDep.Statement, mc, suffix)
-			}
+		} else if hasBom {
+			lang.InsertLnAfter(
+				build.Rewriter,
+				bom.GetStop(),
+				lang.HiddenTokensToLeft(build.Stream, bom.GetStart().GetTokenIndex()),
+				gradle.RawDependencyNoVersion(mc, ""),
+			)
 		}
 
 		changes = append(changes, FileContent{Path: buildPath, Content: build.Rewriter.GetTextDefault()})
 		return changes, nil
 	}
 
-	hasKtorDeps := false
-	for _, dep := range build.Dependencies.List {
-		if dep.Kind == gradle.VersionCatalogDep && strings.HasPrefix(dep.Path, "libs.ktor") {
-			hasKtorDeps = true
-			break
+	// versions catalog file doesn't exist
+	if _, err := os.Stat(versionsPath); errors.Is(err, os.ErrNotExist) {
+		changes = append(changes, FileContent{Path: versionsPath, Content: toml.NewTomlWithKtor(mc)})
+
+		suffix := ""
+		if len(build.Dependencies.List) == 0 {
+			suffix = "\n"
 		}
-	}
 
-	if _, err := os.Stat(versionsPath); errors.Is(err, os.ErrNotExist) && !hasKtorDeps {
-		tomlContent := fmt.Sprintf(`[versions]
-ktor = "%s"
+		lang.InsertLnAfter(
+			build.Rewriter,
+			build.Dependencies.Statements.GetStop(),
+			lang.DefaultIndent,
+			gradle.CatalogDependency(mc.Artifact)+suffix,
+		)
 
-[libraries]
-%s = { module = "%s:%s", version.ref = "ktor" }
-`, mc.Version, mc.Artifact, mc.Group, mc.Artifact)
-
-		changes = append(changes, FileContent{Path: versionsPath, Content: tomlContent})
-
-		rewriter := antlr.NewTokenStreamRewriter(build.Stream)
-		indent := strings.Repeat(" ", 4)
-		rewriter.InsertAfterDefault(build.Dependencies.Element.GetStop().GetTokenIndex(), "\n"+indent+fmt.Sprintf("implementation(libs.%s)\n", strings.ReplaceAll(mc.Artifact, "-", ".")))
-
-		changes = append(changes, FileContent{Path: buildPath, Content: rewriter.GetTextDefault()})
+		changes = append(changes, FileContent{Path: buildPath, Content: build.Rewriter.GetTextDefault()})
 
 		return changes, nil
-	}
-
-	tomlDoc, err := toml.ParseToml(versionsPath)
-
-	if err != nil {
-		return changes, err
-	}
-
-	key, ok := toml.FindCatalogLib(tomlDoc.Tables.List, mc)
-
-	if ok {
-		ok = gradle.FindCatalogDep(build.Dependencies.List, key)
-
-		if ok {
-			return changes, nil
-		}
 	}
 
 	modified, err := toml.AddLib(tomlDoc, mc)
@@ -147,7 +184,7 @@ ktor = "%s"
 
 	changes = append(changes, FileContent{Path: versionsPath, Content: modified})
 
-	modified, err = gradle.AddDependency(build, mc.Artifact)
+	modified, err = gradle.AddCatalogDep(build, mc.Artifact)
 
 	if err != nil {
 		return changes, err

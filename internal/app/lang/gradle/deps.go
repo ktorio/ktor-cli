@@ -5,16 +5,6 @@ import (
 	"strings"
 )
 
-func FindCatalogDep(deps []Dep, catalogKey string) bool {
-	for _, dep := range deps {
-		if dep.Kind == VersionCatalogDep && dep.Path == "libs."+strings.ReplaceAll(catalogKey, "-", ".") {
-			return true
-		}
-	}
-
-	return false
-}
-
 func FindKtorPlugin(plugins []Plugin) (*Plugin, bool) {
 	for _, p := range plugins {
 		if p.Prefix == "id" && p.Id == "io.ktor.plugin" {
@@ -25,9 +15,23 @@ func FindKtorPlugin(plugins []Plugin) (*Plugin, bool) {
 	return nil, false
 }
 
+func FindKotlinPlugin(plugins []Plugin) (*Plugin, bool) {
+	for _, p := range plugins {
+		if p.Prefix == "kotlin" && p.Id == "jvm" {
+			return &p, true
+			//indent := lang.HiddenTokensToLeft(build.Stream, p.Statement.GetStart().GetTokenIndex())
+			//code := fmt.Sprintf("kotlin(\"%s\") version \"%s\"", ktor.SerPluginKotlinId, p.Version)
+			//build.Rewriter.InsertAfterDefault(p.Statement.GetStop().GetTokenIndex(), "\n"+indent+code)
+			//break
+		}
+	}
+
+	return nil, false
+}
+
 func HasSerializationPlugin(plugins []Plugin) bool {
 	for _, p := range plugins {
-		if (p.Prefix == "kotlin" && p.Id == "plugin.serialization") || (p.Prefix == "id" && p.Id == "org.jetbrains.kotlin.plugin.serialization") {
+		if (p.Prefix == "kotlin" && p.Id == ktor.SerPluginKotlinId) || (p.Prefix == "id" && p.Id == ktor.SerPluginId) {
 			return true
 		}
 	}
@@ -38,7 +42,7 @@ func HasSerializationPlugin(plugins []Plugin) bool {
 func FindKtorDep(deps []Dep, preferTest bool) (*Dep, bool) {
 	var lastKtorDep *Dep
 	for _, dep := range deps {
-		if dep.Kind == HardcodedRep {
+		if dep.Kind == HardcodedDep {
 			mc, ok := ktor.ParseMavenCoords(dep.Path)
 
 			if !ok {
@@ -72,22 +76,22 @@ func FindKtorDep(deps []Dep, preferTest bool) (*Dep, bool) {
 	return nil, false
 }
 
-func FindRawDep(deps []Dep, mavenCoords ktor.MavenCoords) bool {
-	for _, dep := range deps {
-		if dep.Kind != HardcodedRep {
-			continue
-		}
-
-		mc, ok := ktor.ParseMavenCoords(dep.Path)
-
-		if !ok {
-			continue
-		}
-
-		if mavenCoords.RoughlySame(mc) {
-			return true
+func FindCatalogDep(build *BuildRoot, catalogKey string) (*Dep, bool) {
+	for _, dep := range build.Dependencies.List {
+		if dep.Kind == VersionCatalogDep && dep.Path == "libs."+strings.ReplaceAll(catalogKey, "-", ".") {
+			return &dep, true
 		}
 	}
 
-	return false
+	return nil, false
+}
+
+func FindCatalogDepPrefixed(build *BuildRoot, prefix string) (*Dep, bool) {
+	for _, dep := range build.Dependencies.List {
+		if dep.Kind == VersionCatalogDep && strings.HasPrefix(dep.Path, prefix) {
+			return &dep, true
+		}
+	}
+
+	return nil, false
 }

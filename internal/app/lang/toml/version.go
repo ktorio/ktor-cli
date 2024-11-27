@@ -1,18 +1,16 @@
 package toml
 
 import (
-	"errors"
-	"fmt"
 	"github.com/antlr4-go/antlr/v4"
 	"github.com/ktorio/ktor-cli/internal/app/ktor"
 	"github.com/ktorio/ktor-cli/internal/app/lang"
 	parser "github.com/ktorio/ktor-cli/internal/app/lang/parsers/toml"
-	"strings"
 )
 
 type Document struct {
-	Stream *antlr.CommonTokenStream
-	Tables Tables
+	Stream   *antlr.CommonTokenStream
+	Rewriter *antlr.TokenStreamRewriter
+	Tables   Tables
 }
 
 type Tables struct {
@@ -33,20 +31,34 @@ const (
 )
 
 type TableEntry struct {
-	Kind     TableEntryKind
-	KeyValue map[string]string
-	Key      string
-	String   string
+	Kind       TableEntryKind
+	KeyValue   map[string]string
+	Key        string
+	String     string
+	Expression parser.IExpressionContext
+}
+
+func (te *TableEntry) Get(key string) (string, bool) {
+	if te.Kind != ValueMap {
+		return "", false
+	}
+
+	v, ok := te.KeyValue[key]
+	return v, ok
 }
 
 func ParseToml(fp string) (*Document, error) {
-	p, err := NewParser(fp)
+	input, err := antlr.NewFileStream(fp)
 
 	if err != nil {
 		return nil, err
 	}
 
-	doc := Document{Stream: p.GetTokenStream().(*antlr.CommonTokenStream)}
+	lexer := parser.NewTomlLexer(&input.InputStream)
+	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
+	p := parser.NewTomlParser(stream)
+
+	doc := Document{Stream: stream, Rewriter: antlr.NewTokenStreamRewriter(stream)}
 
 	table := Table{}
 	for _, ch := range p.Document().GetChildren() {
@@ -94,7 +106,7 @@ func tableName(t parser.ITableContext) string {
 
 func parseEntry(tree antlr.Tree) TableEntry {
 	exp, ok := tree.(parser.IExpressionContext)
-	entry := TableEntry{}
+	entry := TableEntry{Expression: exp}
 
 	if !ok {
 		return entry
@@ -131,76 +143,45 @@ func parseEntry(tree antlr.Tree) TableEntry {
 	return entry
 }
 
-func NewParser(fp string) (*parser.TomlParser, error) {
-	input, err := antlr.NewFileStream(fp)
-
-	if err != nil {
-		return nil, err
-	}
-
-	lexer := parser.NewTomlLexer(&input.InputStream)
-	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
-
-	return parser.NewTomlParser(stream), nil
-}
-
-func FindCatalogLib(tables []Table, mavenCoords ktor.MavenCoords) (string, bool) {
-	for _, t := range tables {
-		for _, e := range t.Entries {
-			if e.Kind != ValueMap {
-				continue
-			}
-			m, ok := e.KeyValue["module"]
-
-			if !ok || !strings.HasPrefix(m, "io.ktor") {
-				return m, true
-			}
-
-			if mc, ok := ktor.ParseMavenCoords(m); ok && mavenCoords.RoughlySame(mc) {
-				return e.Key, true
-			}
-		}
-	}
-
-	return "", false
-}
-
 func AddLib(doc *Document, mc ktor.MavenCoords) (string, error) {
-	key := ""
-	var versionsTable parser.ITableContext
-	var libTable parser.ITableContext
-	stream := doc.Stream
+	versionKey := ""
+	versionsTable, hasVersionsTable := FindTable(doc, "versions")
 
-	for _, t := range doc.Tables.List {
-		if t.Name == "versions" {
-			versionsTable = t.Element
-		}
-
-		if t.Name == "libraries" {
-			libTable = t.Element
-		}
-
-		for _, e := range t.Entries {
-			if e.Kind == StringValue && strings.HasPrefix(e.Key, "ktor") {
-				key = e.Key
-				break
-			}
+	if hasVersionsTable {
+		if e, ok := FindVersionPrefixed(doc, "ktor"); ok {
+			versionKey = e.Key
 		}
 	}
 
-	rewriter := antlr.NewTokenStreamRewriter(stream)
-	if key == "" && versionsTable != nil {
-		key = "ktor"
-		v := fmt.Sprintf("%s = \"%s\"", key, mc.Version)
-		rewriter.InsertAfterDefault(versionsTable.GetStop().GetTokenIndex(), "\n"+lang.HiddenTokensToLeft(stream, versionsTable.GetStart().GetTokenIndex())+v)
+	rewriter := doc.Rewriter
+
+	if versionKey == "" && hasVersionsTable {
+		versionKey = "ktor"
+
+		lang.InsertLnAfter(
+			doc.Rewriter,
+			versionsTable.Element.GetStop(),
+			lang.HiddenTokensToLeft(doc.Stream, versionsTable.Element.GetStart().GetTokenIndex()),
+			VersionEntry(versionKey, mc.Version),
+		)
 	}
 
-	if libTable == nil {
-		return "", errors.New("toml: unable to find [libraries] section")
+	libTable, hasLibTable := FindTable(doc, "libraries")
+	if !hasLibTable {
+		if hasVersionsTable && len(versionsTable.Entries) > 0 {
+			lastVersion := versionsTable.Entries[len(versionsTable.Entries)-1].Expression
+			rewriter.InsertAfterDefault(lastVersion.GetStop().GetTokenIndex(), "\n\n"+NewLibraryTableWithKtor(mc))
+		}
+
+		return rewriter.GetTextDefault(), nil
 	}
 
-	lib := fmt.Sprintf("%s = { module = \"%s\", version.ref = \"%s\" }", mc.Artifact, mc.String(), key)
-	rewriter.InsertAfterDefault(libTable.GetStop().GetTokenIndex(), "\n"+lang.HiddenTokensToLeft(stream, libTable.GetStop().GetTokenIndex())+lib)
+	lang.InsertLnAfter(
+		rewriter,
+		libTable.Element.GetStop(),
+		"",
+		LibEntry(versionKey, mc),
+	)
 
 	return rewriter.GetTextDefault(), nil
 }

@@ -14,15 +14,20 @@ type DepKind int
 
 const (
 	VersionCatalogDep DepKind = iota
-	HardcodedRep
+	HardcodedDep
 )
 
 type BuildRoot struct {
 	Dependencies Dependencies
+	Repositories Repositories
 	Plugins      Plugins
 	Stream       *antlr.CommonTokenStream
 	Rewriter     *antlr.TokenStreamRewriter
 	Parser       *parser.KotlinParser
+}
+
+type Repositories struct {
+	Statement parser.IStatementContext
 }
 
 type Plugins struct {
@@ -38,8 +43,8 @@ type Plugin struct {
 }
 
 type Dependencies struct {
-	List    []Dep
-	Element parser.IStatementsContext
+	List       []Dep
+	Statements parser.IStatementsContext
 }
 
 type Dep struct {
@@ -93,7 +98,7 @@ func ParseBuildFile(fp string) (*BuildRoot, error) {
 		}
 
 		if id.GetText() == "dependencies" {
-			root.Dependencies.Element = lit.Statements()
+			root.Dependencies.Statements = lit.Statements()
 			for _, depSt := range lit.Statements().AllStatement() {
 				pus, ok := lang.FindChild[parser.IPostfixUnaryExpressionContext](depSt)
 
@@ -133,7 +138,7 @@ func ParseBuildFile(fp string) (*BuildRoot, error) {
 						continue
 					}
 
-					k := HardcodedRep
+					k := HardcodedDep
 					if strings.HasPrefix(va.GetText(), "libs.") {
 						k = VersionCatalogDep
 					}
@@ -220,6 +225,8 @@ func ParseBuildFile(fp string) (*BuildRoot, error) {
 
 				root.Plugins.List = append(root.Plugins.List, plugin)
 			}
+		} else if id.GetText() == "repositories" {
+			root.Repositories.Statement = st
 		}
 
 	}

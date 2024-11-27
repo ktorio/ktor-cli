@@ -85,6 +85,10 @@ var testing = map[string]struct{}{
 	"test-host": {},
 }
 
+const SerPluginId = "org.jetbrains.kotlin.plugin.serialization"
+const SerPluginKotlinId = "plugin.serialization"
+const KotlinJvmPluginId = "org.jetbrains.kotlin.jvm"
+
 const ktorGroup = "io.ktor"
 
 var modules map[string]MavenCoords
