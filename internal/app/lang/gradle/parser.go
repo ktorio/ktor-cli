@@ -197,15 +197,17 @@ func ParseBuildFile(fp string) (*BuildRoot, error) {
 
 				if pe.SimpleIdentifier().GetText() == "alias" {
 					plugin.IsCatalog = true
-					//plugin.IsKotlin = false
 				}
 
 				if pe.SimpleIdentifier().GetText() == "kotlin" {
 					plugin.IsCatalog = false
-					//plugin.IsKotlin = true
 				}
 
 				plugin.Prefix = pe.SimpleIdentifier().GetText()
+
+				if pus.GetChildCount() < 2 {
+					continue
+				}
 
 				pus2, ok := pus.GetChild(1).(parser.IPostfixUnarySuffixContext)
 

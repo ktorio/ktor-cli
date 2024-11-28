@@ -1,6 +1,7 @@
 package command
 
 import (
+	"bufio"
 	"errors"
 	"fmt"
 	"github.com/hexops/gotextdiff"
@@ -42,11 +43,70 @@ func Add(mc ktor.MavenCoords, projectDir string, serPlugin *ktor.GradlePlugin) e
 		return err
 	}
 
+	if len(files) == 0 {
+		fmt.Println("Nothing to change.")
+		fmt.Println("Goodbye!")
+		return nil
+	}
+
 	for _, f := range files {
 		fmt.Println(getDiff(f.Path, f.Content))
 	}
 
+	fmt.Print("Do you want to apply the changes above? (y/n) ")
+	scanner := bufio.NewScanner(os.Stdin)
+	scanner.Scan()
+	answer := scanner.Text()
+
+	if answer == "y" || answer == "Y" || answer == "yes" {
+		err = applyChanges(files)
+
+		if err == nil {
+			fmt.Println("The changes are successfully applied.")
+		} else {
+			fmt.Println("An error occurred applying the changes.")
+		}
+
+		return err
+	}
+
+	fmt.Println("Goodbye!")
+
 	return nil
+}
+
+func applyChanges(files []FileContent) error {
+	// Load all current files content into memory
+	var savedContents [][]byte
+	for _, f := range files {
+		b, err := os.ReadFile(f.Path)
+		if err != nil {
+			return err
+		}
+
+		savedContents = append(savedContents, b)
+	}
+
+	// Write changes to all files
+	var lastErr error
+	for _, fc := range files {
+		err := os.WriteFile(fc.Path, []byte(fc.Content), 0777)
+
+		if err != nil {
+			lastErr = err
+			break
+		}
+	}
+
+	// If at least one error -> roll everything back
+	if lastErr != nil {
+		for i, b := range savedContents {
+			fc := files[i]
+			_ = os.WriteFile(fc.Path, b, 0777)
+		}
+	}
+
+	return lastErr
 }
 
 func addDependency(mc ktor.MavenCoords, projectDir string, serPlugin *ktor.GradlePlugin) ([]FileContent, error) {
