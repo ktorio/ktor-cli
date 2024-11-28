@@ -51,10 +51,16 @@ func TestAddProjectDependencies(t *testing.T) {
 			serPlugin = &depPlugins[0]
 		}
 
-		files, err := addDependency(mc, projDir, serPlugin)
+		files, result, err := addDependency(mc, projDir, serPlugin)
 
 		if err != nil {
 			t.Fatal(err)
+		}
+
+		if e.Name() == "multi-platform-catalog-projects-not-supported" || e.Name() == "multi-platform-projects-not-supported" {
+			if result != MultiplatformProjectNotSupported {
+				t.Fatalf("Expected Multiplatform project error, got %v", result)
+			}
 		}
 
 		err = filepath.WalkDir(projDir, func(p string, d fs.DirEntry, err error) error {

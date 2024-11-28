@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
+	"github.com/antlr4-go/antlr/v4"
 	"github.com/hexops/gotextdiff"
 	"github.com/hexops/gotextdiff/myers"
 	"github.com/hexops/gotextdiff/span"
@@ -33,12 +34,26 @@ type FileContent struct {
 	Content string
 }
 
+type AddDependencyResult string
+
+const (
+	Success                          AddDependencyResult = "success"
+	Error                                                = "error"
+	MultiplatformProjectNotSupported                     = "multiplatform-not-supported"
+)
+
 func (e AddModuleError) Error() string {
 	return fmt.Sprintf("cannot add module. error #%d: %v", e.Kind, e.Err)
 }
 
 func Add(mc ktor.MavenCoords, projectDir string, serPlugin *ktor.GradlePlugin) error {
-	files, err := addDependency(mc, projectDir, serPlugin)
+	files, result, err := addDependency(mc, projectDir, serPlugin)
+
+	switch result {
+	case MultiplatformProjectNotSupported:
+		fmt.Println("Adding Ktor dependency to a Kotlin multiplatform project is not supported.")
+		os.Exit(1)
+	}
 
 	if err != nil {
 		return err
@@ -110,7 +125,7 @@ func applyChanges(files []FileContent) error {
 	return lastErr
 }
 
-func addDependency(mc ktor.MavenCoords, projectDir string, serPlugin *ktor.GradlePlugin) ([]FileContent, error) {
+func addDependency(mc ktor.MavenCoords, projectDir string, serPlugin *ktor.GradlePlugin) ([]FileContent, AddDependencyResult, error) {
 	versionsPath := filepath.Join(projectDir, "gradle", "libs.versions.toml")
 	buildPath := filepath.Join(projectDir, "build.gradle.kts")
 	var changes []FileContent
@@ -131,7 +146,16 @@ func addDependency(mc ktor.MavenCoords, projectDir string, serPlugin *ktor.Gradl
 
 	build, err := gradle.ParseBuildFile(buildPath)
 	if err != nil {
-		return changes, err
+		return changes, Error, err
+	}
+
+	catalogPath := versionsPath
+	if !utils.Exists(catalogPath) {
+		catalogPath = filepath.Join(projectDir, "..", "gradle", "libs.versions.toml")
+	}
+
+	if isKmpProject(build, catalogPath) {
+		return changes, MultiplatformProjectNotSupported, nil
 	}
 
 	// Looking for a hardcoded dependency
@@ -141,19 +165,18 @@ func addDependency(mc ktor.MavenCoords, projectDir string, serPlugin *ktor.Gradl
 		}
 
 		if coords, ok := ktor.ParseMavenCoords(dep.Path); ok && mc.RoughlySame(coords) {
-			return changes, nil
+			return changes, Success, nil
 		}
 	}
 
 	tomlDoc, tomlErr := toml.ParseToml(versionsPath)
-
 	// Check if catalog dependency is already present
 	if tomlErr == nil {
 		libEntry, ok := toml.FindLib(tomlDoc, mc)
 
 		if ok {
 			if _, ok := gradle.FindCatalogDep(build, libEntry.Key); ok {
-				return changes, nil
+				return changes, Success, nil
 			}
 		}
 	}
@@ -227,34 +250,38 @@ func addDependency(mc ktor.MavenCoords, projectDir string, serPlugin *ktor.Gradl
 		}
 
 		changes = append(changes, FileContent{Path: buildPath, Content: build.Rewriter.GetTextDefault()})
-		return changes, nil
+		return changes, Success, nil
 	}
 
 	// versions catalog file doesn't exist
 	if _, err := os.Stat(versionsPath); errors.Is(err, os.ErrNotExist) {
 		changes = append(changes, FileContent{Path: versionsPath, Content: toml.NewTomlWithKtor(mc)})
 
-		suffix := ""
-		if len(build.Dependencies.List) == 0 {
-			suffix = "\n"
+		if build.Dependencies.Statements != nil {
+			suffix := ""
+			if len(build.Dependencies.List) == 0 {
+				suffix = "\n"
+			}
+
+			lang.InsertLnAfter(
+				build.Rewriter,
+				build.Dependencies.Statements.GetStop(),
+				lang.DefaultIndent,
+				gradle.CatalogDependency(mc.Artifact)+suffix,
+			)
 		}
 
-		lang.InsertLnAfter(
-			build.Rewriter,
-			build.Dependencies.Statements.GetStop(),
-			lang.DefaultIndent,
-			gradle.CatalogDependency(mc.Artifact)+suffix,
-		)
+		if len(build.Rewriter.GetProgram(antlr.DefaultProgramName)) > 0 {
+			changes = append(changes, FileContent{Path: buildPath, Content: build.Rewriter.GetTextDefault()})
+		}
 
-		changes = append(changes, FileContent{Path: buildPath, Content: build.Rewriter.GetTextDefault()})
-
-		return changes, nil
+		return changes, Success, nil
 	}
 
 	modified, err := toml.AddLib(tomlDoc, mc)
 
 	if err != nil {
-		return changes, err
+		return changes, Error, err
 	}
 
 	changes = append(changes, FileContent{Path: versionsPath, Content: modified})
@@ -262,19 +289,51 @@ func addDependency(mc ktor.MavenCoords, projectDir string, serPlugin *ktor.Gradl
 	modified, err = gradle.AddCatalogDep(build, mc.Artifact)
 
 	if err != nil {
-		return changes, err
+		return changes, Error, err
 	}
 
 	changes = append(changes, FileContent{Path: buildPath, Content: modified})
 
-	return changes, nil
+	return changes, Success, nil
+}
+
+func isKmpProject(build *gradle.BuildRoot, versionsPath string) bool {
+	for _, p := range build.Plugins.List {
+		if p.Prefix == "kotlin" && p.Id == "multiplatform" {
+			return true
+		}
+	}
+
+	tomlDoc, err := toml.ParseToml(versionsPath)
+
+	if err != nil {
+		return false
+	}
+
+	plugin, ok := toml.FindPlugin(tomlDoc, ktor.KmpPluginId)
+
+	if !ok {
+		return false
+	}
+
+	for _, p := range build.Plugins.List {
+		if p.Prefix == "kotlin" && p.Id == "multiplatform" {
+			return true
+		}
+
+		if p.Prefix == "alias" && p.Id == fmt.Sprintf("libs.plugins.%s", plugin.Key) {
+			return true
+		}
+	}
+
+	return false
 }
 
 func getDiff(fp string, new string) string {
 	old, err := os.ReadFile(fp)
 
 	if err != nil {
-		return ""
+		old = []byte{}
 	}
 
 	edits := myers.ComputeEdits(span.URIFromPath(fp), string(old), new)
