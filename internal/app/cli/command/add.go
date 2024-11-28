@@ -11,6 +11,7 @@ import (
 	"github.com/ktorio/ktor-cli/internal/app/lang"
 	"github.com/ktorio/ktor-cli/internal/app/lang/gradle"
 	"github.com/ktorio/ktor-cli/internal/app/lang/toml"
+	"github.com/ktorio/ktor-cli/internal/app/utils"
 	"os"
 	"path/filepath"
 	"strings"
@@ -114,9 +115,23 @@ func addDependency(mc ktor.MavenCoords, projectDir string, serPlugin *ktor.Gradl
 	buildPath := filepath.Join(projectDir, "build.gradle.kts")
 	var changes []FileContent
 
+	if !utils.Exists(buildPath) {
+		if utils.Exists(filepath.Join(projectDir, "pom.xml")) {
+			fmt.Println("Adding Ktor dependency to a Maven project is not supported.")
+		}
+
+		if utils.Exists(filepath.Join(projectDir, "build.gradle")) {
+			fmt.Println("Adding Ktor dependency to a Gradle project with Groovy DSL is not supported.")
+		}
+
+		fmt.Printf("Build file %s is expected but not found.\n", buildPath)
+
+		os.Exit(1)
+	}
+
 	build, err := gradle.ParseBuildFile(buildPath)
 	if err != nil {
-		return changes, nil
+		return changes, err
 	}
 
 	// Looking for a hardcoded dependency
