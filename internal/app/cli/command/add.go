@@ -53,12 +53,12 @@ func Add(mc ktor.MavenCoords, projectDir string, serPlugin *ktor.GradlePlugin) e
 		fmt.Println(getDiff(f.Path, f.Content))
 	}
 
-	fmt.Print("Do you want to apply the changes above? (y/n) ")
+	fmt.Print("Do you want to apply the changes above (y/n)? ")
 	scanner := bufio.NewScanner(os.Stdin)
 	scanner.Scan()
 	answer := scanner.Text()
 
-	if answer == "y" || answer == "Y" || answer == "yes" {
+	if answer == "y" || answer == "Y" || answer == "yes" || answer == "Yes" {
 		err = applyChanges(files)
 
 		if err == nil {

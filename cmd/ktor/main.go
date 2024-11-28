@@ -25,6 +25,14 @@ import (
 var Version string
 
 func main() {
+	defer func() {
+		if e := recover(); e != nil {
+			fmt.Printf("Unrecoverable error occurred: %s\n", e)
+			fmt.Println("This looks like a bug so please file an issue at https://youtrack.jetbrains.com/newIssue?project=ktor.")
+			fmt.Printf("Please put the following stack trace into the issue's description: \n\n%s", string(debug.Stack()))
+		}
+	}()
+
 	args, err := cli.ProcessArgs(cli.ParseArgs(os.Args))
 
 	if err != nil {
