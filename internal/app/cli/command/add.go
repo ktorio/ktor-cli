@@ -40,6 +40,8 @@ const (
 	Success                          AddDependencyResult = "success"
 	Error                                                = "error"
 	MultiplatformProjectNotSupported                     = "multiplatform-not-supported"
+	MavenProjectNotSupported                             = "maven-not-supported"
+	GroovyDslNotSupported                                = "groovy-dsl-not-supported"
 )
 
 func (e AddModuleError) Error() string {
@@ -52,6 +54,12 @@ func Add(mc ktor.MavenCoords, projectDir string, serPlugin *ktor.GradlePlugin) e
 	switch result {
 	case MultiplatformProjectNotSupported:
 		fmt.Println("Adding Ktor dependency to a Kotlin multiplatform project is not supported.")
+		os.Exit(1)
+	case MavenProjectNotSupported:
+		fmt.Println("Adding Ktor dependency to a Maven project is not supported.")
+		os.Exit(1)
+	case GroovyDslNotSupported:
+		fmt.Println("Adding Ktor dependency to a Gradle project with Groovy DSL is not supported.")
 		os.Exit(1)
 	}
 
@@ -132,16 +140,12 @@ func addDependency(mc ktor.MavenCoords, projectDir string, serPlugin *ktor.Gradl
 
 	if !utils.Exists(buildPath) {
 		if utils.Exists(filepath.Join(projectDir, "pom.xml")) {
-			fmt.Println("Adding Ktor dependency to a Maven project is not supported.")
+			return changes, MavenProjectNotSupported, nil
 		}
 
 		if utils.Exists(filepath.Join(projectDir, "build.gradle")) {
-			fmt.Println("Adding Ktor dependency to a Gradle project with Groovy DSL is not supported.")
+			return changes, GroovyDslNotSupported, nil
 		}
-
-		fmt.Printf("Build file %s is expected but not found.\n", buildPath)
-
-		os.Exit(1)
 	}
 
 	build, err := gradle.ParseBuildFile(buildPath)

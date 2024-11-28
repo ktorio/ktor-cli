@@ -57,9 +57,18 @@ func TestAddProjectDependencies(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if e.Name() == "multi-platform-catalog-projects-not-supported" || e.Name() == "multi-platform-projects-not-supported" {
+		switch e.Name() {
+		case "multi-platform-catalog-projects-not-supported", "multi-platform-projects-not-supported":
 			if result != MultiplatformProjectNotSupported {
 				t.Fatalf("Expected Multiplatform project error, got %v", result)
+			}
+		case "maven-projects-not-supported":
+			if result != MavenProjectNotSupported {
+				t.Fatalf("Expected Maven project error, got %v", result)
+			}
+		case "groovy-dsl-projects-not-supported":
+			if result != GroovyDslNotSupported {
+				t.Fatalf("Expected Groovy DSL project error, got %v", result)
 			}
 		}
 
