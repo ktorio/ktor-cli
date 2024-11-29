@@ -163,6 +163,12 @@ func addDependency(mc ktor.MavenCoords, projectDir string, serPlugin *ktor.Gradl
 		return changes, MultiplatformProjectNotSupported, nil
 	}
 
+	if _, _, ok := gradle.FindDepFunc(build.Dependencies.List, func(m ktor.MavenCoords) bool {
+		return mc.RoughlySame(m)
+	}); ok {
+		return changes, Success, nil
+	}
+
 	if ktorDep, coords, ok := gradle.FindDepFunc(build.Dependencies.List, func(mc ktor.MavenCoords) bool {
 		return mc.Group == "io.ktor" && strings.HasPrefix(mc.Version, "$")
 	}); ok {
