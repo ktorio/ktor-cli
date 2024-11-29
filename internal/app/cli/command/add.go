@@ -174,7 +174,7 @@ func addDependency(mc ktor.MavenCoords, projectDir string, serPlugin *ktor.Gradl
 	}); ok {
 
 		if vd, ok := gradle.FindVarDecl(build.TopLevelVars, func(v *gradle.VarDecl) bool {
-			return v.IsDelegate && v.Delegate == "project" && v.Id == kotlin.GetVarId(coords.Version)
+			return v.Id == kotlin.GetVarId(coords.Version)
 		}); ok {
 			lang.InsertLnAfter(
 				build.Rewriter,
