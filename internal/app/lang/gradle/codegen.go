@@ -24,13 +24,13 @@ func RawDependencyNoVersion(mc ktor.MavenCoords, suffix string) string {
 	return fmt.Sprintf("%s(%s)", fn, lang.Quote(mc.Group+":"+mc.Artifact+suffix))
 }
 
-func DependencyWithVersionVar(mc ktor.MavenCoords, version string) string {
+func DependencyWithVersionVar(mc ktor.MavenCoords, version string, suffix string) string {
 	fn := "implementation"
 	if mc.IsTest {
 		fn = "testImplementation"
 	}
 
-	return fmt.Sprintf("%s(%s)", fn, lang.Quote(mc.Group+":"+mc.Artifact+":$"+version))
+	return fmt.Sprintf("%s(%s)", fn, lang.Quote(mc.Group+":"+mc.Artifact+suffix+":$"+version))
 }
 
 func CatalogDependency(artifact string) string {

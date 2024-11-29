@@ -95,3 +95,23 @@ func FindCatalogDepPrefixed(build *BuildRoot, prefix string) (*Dep, bool) {
 
 	return nil, false
 }
+
+func FindDepFunc(deps []Dep, pred func(ktor.MavenCoords) bool) (*Dep, *ktor.MavenCoords, bool) {
+	for _, dep := range deps {
+		if coords, ok := ktor.ParseMavenCoords(dep.Path); ok && pred(coords) {
+			return &dep, &coords, true
+		}
+	}
+
+	return nil, nil, false
+}
+
+func FindVarDecl(decls []VarDecl, pred func(*VarDecl) bool) (*VarDecl, bool) {
+	for _, vd := range decls {
+		if pred(&vd) {
+			return &vd, true
+		}
+	}
+
+	return nil, false
+}

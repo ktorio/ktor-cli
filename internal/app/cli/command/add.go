@@ -163,32 +163,21 @@ func addDependency(mc ktor.MavenCoords, projectDir string, serPlugin *ktor.Gradl
 		return changes, MultiplatformProjectNotSupported, nil
 	}
 
-	var versionVar *string
-	var ktorDep *gradle.Dep
-	for _, dep := range build.Dependencies.List {
-		if dep.Kind != gradle.HardcodedDep {
-			continue
-		}
+	if ktorDep, coords, ok := gradle.FindDepFunc(build.Dependencies.List, func(mc ktor.MavenCoords) bool {
+		return mc.Group == "io.ktor" && strings.HasPrefix(mc.Version, "$")
+	}); ok {
 
-		if coords, ok := ktor.ParseMavenCoords(dep.Path); ok && coords.Group == "io.ktor" && strings.HasPrefix(coords.Version, "$") {
-			versionVar = &coords.Version
-			ktorDep = &dep
-			break
-		}
-	}
-
-	if versionVar != nil && ktorDep != nil {
-		for _, v := range build.TopLevelVars {
-			if v.IsDelegate && v.Delegate == "project" && v.Id == kotlin.GetVarId(*versionVar) {
-				lang.InsertLnAfter(
-					build.Rewriter,
-					ktorDep.Statement.GetStop(),
-					lang.HiddenTokensToLeft(build.Stream, ktorDep.Statement.GetStart().GetTokenIndex()),
-					gradle.DependencyWithVersionVar(mc, v.Id),
-				)
-				changes = append(changes, FileContent{Path: buildPath, Content: build.Rewriter.GetTextDefault()})
-				return changes, Success, nil
-			}
+		if vd, ok := gradle.FindVarDecl(build.TopLevelVars, func(v *gradle.VarDecl) bool {
+			return v.IsDelegate && v.Delegate == "project" && v.Id == kotlin.GetVarId(coords.Version)
+		}); ok {
+			lang.InsertLnAfter(
+				build.Rewriter,
+				ktorDep.Statement.GetStop(),
+				lang.HiddenTokensToLeft(build.Stream, ktorDep.Statement.GetStart().GetTokenIndex()),
+				gradle.DependencyWithVersionVar(mc, vd.Id, gradle.PlatformSuffix(coords.Artifact)),
+			)
+			changes = append(changes, FileContent{Path: buildPath, Content: build.Rewriter.GetTextDefault()})
+			return changes, Success, nil
 		}
 	}
 
@@ -262,16 +251,11 @@ func addDependency(mc ktor.MavenCoords, projectDir string, serPlugin *ktor.Gradl
 	// Add dependency with BOM defined
 	if hasBom || hasKtorPlugin {
 		if kDep, ok := gradle.FindKtorDep(build.Dependencies.List, mc.IsTest); ok {
-			suffix := ""
-			if strings.HasSuffix(kDep.Path, "-jvm") {
-				suffix = "-jvm"
-			}
-
 			lang.InsertLnAfter(
 				build.Rewriter,
 				kDep.Statement.GetStop(),
 				lang.HiddenTokensToLeft(build.Stream, kDep.Statement.GetStart().GetTokenIndex()),
-				gradle.RawDependencyNoVersion(mc, suffix),
+				gradle.RawDependencyNoVersion(mc, gradle.PlatformSuffix(kDep.Path)),
 			)
 
 		} else if hasBom {
