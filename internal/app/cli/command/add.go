@@ -154,6 +154,31 @@ func addDependency(mc ktor.MavenCoords, projectDir string, serPlugin *ktor.Gradl
 		return changes, Error, err
 	}
 
+	// Check if the dependency exist
+	for _, d := range build.Dependencies.List {
+		if d.Kind == gradle.VersionCatalogDep {
+			continue
+		}
+
+		// BOM, Hardcoded, variable as version
+		if m, ok := ktor.ParseMavenCoords(d.Path); ok && mc.RoughlySame(m) {
+			return changes, Success, nil
+		}
+	}
+
+	tomlDoc, tomlErr := toml.ParseToml(versionsPath)
+
+	// Catalog dependency
+	if tomlErr == nil {
+		libEntry, ok := toml.FindLib(tomlDoc, mc)
+
+		if ok {
+			if _, ok := gradle.FindCatalogDep(build, libEntry.Key); ok {
+				return changes, Success, nil
+			}
+		}
+	}
+
 	catalogPath := versionsPath
 	if !utils.Exists(catalogPath) {
 		catalogPath = filepath.Join(projectDir, "..", "gradle", "libs.versions.toml")
@@ -161,12 +186,6 @@ func addDependency(mc ktor.MavenCoords, projectDir string, serPlugin *ktor.Gradl
 
 	if isKmpProject(build, catalogPath) {
 		return changes, MultiplatformProjectNotSupported, nil
-	}
-
-	if _, _, ok := gradle.FindDepFunc(build.Dependencies.List, func(m ktor.MavenCoords) bool {
-		return mc.RoughlySame(m)
-	}); ok {
-		return changes, Success, nil
 	}
 
 	if ktorDep, coords, ok := gradle.FindDepFunc(build.Dependencies.List, func(mc ktor.MavenCoords) bool {
@@ -184,29 +203,6 @@ func addDependency(mc ktor.MavenCoords, projectDir string, serPlugin *ktor.Gradl
 			)
 			changes = append(changes, FileContent{Path: buildPath, Content: build.Rewriter.GetTextDefault()})
 			return changes, Success, nil
-		}
-	}
-
-	// Looking for a hardcoded dependency
-	for _, dep := range build.Dependencies.List {
-		if dep.Kind != gradle.HardcodedDep {
-			continue
-		}
-
-		if coords, ok := ktor.ParseMavenCoords(dep.Path); ok && mc.RoughlySame(coords) {
-			return changes, Success, nil
-		}
-	}
-
-	tomlDoc, tomlErr := toml.ParseToml(versionsPath)
-	// Check if catalog dependency is already present
-	if tomlErr == nil {
-		libEntry, ok := toml.FindLib(tomlDoc, mc)
-
-		if ok {
-			if _, ok := gradle.FindCatalogDep(build, libEntry.Key); ok {
-				return changes, Success, nil
-			}
 		}
 	}
 
