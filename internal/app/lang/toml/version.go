@@ -1,10 +1,14 @@
 package toml
 
 import (
+	"errors"
+	"fmt"
 	"github.com/antlr4-go/antlr/v4"
 	"github.com/ktorio/ktor-cli/internal/app/ktor"
 	"github.com/ktorio/ktor-cli/internal/app/lang"
 	parser "github.com/ktorio/ktor-cli/internal/app/lang/parsers/toml"
+	"github.com/ktorio/ktor-cli/internal/app/utils"
+	"path/filepath"
 )
 
 type Document struct {
@@ -47,7 +51,13 @@ func (te *TableEntry) Get(key string) (string, bool) {
 	return v, ok
 }
 
-func ParseToml(fp string) (*Document, error) {
+func ParseCatalogToml(projectDir string) (*Document, error) {
+	fp, ok := FindVersionsPath(projectDir)
+
+	if !ok {
+		return nil, errors.New(fmt.Sprintf("catalog: cannot find TOML file for the project %s", projectDir))
+	}
+
 	input, err := antlr.NewFileStream(fp)
 
 	if err != nil {
@@ -184,4 +194,18 @@ func AddLib(doc *Document, mc ktor.MavenCoords) (string, error) {
 	)
 
 	return rewriter.GetTextDefault(), nil
+}
+
+func FindVersionsPath(projectDir string) (string, bool) {
+	inCurrentDir := filepath.Join(projectDir, "gradle", "libs.versions.toml")
+
+	if utils.Exists(inCurrentDir) {
+		return inCurrentDir, true
+	}
+
+	if utils.Exists(filepath.Join(projectDir, "..", "gradle", "libs.versions.toml")) {
+		return filepath.Join(projectDir, "..", "gradle", "libs.versions.toml"), true
+	}
+
+	return inCurrentDir, false
 }
