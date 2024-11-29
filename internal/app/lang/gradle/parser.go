@@ -21,9 +21,16 @@ type BuildRoot struct {
 	Dependencies Dependencies
 	Repositories Repositories
 	Plugins      Plugins
+	TopLevelVars []VarDecl
 	Stream       *antlr.CommonTokenStream
 	Rewriter     *antlr.TokenStreamRewriter
 	Parser       *parser.KotlinParser
+}
+
+type VarDecl struct {
+	IsDelegate bool
+	Delegate   string
+	Id         string
 }
 
 type Repositories struct {
@@ -73,6 +80,12 @@ func ParseBuildFile(fp string) (*BuildRoot, error) {
 	root.Rewriter = antlr.NewTokenStreamRewriter(root.Stream)
 
 	for _, st := range p.Script().AllStatement() {
+		if pd, ok := lang.FindChild[parser.IPropertyDeclarationContext](st); ok {
+			if vd, ok := parseVarDecl(pd); ok {
+				root.TopLevelVars = append(root.TopLevelVars, vd)
+			}
+		}
+
 		e, ok := lang.FindChild[parser.IPostfixUnaryExpressionContext](st)
 
 		if !ok {
@@ -217,12 +230,6 @@ func ParseBuildFile(fp string) (*BuildRoot, error) {
 
 				for _, va := range findValueArguments(pus2.CallSuffix()) {
 					plugin.Id = lang.Unquote(va.GetText())
-
-					//if plugin.IsKotlin {
-					//	plugin.Id = lang.Unquote(va.GetText())
-					//} else if plugin.IsCatalog {
-					//	plugin.CatalogKey = va.GetText()
-					//}
 				}
 
 				root.Plugins.List = append(root.Plugins.List, plugin)
@@ -234,6 +241,26 @@ func ParseBuildFile(fp string) (*BuildRoot, error) {
 	}
 
 	return &root, nil
+}
+
+func parseVarDecl(pd parser.IPropertyDeclarationContext) (VarDecl, bool) {
+	vd := VarDecl{}
+
+	if pd.VariableDeclaration() == nil {
+		return vd, false
+	}
+
+	vd.Id = pd.VariableDeclaration().SimpleIdentifier().GetText()
+
+	if pd.PropertyDelegate() == nil {
+		return vd, true
+	}
+	if id, ok := lang.FindChild[parser.ISimpleIdentifierContext](pd.PropertyDelegate().Expression()); ok {
+		vd.IsDelegate = true
+		vd.Delegate = id.GetText()
+	}
+
+	return vd, true
 }
 
 func fixTrailingNewLine(fp string) (io.Reader, error) {

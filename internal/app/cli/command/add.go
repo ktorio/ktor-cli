@@ -11,6 +11,7 @@ import (
 	"github.com/ktorio/ktor-cli/internal/app/ktor"
 	"github.com/ktorio/ktor-cli/internal/app/lang"
 	"github.com/ktorio/ktor-cli/internal/app/lang/gradle"
+	"github.com/ktorio/ktor-cli/internal/app/lang/kotlin"
 	"github.com/ktorio/ktor-cli/internal/app/lang/toml"
 	"github.com/ktorio/ktor-cli/internal/app/utils"
 	"os"
@@ -160,6 +161,35 @@ func addDependency(mc ktor.MavenCoords, projectDir string, serPlugin *ktor.Gradl
 
 	if isKmpProject(build, catalogPath) {
 		return changes, MultiplatformProjectNotSupported, nil
+	}
+
+	var versionVar *string
+	var ktorDep *gradle.Dep
+	for _, dep := range build.Dependencies.List {
+		if dep.Kind != gradle.HardcodedDep {
+			continue
+		}
+
+		if coords, ok := ktor.ParseMavenCoords(dep.Path); ok && coords.Group == "io.ktor" && strings.HasPrefix(coords.Version, "$") {
+			versionVar = &coords.Version
+			ktorDep = &dep
+			break
+		}
+	}
+
+	if versionVar != nil && ktorDep != nil {
+		for _, v := range build.TopLevelVars {
+			if v.IsDelegate && v.Delegate == "project" && v.Id == kotlin.GetVarId(*versionVar) {
+				lang.InsertLnAfter(
+					build.Rewriter,
+					ktorDep.Statement.GetStop(),
+					lang.HiddenTokensToLeft(build.Stream, ktorDep.Statement.GetStart().GetTokenIndex()),
+					gradle.DependencyWithVersionVar(mc, v.Id),
+				)
+				changes = append(changes, FileContent{Path: buildPath, Content: build.Rewriter.GetTextDefault()})
+				return changes, Success, nil
+			}
+		}
 	}
 
 	// Looking for a hardcoded dependency
