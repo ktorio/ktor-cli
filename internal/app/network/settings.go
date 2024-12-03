@@ -13,12 +13,12 @@ func FetchSettings(client *http.Client) (*DefaultSettings, error) {
 	resp, err := client.Get(fmt.Sprintf("%s/project/settings", config.GenBaseUrl()))
 
 	if err != nil {
-		return nil, convertResponseError(err)
+		return nil, ConvertResponseError(err, app.GenServerError)
 	}
 
 	defer resp.Body.Close()
 
-	if err = checkResponseStatus(resp, "fetch settings"); err != nil {
+	if err = CheckResponseStatus(resp, "fetch settings", app.GenServerError); err != nil {
 		return nil, err
 	}
 

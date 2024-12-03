@@ -21,6 +21,14 @@ func CorrettoBaseUrl() string {
 	return "https://corretto.aws"
 }
 
+func OpenApiJarUrl() string {
+	if e, ok := os.LookupEnv("OPENAPI_JAR_URL"); ok && e != "" {
+		return e
+	}
+
+	return "https://repo1.maven.org/maven2/org/openapitools/openapi-generator-cli/7.10.0/openapi-generator-cli-7.10.0.jar"
+}
+
 func KtorDir(homeDir string) string {
 	return filepath.Join(homeDir, ".ktor")
 }

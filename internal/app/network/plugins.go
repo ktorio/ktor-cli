@@ -31,13 +31,13 @@ func FetchPlugins(client *http.Client, ktorVersion string, ctx context.Context) 
 	resp, err := client.Do(req)
 
 	if err != nil {
-		return nil, convertResponseError(err)
+		return nil, ConvertResponseError(err, app.GenServerError)
 	}
 
 	defer resp.Body.Close()
 
 	tag := fmt.Sprintf("fetch plugins for %s", ktorVersion)
-	if err = checkResponseStatus(resp, tag); err != nil {
+	if err = CheckResponseStatus(resp, tag, app.GenServerError); err != nil {
 		return nil, err
 	}
 

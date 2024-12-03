@@ -23,6 +23,9 @@ const (
 	JdkServerError
 	JdkServerDownloadError
 	JdkVerificationFailed
+	ExternalCommandError
+	OpenApiDownloadJarError
+	OpenApiExecuteJarError
 )
 
 type ErrorKind int

@@ -55,12 +55,12 @@ func NewProject(client *http.Client, payload ProjectPayload, ctx context.Context
 	resp, err := client.Do(req)
 
 	if err != nil {
-		return nil, err
+		return nil, ConvertResponseError(err, app.GenServerError)
 	}
 
 	defer resp.Body.Close()
 
-	if err = checkResponseStatus(resp, "new project"); err != nil {
+	if err = CheckResponseStatus(resp, "new project", app.GenServerError); err != nil {
 		return nil, err
 	}
 

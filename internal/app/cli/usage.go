@@ -37,6 +37,26 @@ func WriteUsage(w io.Writer) {
 	}
 }
 func formatCommand(command Command) string {
+	var opts strings.Builder
+
+	sep := ""
+	if spec, ok := commandFlagSpec[command]; ok {
+		for _, s := range spec {
+			opts.WriteString(sep)
+			opts.WriteString(formatFlags(&s))
+
+			if s.hasArg {
+				opts.WriteString(" <arg>")
+			}
+
+			sep = ", "
+		}
+	}
+
+	if opts.String() != "" {
+		return fmt.Sprintf("%s [%s] %s", command, opts.String(), formatArgs(allCommandsSpec[command].args))
+	}
+
 	return fmt.Sprintf("%s %s", command, formatArgs(allCommandsSpec[command].args))
 }
 
