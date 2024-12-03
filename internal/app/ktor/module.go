@@ -3,11 +3,11 @@ package ktor
 import (
 	"fmt"
 	"github.com/agnivade/levenshtein"
-	"slices"
+	"math"
 	"strings"
 )
 
-var defs = map[string]string{
+var serverDefs = map[string]string{
 	"cio":             "CIO",
 	"config-yaml":     "YamlConfig",
 	"core":            "Application",
@@ -21,68 +21,90 @@ var defs = map[string]string{
 
 	// plugins
 
-	"auth":                           "Auth",
-	"auth-jwt":                       "awt",
-	"auth-ldap":                      "ldap",
-	"auto-head-response":             "AutoHeadResponse",
-	"body-limit":                     "RequestBodyLimit",
-	"cachingHeaders":                 "CachingHeaders",
-	"call-id":                        "CallId",
-	"call-logging":                   "CallLogging",
-	"compression":                    "Compression",
-	"conditional-headers":            "ConditionalHeaders",
-	"content-negotiation":            "ContentNegotiation",
-	"cors":                           "CORS",
-	"csrf":                           "CSRF",
-	"data-conversion":                "DataConversion",
-	"double-receive":                 "DoubleReceive",
-	"forwarded-header":               "ForwardedHeaders",
-	"freemarker":                     "FreeMarker",
-	"hsts":                           "HSTS",
-	"html-builder":                   "respondHtml",
-	"http-redirect":                  "HttpsRedirect",
-	"i18n":                           "I18n",
-	"jte":                            "Jte",
-	"method-override":                "XHttpMethodOverride",
-	"metrics":                        "DropwizardMetrics",
-	"metrics-micrometer":             "MicrometerMetrics",
-	"mustache":                       "Mustache",
-	"openapi":                        "openAPI",
-	"partial-content":                "PartialContent",
-	"pebble":                         "Pebble",
-	"rate-limit":                     "RateLimit",
-	"request-validation":             "RequestValidation",
-	"resources":                      "Resources",
-	"sessions":                       "Sessions",
-	"status-pages":                   "StatusPages",
-	"sse":                            "SSE",
-	"swagger":                        "swaggerUI",
-	"thymeleaf":                      "Thymeleaf",
-	"velocity":                       "Velocity",
-	"webjars":                        "Webjars",
-	"websockets":                     "Websockets",
-	"test-host":                      "testApplication",
+	"auth":                "Authentication",
+	"auth-jwt":            "awt",
+	"auth-ldap":           "ldap",
+	"auto-head-response":  "AutoHeadResponse",
+	"body-limit":          "RequestBodyLimit",
+	"cachingHeaders":      "CachingHeaders",
+	"call-id":             "CallId",
+	"call-logging":        "CallLogging",
+	"compression":         "Compression",
+	"conditional-headers": "ConditionalHeaders",
+	"content-negotiation": "ContentNegotiation",
+	"cors":                "CORS",
+	"csrf":                "CSRF",
+	"data-conversion":     "DataConversion",
+	"double-receive":      "DoubleReceive",
+	"forwarded-header":    "ForwardedHeaders",
+	"freemarker":          "FreeMarker",
+	"hsts":                "HSTS",
+	"html-builder":        "respondHtml",
+	"http-redirect":       "HttpsRedirect",
+	"i18n":                "I18n",
+	"jte":                 "Jte",
+	"method-override":     "XHttpMethodOverride",
+	"metrics":             "DropwizardMetrics",
+	"metrics-micrometer":  "MicrometerMetrics",
+	"mustache":            "Mustache",
+	"openapi":             "openAPI",
+	"partial-content":     "PartialContent",
+	"pebble":              "Pebble",
+	"rate-limit":          "RateLimit",
+	"request-validation":  "RequestValidation",
+	"resources":           "Resources",
+	"sessions":            "Sessions",
+	"status-pages":        "StatusPages",
+	"sse":                 "SSE",
+	"swagger":             "swaggerUI",
+	"thymeleaf":           "Thymeleaf",
+	"velocity":            "Velocity",
+	"webjars":             "Webjars",
+	"websockets":          "Websockets",
+	"test-host":           "testApplication",
+}
+
+var clientDefs = map[string]string{
+	"android":       "Android",
+	"apache":        "Apache",
+	"apache5":       "Apache5",
+	"cio":           "CIO",
+	"core":          "HttpClient",
+	"curl":          "Curl",
+	"darwin":        "Darwin",
+	"darwin-legacy": "DarwinLegacy",
+	"ios":           "Ios",
+	"java":          "Java",
+	"jetty":         "Jetty",
+	"js":            "Js",
+	"mock":          "MockEngine",
+	"okhttp":        "OkHttp",
+	"winhttp":       "WinHttp",
+
+	// plugins
+	"auth":                "Auth",
+	"bom-remover":         "BOMRemover",
+	"call-id":             "CallId",
+	"content-negotiation": "ContentNegotiation",
+	"encoding":            "ContentEncoding",
+	"logging":             "Logging",
+	"resources":           "Resources",
+	"websockets":          "Websockets",
+}
+
+var sharedDefs = map[string]string{
 	"serialization-kotlinx-cbor":     "Cbor",
 	"serialization-kotlinx-json":     "Json",
 	"serialization-kotlinx-protobuf": "ProtoBuf",
 	"serialization-kotlinx-xml":      "Xml",
 	"serialization-gson":             "Gson",
 	"serialization-jackson":          "Jackson",
-	"websocket-serialization":        "sendSerialized",
+	"websocket-serialization":        "WebsocketsSerialization",
 }
 
-var shared = map[string]struct{}{
-	"serialization-kotlinx-cbor":     {},
-	"serialization-kotlinx-json":     {},
-	"serialization-kotlinx-protobuf": {},
-	"serialization-kotlinx-xml":      {},
-	"serialization-gson":             {},
-	"serialization-jackson":          {},
-	"websocket-serialization":        {},
-}
-
-var testing = map[string]struct{}{
+var testDeps = map[string]struct{}{
 	"test-host": {},
+	"mock":      {},
 }
 
 const SerPluginId = "org.jetbrains.kotlin.plugin.serialization"
@@ -91,45 +113,6 @@ const KotlinJvmPluginId = "org.jetbrains.kotlin.jvm"
 const KmpPluginId = "org.jetbrains.kotlin.multiplatform"
 
 const ktorGroup = "io.ktor"
-
-var modules map[string]MavenCoords
-var ktorServerModules map[string]MavenCoords
-var serverModules map[string]MavenCoords
-var modulesBySymbol map[string]MavenCoords
-
-func init() {
-	modules = make(map[string]MavenCoords)
-	for name := range defs {
-		_, isTest := testing[name]
-		modules[name] = MavenCoords{Artifact: getPrefix(name) + name, Group: ktorGroup, IsTest: isTest}
-	}
-
-	serverModules = make(map[string]MavenCoords)
-	for name := range defs {
-		_, isTest := testing[name]
-		serverModules["server-"+name] = MavenCoords{Artifact: "ktor-server-" + name, Group: ktorGroup, IsTest: isTest}
-	}
-
-	ktorServerModules = make(map[string]MavenCoords)
-	for name := range defs {
-		_, isTest := testing[name]
-		ktorServerModules["ktor-server-"+name] = MavenCoords{Artifact: "ktor-server-" + name, Group: ktorGroup, IsTest: isTest}
-	}
-
-	modulesBySymbol = make(map[string]MavenCoords)
-	for name, symbol := range defs {
-		_, isTest := testing[name]
-		modulesBySymbol[symbol] = MavenCoords{Artifact: getPrefix(name) + name, Group: ktorGroup, IsTest: isTest}
-	}
-}
-
-func getPrefix(name string) string {
-	if _, ok := shared[name]; ok {
-		return "ktor-"
-	}
-
-	return "ktor-server-"
-}
 
 type MavenCoords struct {
 	Artifact, Group, Version string
@@ -185,61 +168,178 @@ func DependentPlugins(mc MavenCoords) []GradlePlugin {
 	return plugs
 }
 
-func FindModule(name string) (MavenCoords, int, bool) {
-	mc, dist, ok := findIn(modules, strings.ToLower(name), 2)
+type ModuleResult int
 
-	if ok {
-		return mc, dist, true
-	}
+const (
+	ModuleNotFound ModuleResult = iota
+	ModuleAmbiguity
+	AlikeModuleFound
+	ModuleFound
+)
 
-	mc, dist, ok = findIn(serverModules, strings.ToLower(name), 2)
+func FindModule(name string) (MavenCoords, ModuleResult, []MavenCoords) {
+	serverCandidates, clientCandidates, sharedCandidates := findModuleCandidates(name, 2)
+	mc := MavenCoords{}
 
-	if ok {
-		return mc, dist, true
-	}
-
-	mc, dist, ok = findIn(ktorServerModules, strings.ToLower(name), 2)
-
-	if ok {
-		return mc, dist, true
-	}
-
-	mc, dist, ok = findIn(modulesBySymbol, name, 2)
-
-	if ok {
-		return mc, dist, true
-	}
-
-	return MavenCoords{}, 0, false
-}
-
-type mcCandidate struct {
-	mc   MavenCoords
-	dist int
-}
-
-func findIn(mp map[string]MavenCoords, name string, maxDistance int) (MavenCoords, int, bool) {
-	if mc, ok := mp[name]; ok {
-		return mc, 0, true
-	}
-
-	var candidates []mcCandidate
-
-	for m, mc := range mp {
-		distance := levenshtein.ComputeDistance(strings.ToLower(name), strings.ToLower(m))
-
-		if distance <= maxDistance {
-			candidates = append(candidates, mcCandidate{mc: mc, dist: distance})
+	var exactServerCandidates []MavenCoords
+	for _, c := range serverCandidates {
+		if c.Dist == 0 {
+			exactServerCandidates = append(exactServerCandidates, c.Mc)
 		}
 	}
 
-	if len(candidates) == 0 {
-		return MavenCoords{}, 0, false
+	var exactClientCandidates []MavenCoords
+	for _, c := range clientCandidates {
+		if c.Dist == 0 {
+			exactClientCandidates = append(exactClientCandidates, c.Mc)
+		}
 	}
 
-	cd := slices.MinFunc(candidates, func(a, b mcCandidate) int {
-		return a.dist - b.dist
-	})
+	var exactSharedCandidates []MavenCoords
+	for _, c := range sharedCandidates {
+		if c.Dist == 0 {
+			exactSharedCandidates = append(exactSharedCandidates, c.Mc)
+		}
+	}
 
-	return cd.mc, cd.dist, true
+	if len(exactServerCandidates) > 0 && len(exactClientCandidates) == 0 && len(exactSharedCandidates) == 0 {
+		return exactServerCandidates[0], ModuleFound, nil
+	}
+
+	if len(exactServerCandidates) == 0 && len(exactClientCandidates) > 0 && len(exactSharedCandidates) == 0 {
+		return exactClientCandidates[0], ModuleFound, nil
+	}
+
+	if len(exactServerCandidates) == 0 && len(exactClientCandidates) == 0 && len(exactSharedCandidates) > 0 {
+		return exactSharedCandidates[0], ModuleFound, nil
+	}
+
+	if len(serverCandidates) == 0 && len(clientCandidates) == 0 {
+		return mc, ModuleNotFound, nil
+	}
+
+	if (len(exactServerCandidates) > 0 && len(exactClientCandidates) > 0) || (len(exactServerCandidates) > 0 && len(exactSharedCandidates) > 0) {
+		var candidates []MavenCoords
+		for _, m := range exactServerCandidates {
+			candidates = append(candidates, m)
+		}
+		for _, m := range exactClientCandidates {
+			candidates = append(candidates, m)
+		}
+		for _, m := range exactSharedCandidates {
+			candidates = append(candidates, m)
+		}
+
+		return mc, ModuleAmbiguity, candidates
+	}
+
+	if len(serverCandidates) > 0 {
+		minDistMcc := mcCandidate{Dist: math.MaxInt}
+		for _, mcc := range serverCandidates {
+			if mcc.Dist == 0 {
+				return mc, ModuleFound, nil
+			}
+			if mcc.Dist < minDistMcc.Dist {
+				minDistMcc = mcc
+			}
+		}
+
+		return minDistMcc.Mc, AlikeModuleFound, nil
+	}
+
+	if len(clientCandidates) > 0 {
+		minDistMcc := mcCandidate{Dist: math.MaxInt}
+		for _, mcc := range clientCandidates {
+			if mcc.Dist == 0 {
+				return mc, ModuleFound, nil
+			}
+			if mcc.Dist < minDistMcc.Dist {
+				minDistMcc = mcc
+			}
+		}
+
+		return minDistMcc.Mc, AlikeModuleFound, nil
+	}
+
+	return mc, ModuleNotFound, nil
+}
+
+func findModuleCandidates(name string, maxDistance int) (serverCandidates []mcCandidate, clientCandidates []mcCandidate, sharedCandidates []mcCandidate) {
+	name = strings.ToLower(name)
+
+	for k, alias := range serverDefs {
+		k = strings.ToLower(k)
+
+		if k == name || "server-"+k == name || "ktor-server-"+k == name || strings.ToLower(alias) == strings.ToLower(name) {
+			serverCandidates = append(serverCandidates, mcCandidate{Mc: MavenCoords{Artifact: "ktor-server-" + k, Group: ktorGroup, IsTest: isTest(k)}})
+		}
+	}
+
+	for k, alias := range serverDefs {
+		k = strings.ToLower(k)
+
+		for _, fullKey := range []string{k, "server-" + k, "ktor-server-" + k, strings.ToLower(alias)} {
+			if dist := levenshtein.ComputeDistance(name, fullKey); dist <= maxDistance && !hasArtifact(serverCandidates, "ktor-server-"+k) {
+				serverCandidates = append(serverCandidates, mcCandidate{Mc: MavenCoords{Artifact: "ktor-server-" + k, Group: ktorGroup, IsTest: isTest(k)}, Dist: dist})
+			}
+		}
+	}
+
+	for k, alias := range clientDefs {
+		k = strings.ToLower(k)
+
+		if k == name || "client-"+k == name || "ktor-client-"+k == name || strings.ToLower(alias) == strings.ToLower(name) {
+			clientCandidates = append(clientCandidates, mcCandidate{Mc: MavenCoords{Artifact: "ktor-client-" + k, Group: ktorGroup, IsTest: isTest(k)}})
+		}
+	}
+
+	for k, alias := range clientDefs {
+		k = strings.ToLower(k)
+
+		for _, fullKey := range []string{k, "client-" + k, "ktor-client-" + k, strings.ToLower(alias)} {
+			if dist := levenshtein.ComputeDistance(name, fullKey); dist <= maxDistance && !hasArtifact(clientCandidates, "ktor-client-"+k) {
+				clientCandidates = append(clientCandidates, mcCandidate{Mc: MavenCoords{Artifact: "ktor-client-" + k, Group: ktorGroup, IsTest: isTest(k)}, Dist: dist})
+			}
+		}
+	}
+
+	for k, alias := range sharedDefs {
+		k = strings.ToLower(k)
+
+		if k == name || "ktor-"+k == name || strings.ToLower(alias) == strings.ToLower(name) {
+			sharedCandidates = append(sharedCandidates, mcCandidate{Mc: MavenCoords{Artifact: "ktor-" + k, Group: ktorGroup, IsTest: isTest(k)}})
+		}
+	}
+
+	for k, alias := range sharedDefs {
+		k = strings.ToLower(k)
+
+		for _, fullKey := range []string{k, "ktor-" + k, strings.ToLower(alias)} {
+			if dist := levenshtein.ComputeDistance(name, fullKey); dist <= maxDistance && !hasArtifact(clientCandidates, "ktor-client-"+k) {
+				sharedCandidates = append(sharedCandidates, mcCandidate{Mc: MavenCoords{Artifact: "ktor-client-" + k, Group: ktorGroup, IsTest: isTest(k)}, Dist: dist})
+			}
+		}
+	}
+
+	return serverCandidates, clientCandidates, sharedCandidates
+}
+
+func isTest(artifact string) bool {
+	_, ok := testDeps[artifact]
+	return ok
+}
+
+func hasArtifact(mcs []mcCandidate, artifact string) bool {
+	for _, m := range mcs {
+		if m.Mc.Artifact == artifact {
+			return true
+		}
+	}
+
+	return false
+}
+
+type mcCandidate struct {
+	Mc   MavenCoords
+	Dist int
 }

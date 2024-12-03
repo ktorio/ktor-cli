@@ -158,7 +158,6 @@ func addDependency(mc ktor.MavenCoords, projectDir string, serPlugin *ktor.Gradl
 			continue
 		}
 
-		//
 		if m, ok := ktor.ParseMavenCoords(d.Path); ok && mc.RoughlySame(m) {
 			return changes, Success, nil
 		}

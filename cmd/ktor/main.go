@@ -11,6 +11,7 @@ import (
 	"github.com/ktorio/ktor-cli/internal/app/interactive"
 	"github.com/ktorio/ktor-cli/internal/app/ktor"
 	"github.com/ktorio/ktor-cli/internal/app/utils"
+	"golang.org/x/exp/slices"
 	"io"
 	"log"
 	"net"
@@ -74,26 +75,35 @@ func main() {
 		mod := args.CommandArgs[0]
 		projectDir := "."
 
-		mc, dist, ok := ktor.FindModule(mod)
+		// TODO: Add multiple modules at once
 
-		if !ok {
+		mc, modResult, candidates := ktor.FindModule(mod)
+
+		switch modResult {
+		case ktor.ModuleNotFound:
 			log.Fatal(fmt.Sprintf("Cannot find Ktor module %s", mod))
-		}
-
-		if dist > 0 {
+		case ktor.ModuleAmbiguity:
+			var names []string
+			for _, c := range candidates {
+				if !slices.Contains(names, c.Artifact) {
+					names = append(names, c.Artifact)
+				}
+			}
+			log.Fatal(fmt.Sprintf("Module ambiguity. Candidates: %s", strings.Join(names, ", ")))
+		case ktor.AlikeModuleFound:
 			log.Fatal(fmt.Sprintf("Cannot recognize the '%s' module.\nDid you mean '%s'?\n", mod, mc.Artifact))
-		}
+		case ktor.ModuleFound:
+			depPlugins := ktor.DependentPlugins(mc)
+			var serPlugin *ktor.GradlePlugin
+			if len(depPlugins) > 0 {
+				serPlugin = &depPlugins[0]
+			}
 
-		depPlugins := ktor.DependentPlugins(mc)
-		var serPlugin *ktor.GradlePlugin
-		if len(depPlugins) > 0 {
-			serPlugin = &depPlugins[0]
-		}
+			err = command.Add(mc, projectDir, serPlugin)
 
-		err = command.Add(mc, projectDir, serPlugin)
-
-		if err != nil {
-			log.Fatal(err)
+			if err != nil {
+				log.Fatal(err)
+			}
 		}
 	case cli.VersionCommand:
 		fmt.Printf(i18n.Get(i18n.VersionInfo, getVersion()))
