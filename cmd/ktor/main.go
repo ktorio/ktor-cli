@@ -72,37 +72,39 @@ func main() {
 	switch args.Command {
 	case cli.AddCommand:
 		log.SetOutput(os.Stderr)
-		mod := args.CommandArgs[0]
+		modules := args.CommandArgs
 		projectDir := "."
 
-		// TODO: Add multiple modules at once
+		for _, mod := range modules {
+			mc, modResult, candidates := ktor.FindModule(mod)
 
-		mc, modResult, candidates := ktor.FindModule(mod)
+			fmt.Printf("Changes for module '%s':\n", mod)
 
-		switch modResult {
-		case ktor.ModuleNotFound:
-			log.Fatal(fmt.Sprintf("Cannot find Ktor module %s", mod))
-		case ktor.ModuleAmbiguity:
-			var names []string
-			for _, c := range candidates {
-				if !slices.Contains(names, c.Artifact) {
-					names = append(names, c.Artifact)
+			switch modResult {
+			case ktor.ModuleNotFound:
+				log.Fatal(fmt.Sprintf("Cannot recongnize Ktor module %s", mod))
+			case ktor.ModuleAmbiguity:
+				var names []string
+				for _, c := range candidates {
+					if !slices.Contains(names, c.Artifact) {
+						names = append(names, c.Artifact)
+					}
 				}
-			}
-			log.Fatal(fmt.Sprintf("Module ambiguity. Candidates: %s", strings.Join(names, ", ")))
-		case ktor.AlikeModuleFound:
-			log.Fatal(fmt.Sprintf("Cannot recognize the '%s' module.\nDid you mean '%s'?\n", mod, mc.Artifact))
-		case ktor.ModuleFound:
-			depPlugins := ktor.DependentPlugins(mc)
-			var serPlugin *ktor.GradlePlugin
-			if len(depPlugins) > 0 {
-				serPlugin = &depPlugins[0]
-			}
+				log.Fatal(fmt.Sprintf("Module ambiguity. Candidates: %s", strings.Join(names, ", ")))
+			case ktor.AlikeModuleFound:
+				log.Fatal(fmt.Sprintf("Cannot recognize the '%s' module.\nDid you mean '%s'?\n", mod, mc.Artifact))
+			case ktor.ModuleFound:
+				depPlugins := ktor.DependentPlugins(mc)
+				var serPlugin *ktor.GradlePlugin
+				if len(depPlugins) > 0 {
+					serPlugin = &depPlugins[0]
+				}
 
-			err = command.Add(mc, projectDir, serPlugin)
+				err = command.Add(mc, projectDir, serPlugin)
 
-			if err != nil {
-				log.Fatal(err)
+				if err != nil {
+					log.Fatal(err)
+				}
 			}
 		}
 	case cli.VersionCommand:

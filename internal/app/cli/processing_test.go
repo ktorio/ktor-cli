@@ -23,6 +23,7 @@ func TestProcessArgs(t *testing.T) {
 	checkProcessing(t, []string{"ktor", "--help", "new", "some"}, &Input{Command: HelpCommand})
 	checkProcessing(t, []string{"ktor", "new", "some"}, &Input{Command: NewCommand, CommandArgs: []string{"some"}})
 	checkProcessing(t, []string{"ktor", "-v", "new", "some"}, &Input{Command: NewCommand, CommandArgs: []string{"some"}, Verbose: true})
+	checkProcessing(t, []string{"ktor", "add", "mod1", "mod2"}, &Input{Command: AddCommand, CommandArgs: []string{"mod1", "mod2"}})
 }
 
 func checkProcessing(t *testing.T, args []string, expected *Input) {

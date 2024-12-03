@@ -3,6 +3,7 @@ package cli
 import (
 	"errors"
 	"slices"
+	"strings"
 )
 
 type Command string
@@ -16,7 +17,7 @@ const (
 
 var allCommandsSpec = map[Command]commandSpec{
 	NewCommand:     {args: map[string]Arg{"project-name": {required: false}}, description: "generate new Ktor project. If the project name is omitted run an interactive mode."},
-	AddCommand:     {args: map[string]Arg{"module": {required: true}}, description: "add Ktor module to a project"},
+	AddCommand:     {args: map[string]Arg{"...module": {required: true}}, description: "add Ktor module to a project"},
 	VersionCommand: {args: map[string]Arg{}, description: "print version"},
 	HelpCommand:    {args: map[string]Arg{}, description: "show the help"},
 }
@@ -102,7 +103,7 @@ func ProcessArgs(args *Args) (*Input, error) {
 		return nil, &Error{Err: CommandError{Command: Command(args.Command)}, Kind: CommandNotFoundError}
 	}
 
-	if spec := allCommandsSpec[Command(args.Command)]; requiredArgsCount(spec.args) > 0 && requiredArgsCount(spec.args) != len(args.CommandArgs) || len(args.CommandArgs) > len(spec.args) {
+	if spec := allCommandsSpec[Command(args.Command)]; !hasVararg(spec) && (requiredArgsCount(spec.args) > 0 && requiredArgsCount(spec.args) != len(args.CommandArgs) || len(args.CommandArgs) > len(spec.args)) {
 		return nil, &Error{
 			Err:  CommandError{Command: Command(args.Command)},
 			Kind: WrongNumberOfArgumentsError,
@@ -110,6 +111,15 @@ func ProcessArgs(args *Args) (*Input, error) {
 	}
 
 	return &Input{Command: Command(args.Command), CommandArgs: args.CommandArgs, Verbose: flags[Verbose]}, nil
+}
+
+func hasVararg(spec commandSpec) bool {
+	for k := range spec.args {
+		if strings.HasPrefix(k, "...") {
+			return true
+		}
+	}
+	return false
 }
 
 func requiredArgsCount(args map[string]Arg) int {

@@ -214,7 +214,7 @@ func FindModule(name string) (MavenCoords, ModuleResult, []MavenCoords) {
 		return exactSharedCandidates[0], ModuleFound, nil
 	}
 
-	if len(serverCandidates) == 0 && len(clientCandidates) == 0 {
+	if len(serverCandidates) == 0 && len(clientCandidates) == 0 && len(sharedCandidates) == 0 {
 		return mc, ModuleNotFound, nil
 	}
 
@@ -250,6 +250,20 @@ func FindModule(name string) (MavenCoords, ModuleResult, []MavenCoords) {
 	if len(clientCandidates) > 0 {
 		minDistMcc := mcCandidate{Dist: math.MaxInt}
 		for _, mcc := range clientCandidates {
+			if mcc.Dist == 0 {
+				return mc, ModuleFound, nil
+			}
+			if mcc.Dist < minDistMcc.Dist {
+				minDistMcc = mcc
+			}
+		}
+
+		return minDistMcc.Mc, AlikeModuleFound, nil
+	}
+
+	if len(sharedCandidates) > 0 {
+		minDistMcc := mcCandidate{Dist: math.MaxInt}
+		for _, mcc := range sharedCandidates {
 			if mcc.Dist == 0 {
 				return mc, ModuleFound, nil
 			}
@@ -315,8 +329,8 @@ func findModuleCandidates(name string, maxDistance int) (serverCandidates []mcCa
 		k = strings.ToLower(k)
 
 		for _, fullKey := range []string{k, "ktor-" + k, strings.ToLower(alias)} {
-			if dist := levenshtein.ComputeDistance(name, fullKey); dist <= maxDistance && !hasArtifact(clientCandidates, "ktor-client-"+k) {
-				sharedCandidates = append(sharedCandidates, mcCandidate{Mc: MavenCoords{Artifact: "ktor-client-" + k, Group: ktorGroup, IsTest: isTest(k)}, Dist: dist})
+			if dist := levenshtein.ComputeDistance(name, fullKey); dist <= maxDistance && !hasArtifact(clientCandidates, "ktor-"+k) {
+				sharedCandidates = append(sharedCandidates, mcCandidate{Mc: MavenCoords{Artifact: "ktor-" + k, Group: ktorGroup, IsTest: isTest(k)}, Dist: dist})
 			}
 		}
 	}

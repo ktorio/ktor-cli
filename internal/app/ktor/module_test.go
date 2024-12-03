@@ -30,6 +30,7 @@ func TestFindModule(t *testing.T) {
 		{name: "freemaker", expResult: AlikeModuleFound, expMc: MavenCoords{Artifact: "ktor-server-freemarker", Group: ktorGroup}},
 		{name: "nonexistent", expResult: ModuleNotFound},
 		{name: "ktor-clienp-core", expMc: MavenCoords{Artifact: "ktor-client-core", Group: ktorGroup}, expResult: AlikeModuleFound},
+		{name: "websockets-serialization", expMc: MavenCoords{Artifact: "ktor-websocket-serialization", Group: ktorGroup}, expResult: AlikeModuleFound},
 		{name: "peble", expMc: MavenCoords{Artifact: "ktor-server-pebble", Group: ktorGroup}, expResult: AlikeModuleFound},
 		{name: "server-peble", expMc: MavenCoords{Artifact: "ktor-server-pebble", Group: ktorGroup}, expResult: AlikeModuleFound},
 		{name: "ktor-server-peble", expMc: MavenCoords{Artifact: "ktor-server-pebble", Group: ktorGroup}, expResult: AlikeModuleFound},

@@ -38,6 +38,7 @@ const (
 	MultiplatformProjectNotSupported                     = "multiplatform-not-supported"
 	MavenProjectNotSupported                             = "maven-not-supported"
 	GroovyDslNotSupported                                = "groovy-dsl-not-supported"
+	BuildGradleKtsNotFound                               = "build-gradle-kts-not-found"
 )
 
 func (e AddModuleError) Error() string {
@@ -57,6 +58,9 @@ func Add(mc ktor.MavenCoords, projectDir string, serPlugin *ktor.GradlePlugin) e
 	case GroovyDslNotSupported:
 		fmt.Println("Adding Ktor dependency to a Gradle project with Groovy DSL is not supported.")
 		os.Exit(1)
+	case BuildGradleKtsNotFound:
+		fmt.Println("Unable to find build.gradle.kts file in project directory.")
+		os.Exit(1)
 	}
 
 	if err != nil {
@@ -65,7 +69,6 @@ func Add(mc ktor.MavenCoords, projectDir string, serPlugin *ktor.GradlePlugin) e
 
 	if len(files) == 0 {
 		fmt.Println("Nothing to change.")
-		fmt.Println("Goodbye!")
 		return nil
 	}
 
@@ -82,7 +85,7 @@ func Add(mc ktor.MavenCoords, projectDir string, serPlugin *ktor.GradlePlugin) e
 		err = applyChanges(files)
 
 		if err == nil {
-			fmt.Println("The changes are successfully applied.")
+			fmt.Println("The changes have been successfully applied.")
 		} else {
 			fmt.Println("An error occurred applying the changes.")
 		}
@@ -141,6 +144,8 @@ func addDependency(mc ktor.MavenCoords, projectDir string, serPlugin *ktor.Gradl
 		if utils.Exists(filepath.Join(projectDir, "build.gradle")) {
 			return changes, GroovyDslNotSupported, nil
 		}
+
+		return changes, BuildGradleKtsNotFound, nil
 	}
 
 	build, err := gradle.ParseBuildFile(buildPath)

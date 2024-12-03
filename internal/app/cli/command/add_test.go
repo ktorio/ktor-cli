@@ -70,6 +70,10 @@ func TestAddProjectDependencies(t *testing.T) {
 			if result != GroovyDslNotSupported {
 				t.Fatalf("%s: Expected Groovy DSL project error, got %v", e.Name(), result)
 			}
+		case "empty-project":
+			if result != BuildGradleKtsNotFound {
+				t.Fatalf("%s: Expected Build Gradle KTS project error, got %v", e.Name(), result)
+			}
 		}
 
 		err = filepath.WalkDir(projDir, func(p string, d fs.DirEntry, err error) error {
