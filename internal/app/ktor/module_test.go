@@ -22,22 +22,22 @@ func TestFindModule(t *testing.T) {
 		{name: "ktor-client-mock", expMc: MavenCoords{Artifact: "ktor-client-mock", Group: ktorGroup, IsTest: true}, expResult: ModuleFound},
 		{name: "ktor-websocket-serialization", expMc: MavenCoords{Artifact: "ktor-websocket-serialization", Group: ktorGroup}, expResult: ModuleFound},
 		{name: "json", expMc: MavenCoords{Artifact: "ktor-serialization-kotlinx-json", Group: ktorGroup}, expResult: ModuleFound},
+		{name: "websocket-serialization", expMc: MavenCoords{Artifact: "ktor-websocket-serialization", Group: ktorGroup}, expResult: ModuleFound},
 		{name: "content-negotiation", expResult: ModuleAmbiguity, expCandidates: []MavenCoords{
 			{Artifact: "ktor-server-content-negotiation", Group: ktorGroup},
 			{Artifact: "ktor-client-content-negotiation", Group: ktorGroup},
 		}},
-		{name: "websocket-serialization", expMc: MavenCoords{Artifact: "ktor-websocket-serialization", Group: ktorGroup}, expResult: ModuleFound},
-		{name: "freemaker", expResult: AlikeModuleFound, expMc: MavenCoords{Artifact: "ktor-server-freemarker", Group: ktorGroup}},
+		{name: "core", expResult: ModuleAmbiguity, expCandidates: []MavenCoords{
+			{Artifact: "ktor-server-core", Group: ktorGroup},
+			{Artifact: "ktor-client-core", Group: ktorGroup},
+		}},
 		{name: "nonexistent", expResult: ModuleNotFound},
+		{name: "freemaker", expResult: AlikeModuleFound, expMc: MavenCoords{Artifact: "ktor-server-freemarker", Group: ktorGroup}},
 		{name: "ktor-clienp-core", expMc: MavenCoords{Artifact: "ktor-client-core", Group: ktorGroup}, expResult: AlikeModuleFound},
 		{name: "websockets-serialization", expMc: MavenCoords{Artifact: "ktor-websocket-serialization", Group: ktorGroup}, expResult: AlikeModuleFound},
 		{name: "peble", expMc: MavenCoords{Artifact: "ktor-server-pebble", Group: ktorGroup}, expResult: AlikeModuleFound},
 		{name: "server-peble", expMc: MavenCoords{Artifact: "ktor-server-pebble", Group: ktorGroup}, expResult: AlikeModuleFound},
 		{name: "ktor-server-peble", expMc: MavenCoords{Artifact: "ktor-server-pebble", Group: ktorGroup}, expResult: AlikeModuleFound},
-		{name: "core", expResult: ModuleAmbiguity, expCandidates: []MavenCoords{
-			{Artifact: "ktor-server-core", Group: ktorGroup},
-			{Artifact: "ktor-client-core", Group: ktorGroup},
-		}},
 	}
 
 	for _, c := range cases {
