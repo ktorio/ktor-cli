@@ -9,8 +9,12 @@ func PluginEntry(key, pluginId, version string) string {
 	return fmt.Sprintf("%s = { id = \"%s\", version.ref = \"%s\" }", key, pluginId, version)
 }
 
-func LibEntry(versionKey string, mc ktor.MavenCoords) string {
+func LibEntryModule(versionKey string, mc ktor.MavenCoords) string {
 	return fmt.Sprintf("%s = { module = \"%s:%s\", version.ref = \"%s\" }", mc.Artifact, mc.Group, mc.Artifact, versionKey)
+}
+
+func LibEntryGroupName(versionKey string, mc ktor.MavenCoords) string {
+	return fmt.Sprintf("%s = { group = \"%s\", name = \"%s\", version.ref = \"%s\" }", mc.Artifact, mc.Group, mc.Artifact, versionKey)
 }
 
 func NewTomlWithKtor(mc ktor.MavenCoords) string {

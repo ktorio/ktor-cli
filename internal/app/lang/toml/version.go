@@ -9,6 +9,7 @@ import (
 	parser "github.com/ktorio/ktor-cli/internal/app/lang/parsers/toml"
 	"github.com/ktorio/ktor-cli/internal/app/utils"
 	"path/filepath"
+	"strings"
 )
 
 type Document struct {
@@ -186,12 +187,36 @@ func AddLib(doc *Document, mc ktor.MavenCoords) (string, error) {
 		return rewriter.GetTextDefault(), nil
 	}
 
-	lang.InsertLnAfter(
-		rewriter,
-		libTable.Element.GetStop(),
-		"",
-		LibEntry(versionKey, mc),
-	)
+	var firstKtorLib *TableEntry
+	isModule := false
+	for _, e := range libTable.Entries {
+		if e.Kind != ValueMap {
+			continue
+		}
+
+		if g, ok := e.KeyValue["group"]; ok && g == "io.ktor" {
+			firstKtorLib = &e
+			break
+		}
+
+		if m, ok := e.KeyValue["module"]; ok && strings.HasPrefix(m, "io.ktor") {
+			firstKtorLib = &e
+			isModule = true
+			break
+		}
+	}
+
+	if firstKtorLib != nil && !isModule {
+		lang.InsertLnAfter(rewriter, firstKtorLib.Expression.GetStop(), "", LibEntryGroupName(versionKey, mc))
+		return rewriter.GetTextDefault(), nil
+	}
+
+	if firstKtorLib != nil {
+		lang.InsertLnAfter(rewriter, firstKtorLib.Expression.GetStop(), "", LibEntryModule(versionKey, mc))
+		return rewriter.GetTextDefault(), nil
+	}
+
+	lang.InsertLnAfter(rewriter, libTable.Element.GetStop(), "", LibEntryModule(versionKey, mc))
 
 	return rewriter.GetTextDefault(), nil
 }

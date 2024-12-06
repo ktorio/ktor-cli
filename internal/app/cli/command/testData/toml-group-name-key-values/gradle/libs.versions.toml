@@ -1,0 +1,12 @@
+
+[versions]
+kotlin-version = "2.0.21"
+ktor-version = "3.0.1"
+logback-version = "1.4.14"
+
+[libraries]
+ktor-server-core = { group = "io.ktor", name = "ktor-server-core", version.ref = "ktor-version" }
+
+[plugins]
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin-version" }
+ktor = { id = "io.ktor.plugin", version.ref = "ktor-version" }
