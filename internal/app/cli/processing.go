@@ -9,17 +9,19 @@ import (
 type Command string
 
 const (
-	NewCommand     Command = "new"
-	VersionCommand Command = "version"
-	HelpCommand    Command = "help"
-	AddCommand     Command = "add"
+	NewCommand        Command = "new"
+	VersionCommand    Command = "version"
+	HelpCommand       Command = "help"
+	CompletionCommand Command = "completions"
+	AddCommand        Command = "add"
 )
 
-var allCommandsSpec = map[Command]commandSpec{
-	NewCommand:     {args: map[string]Arg{"project-name": {required: false}}, description: "generate new Ktor project. If the project name is omitted run an interactive mode."},
-	AddCommand:     {args: map[string]Arg{"...module": {required: true}}, description: "add Ktor modules to a project"},
-	VersionCommand: {args: map[string]Arg{}, description: "print version"},
-	HelpCommand:    {args: map[string]Arg{}, description: "show the help"},
+var AllCommandsSpec = map[Command]commandSpec{
+	NewCommand:        {args: map[string]Arg{"project-name": {required: false}}, Description: "generate new Ktor project. If the project name is omitted run an interactive mode."},
+	AddCommand:        {args: map[string]Arg{"...module": {required: true}}, Description: "add Ktor modules to a project"},
+	VersionCommand:    {args: map[string]Arg{}, Description: "print version"},
+	HelpCommand:       {args: map[string]Arg{}, Description: "show the help"},
+	CompletionCommand: {args: map[string]Arg{"shell": {required: true}}, Description: "auto completions for different shells"},
 }
 
 type Arg struct {
@@ -28,7 +30,7 @@ type Arg struct {
 
 type commandSpec struct {
 	args        map[string]Arg
-	description string
+	Description string
 }
 
 type Flag string
@@ -39,15 +41,15 @@ const (
 	Verbose      = "verbose"
 )
 
-var allFlagsSpec = map[Flag]flagSpec{
-	Version: {aliases: []string{"-V", "--version"}, description: "print version"},
-	Help:    {aliases: []string{"-h", "--help"}, description: "show the help"},
-	Verbose: {aliases: []string{"-v", "--verbose"}, description: "enable verbose mode"},
+var AllFlagsSpec = map[Flag]flagSpec{
+	Version: {Aliases: []string{"-V", "--version"}, Description: "print version"},
+	Help:    {Aliases: []string{"-h", "--help"}, Description: "show the help"},
+	Verbose: {Aliases: []string{"-v", "--verbose"}, Description: "enable verbose mode"},
 }
 
 type flagSpec struct {
-	aliases     []string
-	description string
+	Aliases     []string
+	Description string
 }
 
 type Input struct {
@@ -62,12 +64,12 @@ func ProcessArgs(args *Args) (*Input, error) {
 	var unrecognized []string
 	var flags = make(map[Flag]bool)
 	for _, f := range args.Flags {
-		if slices.Contains(allFlagsSpec[Version].aliases, f) {
+		if slices.Contains(AllFlagsSpec[Version].Aliases, f) {
 			version = true
 			break
 		}
 
-		if slices.Contains(allFlagsSpec[Help].aliases, f) {
+		if slices.Contains(AllFlagsSpec[Help].Aliases, f) {
 			help = true
 			break
 		}
@@ -99,11 +101,11 @@ func ProcessArgs(args *Args) (*Input, error) {
 		return nil, &Error{Err: errors.New("command expected"), Kind: NoCommandError}
 	}
 
-	if _, ok := allCommandsSpec[Command(args.Command)]; !ok {
+	if _, ok := AllCommandsSpec[Command(args.Command)]; !ok {
 		return nil, &Error{Err: CommandError{Command: Command(args.Command)}, Kind: CommandNotFoundError}
 	}
 
-	if spec := allCommandsSpec[Command(args.Command)]; !hasVararg(spec) && (requiredArgsCount(spec.args) > 0 && requiredArgsCount(spec.args) != len(args.CommandArgs) || len(args.CommandArgs) > len(spec.args)) {
+	if spec := AllCommandsSpec[Command(args.Command)]; !hasVararg(spec) && (requiredArgsCount(spec.args) > 0 && requiredArgsCount(spec.args) != len(args.CommandArgs) || len(args.CommandArgs) > len(spec.args)) {
 		return nil, &Error{
 			Err:  CommandError{Command: Command(args.Command)},
 			Kind: WrongNumberOfArgumentsError,
@@ -134,8 +136,8 @@ func requiredArgsCount(args map[string]Arg) int {
 }
 
 func searchFlag(f string) (bool, Flag) {
-	for name, spec := range allFlagsSpec {
-		if slices.Contains(spec.aliases, f) {
+	for name, spec := range AllFlagsSpec {
+		if slices.Contains(spec.Aliases, f) {
 			return true, name
 		}
 	}

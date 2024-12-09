@@ -124,6 +124,24 @@ type GradlePlugin struct {
 	IsSerialization bool
 }
 
+func AllModules() []string {
+	var modules []string
+
+	for d, _ := range serverDefs {
+		modules = append(modules, "ktor-server-"+d)
+	}
+
+	for d, _ := range clientDefs {
+		modules = append(modules, "ktor-client-"+d)
+	}
+
+	for d, _ := range sharedDefs {
+		modules = append(modules, "ktor-"+d)
+	}
+
+	return modules
+}
+
 func ParseMavenCoords(s string) (MavenCoords, bool) {
 	parts := strings.Split(s, ":")
 

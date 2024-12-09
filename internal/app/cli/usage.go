@@ -13,33 +13,41 @@ func WriteUsage(w io.Writer) {
 	fmt.Fprintln(w, i18n.Get(i18n.OptionsCaption))
 
 	maxLen := 0
-	for _, spec := range allFlagsSpec {
+	for _, spec := range AllFlagsSpec {
 		if l := len(formatFlags(&spec)); l > maxLen {
 			maxLen = l
 		}
 	}
 
-	for _, spec := range allFlagsSpec {
-		fmt.Fprintf(w, "\t%-*s    %s\n", maxLen, formatFlags(&spec), spec.description)
+	for _, spec := range AllFlagsSpec {
+		fmt.Fprintf(w, "\t%-*s    %s\n", maxLen, formatFlags(&spec), spec.Description)
 	}
 
 	fmt.Fprintln(w, i18n.Get(i18n.CommandsCaption))
 
 	maxLen = 0
-	for command := range allCommandsSpec {
+	for command := range AllCommandsSpec {
+		if command == CompletionCommand {
+			continue
+		}
+
 		if l := len(formatCommand(command)); l > maxLen {
 			maxLen = l
 		}
 	}
 
-	for command, spec := range allCommandsSpec {
-		fmt.Fprintf(w, "\t%-*s    %s\n", maxLen, formatCommand(command), spec.description)
+	for command, spec := range AllCommandsSpec {
+		if command == CompletionCommand {
+			continue
+		}
+
+		fmt.Fprintf(w, "\t%-*s    %s\n", maxLen, formatCommand(command), spec.Description)
 	}
 }
 func formatCommand(command Command) string {
-	return fmt.Sprintf("%s %s", command, formatArgs(allCommandsSpec[command].args))
+	return fmt.Sprintf("%s %s", command, formatArgs(AllCommandsSpec[command].args))
 }
 
 func formatFlags(spec *flagSpec) string {
-	return strings.Join(spec.aliases, ", ")
+	return strings.Join(spec.Aliases, ", ")
 }

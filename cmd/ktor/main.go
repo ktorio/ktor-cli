@@ -111,6 +111,16 @@ func main() {
 		fmt.Printf(i18n.Get(i18n.VersionInfo, getVersion()))
 	case cli.HelpCommand:
 		cli.WriteUsage(os.Stdout)
+	case cli.CompletionCommand:
+		log.SetOutput(os.Stderr)
+		shell := args.CommandArgs[0]
+		s, err := command.Complete(shell)
+
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		fmt.Print(s)
 	case cli.NewCommand:
 		client := &http.Client{
 			Transport: &http.Transport{
