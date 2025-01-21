@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 )
@@ -26,7 +27,9 @@ func OpenApiJarUrl() string {
 		return e
 	}
 
-	return "https://repo1.maven.org/maven2/org/openapitools/openapi-generator-cli/7.10.0/openapi-generator-cli-7.10.0.jar"
+	version := "7.11.0"
+
+	return fmt.Sprintf("https://repo1.maven.org/maven2/org/openapitools/openapi-generator-cli/%s/openapi-generator-cli-%s.jar", version, version)
 }
 
 func KtorDir(homeDir string) string {
