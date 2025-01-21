@@ -40,10 +40,11 @@ type commandSpec struct {
 type Flag string
 
 const (
-	Version Flag = "version"
-	Help         = "help"
-	Verbose      = "verbose"
-	OutDir       = "outDir"
+	Version    Flag = "version"
+	Help            = "help"
+	Verbose         = "verbose"
+	OutDir          = "outDir"
+	ProjectDir      = "projectDir"
 )
 
 var AllFlagsSpec = map[Flag]flagSpec{
@@ -54,6 +55,9 @@ var AllFlagsSpec = map[Flag]flagSpec{
 var commandFlagSpec = map[Command]map[Flag]flagSpec{
 	OpenAPI: {
 		OutDir: {Aliases: []string{"-o", "--output"}, Description: i18n.Get(i18n.OutputDirOptionDescr), hasArg: true},
+	},
+	AddCommand: {
+		ProjectDir: {Aliases: []string{"-p", "--project"}, Description: i18n.Get(i18n.OutputDirOptionDescr), hasArg: true},
 	},
 }
 

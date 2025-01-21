@@ -82,9 +82,8 @@ func main() {
 
 	switch args.Command {
 	case cli.AddCommand:
-		log.SetOutput(os.Stderr)
+		log.SetOutput(os.Stderr) // TODO: Get rid of raw errors
 		modules := args.CommandArgs
-		projectDir := "."
 
 		for _, mod := range modules {
 			mc, modResult, candidates := ktor.FindModule(mod)
@@ -109,6 +108,11 @@ func main() {
 				var serPlugin *ktor.GradlePlugin
 				if len(depPlugins) > 0 {
 					serPlugin = &depPlugins[0]
+				}
+
+				projectDir := "."
+				if dir, ok := args.CommandOptions[cli.ProjectDir]; ok {
+					projectDir = dir
 				}
 
 				err = command.Add(mc, projectDir, serPlugin)

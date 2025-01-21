@@ -86,5 +86,6 @@ const (
 	CompletionCommandDescr
 	VerboseOptionDescr
 	OutputDirOptionDescr
+	ProjectDirOptionDescr
 	ProjectCreatedIn
 )

@@ -82,6 +82,7 @@ var en = map[Message]string{
 	HelpCommandDescr:                   "Show the ktor CLI tool usage text.",
 	VerboseOptionDescr:                 "Enable verbose mode.",
 	OutputDirOptionDescr:               "Project output directory.",
+	ProjectDirOptionDescr:              "Project directory.",
 	AddCommandDescr:                    "add Ktor modules to a project",
 	CompletionCommandDescr:             "auto completions for several shells",
 }
