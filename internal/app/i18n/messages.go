@@ -82,6 +82,8 @@ const (
 	VersionCommandDescr
 	HelpCommandDescr
 	OpenApiCommandDescr
+	AddCommandDescr
+	CompletionCommandDescr
 	VerboseOptionDescr
 	OutputDirOptionDescr
 	ProjectCreatedIn

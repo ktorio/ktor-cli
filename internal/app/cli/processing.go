@@ -22,10 +22,10 @@ const (
 var AllCommandsSpec = map[Command]commandSpec{
 	OpenAPI:           {args: map[string]Arg{"spec.yml": {required: true}}, Description: i18n.Get(i18n.OpenApiCommandDescr)},
 	NewCommand:        {args: map[string]Arg{"project-name": {required: false}}, Description: i18n.Get(i18n.NewCommandDescr)},
-	AddCommand:        {args: map[string]Arg{"...module": {required: true}}, Description: "add Ktor modules to a project"}, // TODO: 18n
+	AddCommand:        {args: map[string]Arg{"...module": {required: true}}, Description: i18n.Get(i18n.AddCommandDescr)},
 	VersionCommand:    {args: map[string]Arg{}, Description: i18n.Get(i18n.VersionCommandDescr)},
 	HelpCommand:       {args: map[string]Arg{}, Description: i18n.Get(i18n.HelpCommandDescr)},
-	CompletionCommand: {args: map[string]Arg{"shell": {required: true}}, Description: "auto completions for different shells"}, // TODO: 18n
+	CompletionCommand: {args: map[string]Arg{"shell": {required: true}}, Description: i18n.Get(i18n.CompletionCommandDescr)},
 }
 
 type Arg struct {
