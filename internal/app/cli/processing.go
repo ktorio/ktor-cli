@@ -2,7 +2,10 @@ package cli
 
 import (
 	"errors"
+	"fmt"
+	"github.com/ktorio/ktor-cli/internal/app/i18n"
 	"slices"
+	"strings"
 )
 
 type Command string
@@ -13,16 +16,16 @@ const (
 	HelpCommand       Command = "help"
 	CompletionCommand Command = "completions"
 	AddCommand        Command = "add"
-	OpenAPI        	  Command = "openapi"
+	OpenAPI           Command = "openapi"
 )
 
-var allCommandsSpec = map[Command]commandSpec{
-	OpenAPI:        {args: map[string]Arg{"spec.yml": {required: true}}, description: i18n.Get(i18n.OpenApiCommandDescr)},
-	NewCommand:     {args: map[string]Arg{"project-name": {required: false}}, description: i18n.Get(i18n.NewCommandDescr)},
-	AddCommand:        {args: map[string]Arg{"...module": {required: true}}, Description: "add Ktor modules to a project"},
-	VersionCommand: {args: map[string]Arg{}, description: i18n.Get(i18n.VersionCommandDescr)},
-	HelpCommand:    {args: map[string]Arg{}, description: i18n.Get(i18n.HelpCommandDescr)},
-	CompletionCommand: {args: map[string]Arg{"shell": {required: true}}, Description: "auto completions for different shells"},
+var AllCommandsSpec = map[Command]commandSpec{
+	OpenAPI:           {args: map[string]Arg{"spec.yml": {required: true}}, Description: i18n.Get(i18n.OpenApiCommandDescr)},
+	NewCommand:        {args: map[string]Arg{"project-name": {required: false}}, Description: i18n.Get(i18n.NewCommandDescr)},
+	AddCommand:        {args: map[string]Arg{"...module": {required: true}}, Description: "add Ktor modules to a project"}, // TODO: 18n
+	VersionCommand:    {args: map[string]Arg{}, Description: i18n.Get(i18n.VersionCommandDescr)},
+	HelpCommand:       {args: map[string]Arg{}, Description: i18n.Get(i18n.HelpCommandDescr)},
+	CompletionCommand: {args: map[string]Arg{"shell": {required: true}}, Description: "auto completions for different shells"}, // TODO: 18n
 }
 
 type Arg struct {
@@ -154,7 +157,7 @@ func ProcessArgs(args *Args) (*Input, error) {
 		i++
 	}
 
-	if spec := AllCommandsSpec[Command(args.Command)]; !hasVararg(spec) && (requiredArgsCount(spec.args) > 0 && requiredArgsCount(spec.args) != len(args.CommandArgs) || len(args.CommandArgs) > len(spec.args)) {
+	if spec := AllCommandsSpec[Command(args.Command)]; !hasVararg(spec) && (requiredArgsCount(spec.args) > 0 && requiredArgsCount(spec.args) != len(args.CommandArgs[argsIndex:]) || len(args.CommandArgs[argsIndex:]) > len(spec.args)) {
 		return nil, &Error{
 			Err:  CommandError{Command: Command(args.Command)},
 			Kind: WrongNumberOfArgumentsError,
@@ -186,7 +189,7 @@ func requiredArgsCount(args map[string]Arg) int {
 
 func searchFlag(f string, flagMap map[Flag]flagSpec, argIndex int) (Flag, int, bool) {
 	for name, spec := range flagMap {
-		for _, al := range spec.aliases {
+		for _, al := range spec.Aliases {
 			if al == f {
 				return name, argIndex + 1, true
 			}

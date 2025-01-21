@@ -46,9 +46,7 @@ func TestProcessArgs(t *testing.T) {
 	checkProcessing(t, []string{"ktor", "--help", "--version"}, &Input{Command: HelpCommand})
 	checkProcessing(t, []string{"ktor", "--version", "new"}, &Input{Command: VersionCommand})
 	checkProcessing(t, []string{"ktor", "--help", "new", "some"}, &Input{Command: HelpCommand})
-	checkProcessing(t, []string{"ktor", "new", "some"}, &Input{Command: NewCommand, CommandArgs: []string{"some"}})
-	checkProcessing(t, []string{"ktor", "-v", "new", "some"}, &Input{Command: NewCommand, CommandArgs: []string{"some"}, Verbose: true})
-	checkProcessing(t, []string{"ktor", "add", "mod1", "mod2"}, &Input{Command: AddCommand, CommandArgs: []string{"mod1", "mod2"}})
+	checkProcessing(t, []string{"ktor", "add", "mod1", "mod2"}, &Input{Command: AddCommand, CommandArgs: []string{"mod1", "mod2"}, CommandOptions: map[Flag]string{}})
 	checkProcessing(t, []string{"ktor", "new", "some"}, &Input{Command: NewCommand, CommandArgs: []string{"some"}, CommandOptions: map[Flag]string{}})
 	checkProcessing(t, []string{"ktor", "-v", "new", "some"}, &Input{Command: NewCommand, CommandArgs: []string{"some"}, Verbose: true, CommandOptions: map[Flag]string{}})
 	checkProcessing(
