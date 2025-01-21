@@ -2,7 +2,10 @@ package cli
 
 import (
 	"errors"
+	"fmt"
+	"github.com/ktorio/ktor-cli/internal/app/i18n"
 	"slices"
+	"strings"
 )
 
 type Command string
@@ -11,12 +14,14 @@ const (
 	NewCommand     Command = "new"
 	VersionCommand Command = "version"
 	HelpCommand    Command = "help"
+	OpenAPI        Command = "openapi"
 )
 
 var allCommandsSpec = map[Command]commandSpec{
-	NewCommand:     {args: map[string]Arg{"project-name": {required: false}}, description: "generate new Ktor project. If the project name is omitted run an interactive mode."},
-	VersionCommand: {args: map[string]Arg{}, description: "print version"},
-	HelpCommand:    {args: map[string]Arg{}, description: "show the help"},
+	OpenAPI:        {args: map[string]Arg{"spec.yml": {required: true}}, description: i18n.Get(i18n.OpenApiCommandDescr)},
+	NewCommand:     {args: map[string]Arg{"project-name": {required: false}}, description: i18n.Get(i18n.NewCommandDescr)},
+	VersionCommand: {args: map[string]Arg{}, description: i18n.Get(i18n.VersionCommandDescr)},
+	HelpCommand:    {args: map[string]Arg{}, description: i18n.Get(i18n.HelpCommandDescr)},
 }
 
 type Arg struct {
@@ -34,23 +39,32 @@ const (
 	Version Flag = "version"
 	Help         = "help"
 	Verbose      = "verbose"
+	OutDir       = "outDir"
 )
 
 var allFlagsSpec = map[Flag]flagSpec{
-	Version: {aliases: []string{"-V", "--version"}, description: "print version"},
-	Help:    {aliases: []string{"-h", "--help"}, description: "show the help"},
-	Verbose: {aliases: []string{"-v", "--verbose"}, description: "enable verbose mode"},
+	Version: {aliases: []string{"-V", "--version"}, description: i18n.Get(i18n.VersionCommandDescr)},
+	Help:    {aliases: []string{"-h", "--help"}, description: i18n.Get(i18n.HelpCommandDescr)},
+	Verbose: {aliases: []string{"-v", "--verbose"}, description: i18n.Get(i18n.VerboseOptionDescr)},
+}
+
+var commandFlagSpec = map[Command]map[Flag]flagSpec{
+	OpenAPI: {
+		OutDir: {aliases: []string{"-o", "--output"}, description: i18n.Get(i18n.OutputDirOptionDescr), hasArg: true},
+	},
 }
 
 type flagSpec struct {
 	aliases     []string
 	description string
+	hasArg      bool
 }
 
 type Input struct {
-	Command     Command
-	CommandArgs []string
-	Verbose     bool
+	Command        Command
+	CommandArgs    []string
+	CommandOptions map[Flag]string
+	Verbose        bool
 }
 
 func ProcessArgs(args *Args) (*Input, error) {
@@ -58,7 +72,7 @@ func ProcessArgs(args *Args) (*Input, error) {
 	help := false
 	var unrecognized []string
 	var flags = make(map[Flag]bool)
-	for _, f := range args.Flags {
+	for i, f := range args.Flags {
 		if slices.Contains(allFlagsSpec[Version].aliases, f) {
 			version = true
 			break
@@ -69,7 +83,7 @@ func ProcessArgs(args *Args) (*Input, error) {
 			break
 		}
 
-		found, fl := searchFlag(f)
+		fl, _, found := searchFlag(f, allFlagsSpec, i)
 
 		if !found && !slices.Contains(unrecognized, f) {
 			unrecognized = append(unrecognized, f)
@@ -100,14 +114,54 @@ func ProcessArgs(args *Args) (*Input, error) {
 		return nil, &Error{Err: CommandError{Command: Command(args.Command)}, Kind: CommandNotFoundError}
 	}
 
-	if spec := allCommandsSpec[Command(args.Command)]; requiredArgsCount(spec.args) > 0 && requiredArgsCount(spec.args) != len(args.CommandArgs) || len(args.CommandArgs) > len(spec.args) {
+	commandOpts := make(map[Flag]string)
+	i := 0
+	argsIndex := i
+	for i < len(args.CommandArgs) {
+		arg := args.CommandArgs[i]
+		if !strings.HasPrefix(arg, "-") {
+			argsIndex = i
+			break
+		}
+
+		spec, ok := commandFlagSpec[Command(args.Command)]
+
+		if !ok {
+			continue
+		}
+
+		if f, argPos, ok := searchFlag(arg, spec, i); ok {
+			if spec[f].hasArg {
+				if argPos == i {
+					parts := strings.Split(arg, "=")
+					if len(parts) < 2 || parts[1] == "" {
+						return nil, &Error{Err: FlagError{Flag: parts[0]}, Kind: NoArgumentForFlag}
+					}
+					commandOpts[f] = parts[1]
+				} else {
+					if argPos >= len(args.CommandArgs) {
+						return nil, &Error{Err: FlagError{Flag: arg}, Kind: NoArgumentForFlag}
+					}
+
+					commandOpts[f] = args.CommandArgs[argPos]
+					i++
+				}
+			} else {
+				commandOpts[f] = ""
+			}
+		}
+
+		i++
+	}
+
+	if spec := allCommandsSpec[Command(args.Command)]; requiredArgsCount(spec.args) > 0 && requiredArgsCount(spec.args) != len(args.CommandArgs[argsIndex:]) || len(args.CommandArgs[argsIndex:]) > len(spec.args) {
 		return nil, &Error{
 			Err:  CommandError{Command: Command(args.Command)},
 			Kind: WrongNumberOfArgumentsError,
 		}
 	}
 
-	return &Input{Command: Command(args.Command), CommandArgs: args.CommandArgs, Verbose: flags[Verbose]}, nil
+	return &Input{Command: Command(args.Command), CommandArgs: args.CommandArgs[argsIndex:], CommandOptions: commandOpts, Verbose: flags[Verbose]}, nil
 }
 
 func requiredArgsCount(args map[string]Arg) int {
@@ -121,12 +175,18 @@ func requiredArgsCount(args map[string]Arg) int {
 	return count
 }
 
-func searchFlag(f string) (bool, Flag) {
-	for name, spec := range allFlagsSpec {
-		if slices.Contains(spec.aliases, f) {
-			return true, name
+func searchFlag(f string, flagMap map[Flag]flagSpec, argIndex int) (Flag, int, bool) {
+	for name, spec := range flagMap {
+		for _, al := range spec.aliases {
+			if al == f {
+				return name, argIndex + 1, true
+			}
+
+			if strings.HasPrefix(f, fmt.Sprintf("%s=", al)) {
+				return name, argIndex, true
+			}
 		}
 	}
 
-	return false, ""
+	return "", 0, false
 }

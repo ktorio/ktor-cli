@@ -1,5 +1,10 @@
 package utils
 
+import (
+	"slices"
+	"strings"
+)
+
 // CleanProjectName returns project name stripped until the first forbidden symbol
 func CleanProjectName(name string) string {
 	forbiddenChars := map[rune]struct{}{'/': {}, '\\': {}, ':': {}, '<': {}, '>': {}, '"': {}, '?': {}, '*': {}, '|': {}}
@@ -17,4 +22,10 @@ func CleanProjectName(name string) string {
 	}
 
 	return name[:lastIndex]
+}
+
+func GetPackage(website string) string {
+	parts := strings.Split(website, ".")
+	slices.Reverse(parts)
+	return strings.Join(parts, ".")
 }

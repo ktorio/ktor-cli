@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 )
@@ -19,6 +20,16 @@ func CorrettoBaseUrl() string {
 	}
 
 	return "https://corretto.aws"
+}
+
+func OpenApiJarUrl() string {
+	if e, ok := os.LookupEnv("OPENAPI_JAR_URL"); ok && e != "" {
+		return e
+	}
+
+	version := "7.11.0"
+
+	return fmt.Sprintf("https://repo1.maven.org/maven2/org/openapitools/openapi-generator-cli/%s/openapi-generator-cli-%s.jar", version, version)
 }
 
 func KtorDir(homeDir string) string {

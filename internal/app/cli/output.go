@@ -4,12 +4,33 @@ import (
 	"errors"
 	"fmt"
 	"github.com/ktorio/ktor-cli/internal/app"
+	"github.com/ktorio/ktor-cli/internal/app/config"
 	"github.com/ktorio/ktor-cli/internal/app/i18n"
 	"github.com/ktorio/ktor-cli/internal/app/jdk"
+	"github.com/ktorio/ktor-cli/internal/app/utils"
+	"log"
 	"os"
 	"runtime"
 	"strings"
 )
+
+func ExitWithError(err error, projectDir string, hasGlobalLog bool, homeDir string) {
+	if _, err := os.Stat(projectDir); err == nil && utils.IsDirEmpty(projectDir) {
+		_ = os.Remove(projectDir)
+	}
+
+	reportLog := HandleAppError(projectDir, err)
+
+	if hasGlobalLog && reportLog {
+		fmt.Fprintf(os.Stderr, i18n.Get(i18n.LogHint, config.LogPath(homeDir)))
+	}
+
+	if hasGlobalLog {
+		log.Fatal(err)
+	}
+
+	os.Exit(1)
+}
 
 func HandleAppError(projectDir string, err error) (reportLog bool) {
 	if err == nil {
@@ -26,6 +47,12 @@ func HandleAppError(projectDir string, err error) (reportLog bool) {
 			fmt.Fprintf(os.Stderr, i18n.Get(i18n.GenServerTimeoutError))
 		case app.NetworkError:
 			fmt.Fprintf(os.Stderr, i18n.Get(i18n.NetworkError))
+		case app.OpenApiDownloadJarError:
+			fmt.Fprintf(os.Stderr, i18n.Get(i18n.DownloadOpenAPIJarError))
+		case app.OpenApiExecuteJarError:
+			fmt.Fprintf(os.Stderr, i18n.Get(i18n.OpenApiExecuteJarError))
+		case app.ExternalCommandError:
+			fmt.Fprintf(os.Stderr, i18n.Get(i18n.ExternalCommandError))
 		case app.InternalError:
 			fmt.Fprintf(os.Stderr, i18n.Get(i18n.InternalError))
 		case app.ProjectDirError:
@@ -35,7 +62,7 @@ func HandleAppError(projectDir string, err error) (reportLog bool) {
 
 			switch {
 			case errors.Is(pe.Err, os.ErrExist):
-				fmt.Fprintf(os.Stderr, i18n.Get(i18n.ProjectDirExist, pe.Path))
+				fmt.Fprintf(os.Stderr, i18n.Get(i18n.ProjectDirExistAndNotEmpty, pe.Path))
 			case errors.Is(pe.Err, os.ErrPermission):
 				fmt.Fprintf(os.Stderr, i18n.Get(i18n.NoPermsCreateProjectDir, pe.Path))
 			}
@@ -112,6 +139,10 @@ func HandleArgsValidation(err error) {
 		if spec, ok := allCommandsSpec[ce.Command]; ok {
 			fmt.Fprintf(os.Stderr, i18n.Get(i18n.CommandArgumentsError, ce.Command, len(spec.args), formatArgs(spec.args)))
 		}
+	case NoArgumentForFlag:
+		var fe FlagError
+		errors.As(e.Err, &fe)
+		fmt.Fprintf(os.Stderr, i18n.Get(i18n.FlagRequiresArgument, fe.Flag))
 	default:
 		// do nothing
 	}

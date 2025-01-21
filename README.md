@@ -64,6 +64,18 @@ To create a new project in the interactive mode, simply use the `new` command wi
 ktor new
 ```
 
+## Generate a project from an OpenAPI specification
+
+To generate a project in the current directory from a given [OpenAPI specification](https://swagger.io/specification/), use the `openapi` command:
+```shell
+ktor openapi petstore.yaml
+```
+
+You can specify a different output directory with the `-o` or `--output` flag:
+```shell
+ktor openapi -o path/to/project petstore.yaml
+```
+
 ## Get the version
 
 To get the version of the tool, use the `--version` flag or the `version` command:
