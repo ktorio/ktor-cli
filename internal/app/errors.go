@@ -26,6 +26,8 @@ const (
 	ExternalCommandError
 	OpenApiDownloadJarError
 	OpenApiExecuteJarError
+	ArtifactSearchError
+	ArtifactListError
 )
 
 type ErrorKind int

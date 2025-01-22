@@ -4,27 +4,26 @@ import (
 	"errors"
 	"fmt"
 	"github.com/ktorio/ktor-cli/internal/app/cli"
-	"github.com/ktorio/ktor-cli/internal/app/ktor"
 	"strings"
 )
 
-func Complete(shell string) (string, error) {
+func Complete(allModules []string, shell string) (string, error) {
 	switch shell {
 	case "zsh":
-		err, s := completeZsh()
+		err, s := completeZsh(allModules)
 		return err, s
 	case "bash":
-		err, s := completeBash()
+		err, s := completeBash(allModules)
 		return err, s
 	case "fish":
-		err, s := completeFish()
+		err, s := completeFish(allModules)
 		return err, s
 	default:
 		return "", errors.New(fmt.Sprintf("unrecognized shell %s", shell))
 	}
 }
 
-func completeFish() (string, error) {
+func completeFish(allModules []string) (string, error) {
 	var commands []string
 	for c, s := range cli.AllCommandsSpec {
 		if c == cli.CompletionCommand {
@@ -37,7 +36,7 @@ func completeFish() (string, error) {
 	newCommand := fmt.Sprintf("complete -c ktor -n \"__fish_seen_subcommand_from new\" -a \"(commandline -ot)\" -d \"[project-name]\"")
 
 	var modules []string
-	for _, m := range ktor.AllModules() {
+	for _, m := range allModules {
 		modules = append(modules, fmt.Sprintf("complete -c ktor -n \"__fish_seen_subcommand_from add\" -f -a \"%s\"", m))
 	}
 
@@ -50,7 +49,7 @@ func completeFish() (string, error) {
 	return s, nil
 }
 
-func completeBash() (string, error) {
+func completeBash(allModules []string) (string, error) {
 	var commands []string
 	for c, _ := range cli.AllCommandsSpec {
 		if c == cli.CompletionCommand {
@@ -67,7 +66,7 @@ func completeBash() (string, error) {
 	}
 
 	var modules []string
-	for _, m := range ktor.AllModules() {
+	for _, m := range allModules {
 		modules = append(modules, m)
 	}
 
@@ -105,7 +104,7 @@ complete -F _ktor_complete ktor
 	return s, nil
 }
 
-func completeZsh() (string, error) {
+func completeZsh(allModules []string) (string, error) {
 	var commands []string
 	for c, s := range cli.AllCommandsSpec {
 		if c == cli.CompletionCommand {
@@ -122,7 +121,7 @@ func completeZsh() (string, error) {
 	}
 
 	var modules []string
-	for _, m := range ktor.AllModules() {
+	for _, m := range allModules {
 		modules = append(modules, `"`+m+`"`)
 	}
 

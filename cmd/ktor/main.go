@@ -11,6 +11,7 @@ import (
 	"github.com/ktorio/ktor-cli/internal/app/i18n"
 	"github.com/ktorio/ktor-cli/internal/app/interactive"
 	"github.com/ktorio/ktor-cli/internal/app/ktor"
+	"github.com/ktorio/ktor-cli/internal/app/network"
 	"github.com/ktorio/ktor-cli/internal/app/utils"
 	"golang.org/x/exp/slices"
 	"io"
@@ -85,14 +86,20 @@ func main() {
 		log.SetOutput(os.Stderr) // TODO: Get rid of raw errors
 		modules := args.CommandArgs
 
-		for _, mod := range modules {
-			mc, modResult, candidates := ktor.FindModule(mod)
+		// TODO: Detect Ktor version or take it from /project/settings endpoint
 
-			fmt.Printf("Changes for module '%s':\n", mod)
+		artifacts, err := network.SearchArtifacts(client, "3.0.3", modules)
+
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		for _, mod := range modules {
+			mc, modResult, candidates := ktor.FindModule(artifacts[mod])
 
 			switch modResult {
 			case ktor.ModuleNotFound:
-				log.Fatal(fmt.Sprintf("Cannot recongnize Ktor module %s", mod))
+				log.Fatal(fmt.Sprintf("Cannot recognize Ktor module '%s'", mod)) // TODO: Return proper error
 			case ktor.ModuleAmbiguity:
 				var names []string
 				for _, c := range candidates {
@@ -100,9 +107,13 @@ func main() {
 						names = append(names, c.Artifact)
 					}
 				}
-				log.Fatal(fmt.Sprintf("Module ambiguity. Candidates: %s", strings.Join(names, ", ")))
-			case ktor.AlikeModuleFound:
-				log.Fatal(fmt.Sprintf("Cannot recognize the '%s' module.\nDid you mean '%s'?\n", mod, mc.Artifact))
+				fmt.Fprintf(os.Stderr, "Module ambiguity. Candidates: %s", strings.Join(names, ", "))
+			case ktor.SimilarModulesFound:
+				fmt.Fprintf(os.Stderr, "Cannot recognize module '%s'. ", mod)
+
+				if len(candidates) > 0 {
+					fmt.Fprintf(os.Stderr, "Did you mean '%s'?\n", candidates[0].Artifact)
+				}
 			case ktor.ModuleFound:
 				depPlugins := ktor.DependentPlugins(mc)
 				var serPlugin *ktor.GradlePlugin
@@ -129,7 +140,14 @@ func main() {
 	case cli.CompletionCommand:
 		log.SetOutput(os.Stderr)
 		shell := args.CommandArgs[0]
-		s, err := command.Complete(shell)
+		modules, err := network.ListArtifacts(client, "3.0.3") // TODO: Get version from settings endpoint
+
+		if err != nil {
+			// TODO: Handle error properly
+			log.Fatal(err)
+		}
+
+		s, err := command.Complete(modules, shell)
 
 		if err != nil {
 			log.Fatal(err)
