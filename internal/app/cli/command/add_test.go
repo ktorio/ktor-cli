@@ -37,6 +37,19 @@ func TestAddProjectDependencies(t *testing.T) {
 			t.Fatalf("Expected ktor-module.txt file in the %s", projDir)
 		}
 
+		if versionBytes, err := os.ReadFile(filepath.Join(projDir, "ktor-version.txt")); err == nil {
+			ktorVersion := strings.TrimSpace(string(versionBytes))
+			actualVersion, ok := SearchKtorVersion(projDir)
+
+			if len(ktorVersion) != 0 && !ok {
+				t.Fatalf("%s: expected Ktor version to be %s, found nothing", e.Name(), ktorVersion)
+			}
+
+			if actualVersion != ktorVersion {
+				t.Fatalf("%s: expected Ktor version to be %s, got %s", e.Name(), ktorVersion, actualVersion)
+			}
+		}
+
 		parts := strings.Split(strings.TrimSpace(string(b)), ":")
 		version := ""
 		artifact := parts[0]

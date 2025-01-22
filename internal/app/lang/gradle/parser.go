@@ -31,6 +31,7 @@ type VarDecl struct {
 	IsDelegate bool
 	Delegate   string
 	Id         string
+	StringVal  string
 }
 
 type Repositories struct {
@@ -55,11 +56,12 @@ type Dependencies struct {
 }
 
 type Dep struct {
-	Kind      DepKind
-	IsTest    bool
-	IsBom     bool
-	Path      string
-	Statement parser.IStatementContext
+	Kind         DepKind
+	IsTest       bool
+	IsKtorBom    bool
+	Path         string
+	PlatformPath string
+	Statement    parser.IStatementContext
 }
 
 func ParseBuildFile(fp string) (*BuildRoot, error) {
@@ -170,8 +172,9 @@ func ParseBuildFile(fp string) (*BuildRoot, error) {
 					}
 
 					for _, va := range findValueArguments(pus2.CallSuffix()) {
-						if strings.HasPrefix(lang.Unquote(va.GetText()), "io.ktor:ktor-bom") {
-							d.IsBom = true
+						if pp := lang.Unquote(va.GetText()); strings.HasPrefix(pp, "io.ktor:ktor-bom") {
+							d.IsKtorBom = true
+							d.PlatformPath = pp
 							break
 						}
 					}
@@ -253,11 +256,15 @@ func parseVarDecl(pd parser.IPropertyDeclarationContext) (VarDecl, bool) {
 	vd.Id = pd.VariableDeclaration().SimpleIdentifier().GetText()
 
 	if pd.PropertyDelegate() == nil {
-		return vd, true
-	}
-	if id, ok := lang.FindChild[parser.ISimpleIdentifierContext](pd.PropertyDelegate().Expression()); ok {
-		vd.IsDelegate = true
-		vd.Delegate = id.GetText()
+		expr := pd.Expression().GetText()
+		if strings.HasPrefix(expr, "\"") && strings.HasSuffix(expr, "\"") {
+			vd.StringVal = lang.Unquote(expr)
+		}
+	} else {
+		if id, ok := lang.FindChild[parser.ISimpleIdentifierContext](pd.PropertyDelegate().Expression()); ok {
+			vd.IsDelegate = true
+			vd.Delegate = id.GetText()
+		}
 	}
 
 	return vd, true

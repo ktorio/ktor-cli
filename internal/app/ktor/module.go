@@ -11,8 +11,7 @@ const SerPluginId = "org.jetbrains.kotlin.plugin.serialization"
 const SerPluginKotlinId = "plugin.serialization"
 const KotlinJvmPluginId = "org.jetbrains.kotlin.jvm"
 const KmpPluginId = "org.jetbrains.kotlin.multiplatform"
-
-const ktorGroup = "io.ktor"
+const MavenGroup = "io.ktor"
 
 type MavenCoords struct {
 	Artifact, Group, Version string

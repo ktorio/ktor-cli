@@ -7,5 +7,7 @@ repositories {
 }
 
 dependencies {
+    implementation(platform("group:artifact:1.2.3"))
     implementation(platform("io.ktor:ktor-bom:2.3.13"))
+    implementation(platform("group:artifact:1.2.3"))
 }

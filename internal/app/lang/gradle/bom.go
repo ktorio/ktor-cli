@@ -6,7 +6,7 @@ import (
 
 func FindBom(deps []Dep) (parser.IStatementContext, bool) {
 	for _, dep := range deps {
-		if dep.IsBom {
+		if dep.IsKtorBom {
 			return dep.Statement, true
 		}
 	}

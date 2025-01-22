@@ -134,6 +134,77 @@ func applyChanges(files []FileContent) error {
 	return lastErr
 }
 
+func SearchKtorVersion(projectDir string) (version string, found bool) {
+	build, err := gradle.ParseBuildFile(filepath.Join(projectDir, "build.gradle.kts"))
+
+	if err != nil {
+		return
+	}
+
+	found = true
+
+	for _, p := range build.Plugins.List {
+		if p.Prefix == "id" && p.Id == "io.ktor.plugin" {
+			version = p.Version
+			return
+		}
+	}
+
+	for _, d := range build.Dependencies.List {
+		if d.IsKtorBom {
+			if mc, ok := ktor.ParseMavenCoords(d.PlatformPath); ok && mc.Version != "" {
+				version = mc.Version
+				break
+			}
+		} else if d.Kind == gradle.HardcodedDep {
+			if mc, ok := ktor.ParseMavenCoords(d.Path); ok && mc.Group == ktor.MavenGroup && mc.Version != "" {
+				version = mc.Version
+				break
+			}
+		}
+	}
+
+	if version != "" && !strings.HasPrefix(version, "$") {
+		return
+	} else {
+		props := gradle.ParseProps(filepath.Join(projectDir, "gradle.properties"))
+
+		for _, v := range build.TopLevelVars {
+			if v.Id == strings.TrimPrefix(version, "$") {
+				if v.IsDelegate && v.Delegate == "project" {
+					if val, ok := props[strings.TrimPrefix(version, "$")]; ok {
+						version = val
+						break
+					}
+				} else {
+					version = v.StringVal
+					break
+				}
+			}
+		}
+
+		if version != "" {
+			return
+		}
+	}
+
+	tomlDoc, tomlErr := toml.ParseCatalogToml(projectDir)
+
+	if tomlErr == nil {
+		if t, ok := toml.FindTable(tomlDoc, "versions"); ok {
+			for _, te := range t.Entries {
+				if strings.HasPrefix(te.Key, "ktor") && te.Kind == toml.StringValue && te.String != "" {
+					version = te.String
+					return
+				}
+			}
+		}
+	}
+
+	found = false
+	return
+}
+
 func addDependency(mc ktor.MavenCoords, projectDir string, serPlugin *ktor.GradlePlugin) ([]FileContent, AddDependencyResult, error) {
 	buildPath := filepath.Join(projectDir, "build.gradle.kts")
 	var changes []FileContent

@@ -86,9 +86,24 @@ func main() {
 		log.SetOutput(os.Stderr) // TODO: Get rid of raw errors
 		modules := args.CommandArgs
 
-		// TODO: Detect Ktor version or take it from /project/settings endpoint
+		projectDir := "."
+		if dir, ok := args.CommandOptions[cli.ProjectDir]; ok {
+			projectDir = dir
+		}
 
-		artifacts, err := network.SearchArtifacts(client, "3.0.3", modules)
+		var ktorVersion string
+		if v, ok := command.SearchKtorVersion(projectDir); ok {
+			ktorVersion = v
+		} else if settings, err := network.FetchSettings(client); err == nil {
+			log.Print(err)
+			ktorVersion = settings.KtorVersion.DefaultId
+		}
+
+		if ktorVersion == "" {
+			// TODO: Handle if ktor version cannot be obtained
+		}
+
+		artifacts, err := network.SearchArtifacts(client, ktorVersion, modules)
 
 		if err != nil {
 			log.Fatal(err)
@@ -101,7 +116,7 @@ func main() {
 
 			switch modResult {
 			case ktor.ModuleNotFound:
-				log.Fatal(fmt.Sprintf("Cannot recognize Ktor module '%s'", mod)) // TODO: Return proper error
+				fmt.Fprintf(os.Stderr, "Cannot recognize Ktor module '%s'\n", mod) // TODO: Return proper error
 			case ktor.ModuleAmbiguity:
 				var names []string
 				for _, c := range candidates {
@@ -121,11 +136,6 @@ func main() {
 				var serPlugin *ktor.GradlePlugin
 				if len(depPlugins) > 0 {
 					serPlugin = &depPlugins[0]
-				}
-
-				projectDir := "."
-				if dir, ok := args.CommandOptions[cli.ProjectDir]; ok {
-					projectDir = dir
 				}
 
 				err = command.Add(mc, projectDir, serPlugin)
