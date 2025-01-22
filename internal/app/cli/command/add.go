@@ -59,7 +59,7 @@ func Add(mc ktor.MavenCoords, projectDir string, serPlugin *ktor.GradlePlugin) e
 		fmt.Println("Adding Ktor dependency to a Gradle project with Groovy DSL is not supported.")
 		os.Exit(1)
 	case BuildGradleKtsNotFound:
-		fmt.Println("Unable to find build.gradle.kts file in project directory.")
+		fmt.Printf("Unable to find build.gradle.kts file in the project directory %s.\n", projectDir)
 		os.Exit(1)
 	}
 
@@ -72,11 +72,14 @@ func Add(mc ktor.MavenCoords, projectDir string, serPlugin *ktor.GradlePlugin) e
 		return nil
 	}
 
+	fmt.Printf("Below you can find suggested changes to add '%s'.\n", mc.String())
+	fmt.Println("If you consider them incorrect, please file an issue at https://youtrack.jetbrains.com/newIssue?project=ktor.")
+	fmt.Println()
 	for _, f := range files {
 		fmt.Println(getDiff(f.Path, f.Content))
 	}
 
-	fmt.Print("Do you want to apply the changes above (y/n)? ")
+	fmt.Print("Do you want to apply the changes (y/n)? ")
 	scanner := bufio.NewScanner(os.Stdin)
 	scanner.Scan()
 	answer := scanner.Text()
@@ -88,12 +91,11 @@ func Add(mc ktor.MavenCoords, projectDir string, serPlugin *ktor.GradlePlugin) e
 			fmt.Println("The changes have been successfully applied.")
 		} else {
 			fmt.Println("An error occurred applying the changes.")
+			// TODO: Report the error
 		}
 
 		return err
 	}
-
-	fmt.Println("Goodbye!")
 
 	return nil
 }

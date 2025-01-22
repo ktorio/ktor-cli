@@ -95,6 +95,8 @@ func main() {
 		}
 
 		for _, mod := range modules {
+			verboseLogger.Printf("Processing module %s...\n", mod)
+
 			mc, modResult, candidates := ktor.FindModule(artifacts[mod])
 
 			switch modResult {
@@ -107,7 +109,7 @@ func main() {
 						names = append(names, c.Artifact)
 					}
 				}
-				fmt.Fprintf(os.Stderr, "Module ambiguity. Candidates: %s", strings.Join(names, ", "))
+				fmt.Fprintf(os.Stderr, "Module ambiguity for %s. Candidates: %s", mod, strings.Join(names, ", "))
 			case ktor.SimilarModulesFound:
 				fmt.Fprintf(os.Stderr, "Cannot recognize module '%s'. ", mod)
 
@@ -139,8 +141,16 @@ func main() {
 		cli.WriteUsage(os.Stdout)
 	case cli.CompletionCommand:
 		log.SetOutput(os.Stderr)
+
+		settings, err := network.FetchSettings(client)
+
+		if err != nil {
+			// TODO: Handle error properly
+			log.Fatal(err)
+		}
+
 		shell := args.CommandArgs[0]
-		modules, err := network.ListArtifacts(client, "3.0.3") // TODO: Get version from settings endpoint
+		modules, err := network.ListArtifacts(client, settings.KtorVersion.DefaultId)
 
 		if err != nil {
 			// TODO: Handle error properly
