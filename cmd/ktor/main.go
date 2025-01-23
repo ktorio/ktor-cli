@@ -11,6 +11,8 @@ import (
 	"github.com/ktorio/ktor-cli/internal/app/i18n"
 	"github.com/ktorio/ktor-cli/internal/app/interactive"
 	"github.com/ktorio/ktor-cli/internal/app/ktor"
+	"github.com/ktorio/ktor-cli/internal/app/lang/gradle"
+	"github.com/ktorio/ktor-cli/internal/app/lang/toml"
 	"github.com/ktorio/ktor-cli/internal/app/network"
 	"github.com/ktorio/ktor-cli/internal/app/utils"
 	"io"
@@ -90,9 +92,48 @@ func main() {
 			projectDir = dir
 		}
 
-		// TODO: Think how to parse build.gradle.kts and toml files only once
+		tomlPath, tomlFound := toml.FindVersionsPath(projectDir)
+		var tomlDoc *toml.Document
+		var tomlSuccessParsed bool
+
+		buildPath := filepath.Join(projectDir, "build.gradle.kts")
+		buildFound := utils.Exists(buildPath)
+		var buildRoot *gradle.BuildRoot
+
+		if buildFound {
+			buildRoot, err = gradle.ParseBuildFile(buildPath)
+
+			if err != nil {
+				cli.ExitWithError(err, hasGlobalLog, homeDir)
+			} else {
+				if tomlFound {
+					tomlDoc, err = toml.ParseCatalogToml(tomlPath)
+
+					if err != nil {
+						log.Println(err)
+					} else {
+						tomlSuccessParsed = true
+					}
+				}
+
+				if command.IsKmpProject(buildRoot, tomlDoc, tomlSuccessParsed) { // TODO: Move this code to add.go in command
+					fmt.Fprintln(os.Stderr, "Unable to add the Ktor module to a Kotlin Multiplatform project (not supported yet).")
+					os.Exit(1)
+				}
+			}
+		} else {
+			if utils.Exists(filepath.Join(projectDir, "pom.xml")) {
+				fmt.Fprintln(os.Stderr, "Unable to add the Ktor module to a Maven project (not supported yet).")
+			} else if utils.Exists(filepath.Join(projectDir, "build.gradle")) {
+				fmt.Fprintln(os.Stderr, "Unable to add the Ktor module to a Gradle project with Groovy DSL (not supported yet).")
+			} else {
+				fmt.Fprintf(os.Stderr, "Unable to find build.gradle.kts file in the project directory %s.\n", projectDir)
+			}
+			os.Exit(1)
+		}
+
 		var ktorVersion string
-		if v, ok := command.SearchKtorVersion(projectDir); ok {
+		if v, ok := command.SearchKtorVersion(projectDir, buildRoot, tomlDoc, tomlSuccessParsed); ok {
 			ktorVersion = v
 			verboseLogger.Printf("Detected Ktor version: %s\n", ktorVersion)
 		} else {
@@ -102,7 +143,7 @@ func main() {
 				cli.ExitWithError(err, hasGlobalLog, homeDir)
 			} else {
 				ktorVersion = settings.KtorVersion.DefaultId
-				verboseLogger.Printf("Using latest stable Ktor version: %s\n", ktorVersion)
+				verboseLogger.Printf("Using the latest stable Ktor version: %s\n", ktorVersion)
 			}
 		}
 
@@ -146,7 +187,7 @@ func main() {
 					serPlugin = &depPlugins[0]
 				}
 
-				err = command.Add(mc, projectDir, serPlugin)
+				err = command.Add(mc, buildRoot, tomlDoc, tomlSuccessParsed, serPlugin, buildPath, tomlPath, projectDir)
 
 				if err != nil {
 					cli.ExitWithError(err, hasGlobalLog, homeDir)

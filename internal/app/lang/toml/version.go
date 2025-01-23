@@ -236,5 +236,5 @@ func FindVersionsPath(projectDir string) (string, bool) {
 		return filepath.Join(projectDir, "..", "gradle", "libs.versions.toml"), true
 	}
 
-	return inCurrentDir, false
+	return "", false
 }

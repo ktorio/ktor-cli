@@ -4,6 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"github.com/ktorio/ktor-cli/internal/app/ktor"
+	"github.com/ktorio/ktor-cli/internal/app/lang/gradle"
+	"github.com/ktorio/ktor-cli/internal/app/lang/toml"
 	"github.com/ktorio/ktor-cli/internal/app/utils"
 	"io/fs"
 	"os"
@@ -38,9 +40,24 @@ func TestAddProjectDependencies(t *testing.T) {
 			t.Fatalf("Expected ktor-module.txt file in the %s", projDir)
 		}
 
-		if versionBytes, err := os.ReadFile(filepath.Join(projDir, "ktor-version.txt")); err == nil {
+		buildPath := filepath.Join(projDir, "build.gradle.kts")
+		buildRoot, buildErr := gradle.ParseBuildFile(buildPath)
+
+		tomlPath, tomlFound := toml.FindVersionsPath(projDir)
+		tomlSuccessParsed := false
+		var tomlDoc *toml.Document
+
+		if tomlFound {
+			tomlDoc, err = toml.ParseCatalogToml(tomlPath)
+
+			if err == nil {
+				tomlSuccessParsed = true
+			}
+		}
+
+		if versionBytes, err := os.ReadFile(filepath.Join(projDir, "ktor-version.txt")); err == nil && buildErr == nil && utils.Exists(buildPath) {
 			ktorVersion := strings.TrimSpace(string(versionBytes))
-			actualVersion, ok := SearchKtorVersion(projDir)
+			actualVersion, ok := SearchKtorVersion(projDir, buildRoot, tomlDoc, tomlSuccessParsed)
 
 			if len(ktorVersion) != 0 && !ok {
 				t.Fatalf("%s: expected Ktor version to be %s, found nothing", e.Name(), ktorVersion)
@@ -65,78 +82,61 @@ func TestAddProjectDependencies(t *testing.T) {
 			serPlugin = &depPlugins[0]
 		}
 
-		files, result, err := addDependency(mc, projDir, serPlugin)
+		if buildErr == nil && utils.Exists(buildPath) {
+			files, err := addDependency(mc, buildRoot, tomlDoc, tomlSuccessParsed, serPlugin, buildPath, tomlPath, projDir)
 
-		if err != nil && !utils.Exists(filepath.Join(projDir, "expect-error.txt")) {
-			t.Fatal(err)
-		}
-
-		switch e.Name() {
-		case "multi-platform-catalog-projects-not-supported", "multi-platform-projects-not-supported":
-			if result != MultiplatformProjectNotSupported {
-				t.Fatalf("%s: Expected Multiplatform project error, got %v", e.Name(), result)
-			}
-		case "maven-projects-not-supported":
-			if result != MavenProjectNotSupported {
-				t.Fatalf("%s: Expected Maven project error, got %v", e.Name(), result)
-			}
-		case "groovy-dsl-projects-not-supported":
-			if result != GroovyDslNotSupported {
-				t.Fatalf("%s: Expected Groovy DSL project error, got %v", e.Name(), result)
-			}
-		case "empty-project":
-			if result != BuildGradleKtsNotFound {
-				t.Fatalf("%s: Expected Build Gradle KTS project error, got %v", e.Name(), result)
-			}
-		}
-
-		err = filepath.WalkDir(projDir, func(p string, d fs.DirEntry, err error) error {
-			if err != nil {
-				return err
+			if err != nil && !utils.Exists(filepath.Join(projDir, "expect-error.txt")) {
+				t.Fatal(err)
 			}
 
-			if !strings.HasSuffix(p, ".expected") {
-				return nil
-			}
+			err = filepath.WalkDir(projDir, func(p string, d fs.DirEntry, err error) error {
+				if err != nil {
+					return err
+				}
 
-			srcPath := strings.TrimSuffix(p, ".expected")
+				if !strings.HasSuffix(p, ".expected") {
+					return nil
+				}
 
-			srcBytes, err := os.ReadFile(srcPath)
+				srcPath := strings.TrimSuffix(p, ".expected")
 
-			if err != nil {
-				srcBytes = []byte{}
-			}
+				srcBytes, err := os.ReadFile(srcPath)
 
-			expBytes, err := os.ReadFile(p)
+				if err != nil {
+					srcBytes = []byte{}
+				}
 
-			if err != nil {
-				return err
-			}
-
-			fc := findFileContent(files, srcPath)
-			if slices.Equal(srcBytes, expBytes) && fc == nil {
-				return nil
-			}
-
-			if fc == nil {
-				return errors.New(fmt.Sprintf("%s: content for file %s not found", e.Name(), filepath.Base(srcPath)))
-			}
-
-			if string(expBytes) != fc.Content {
-				rel, err := filepath.Rel(filepath.Dir(projDir), srcPath)
+				expBytes, err := os.ReadFile(p)
 
 				if err != nil {
 					return err
 				}
 
-				t.Fatalf("File %s has unexpected content:\n%s", rel, getDiff(p, fc.Content))
+				fc := findFileContent(files, srcPath)
+				if slices.Equal(srcBytes, expBytes) && fc == nil {
+					return nil
+				}
+
+				if fc == nil {
+					return errors.New(fmt.Sprintf("%s: content for file %s not found", e.Name(), filepath.Base(srcPath)))
+				}
+
+				if string(expBytes) != fc.Content {
+					rel, err := filepath.Rel(filepath.Dir(projDir), srcPath)
+
+					if err != nil {
+						return err
+					}
+
+					t.Fatalf("File %s has unexpected content:\n%s", rel, getDiff(p, fc.Content))
+				}
+
+				return nil
+			})
+
+			if err != nil {
+				t.Fatal(err)
 			}
-
-			return nil
-		})
-
-		if err != nil {
-			t.Fatal(err)
 		}
 	}
 }
