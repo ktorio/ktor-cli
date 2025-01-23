@@ -3,8 +3,50 @@ package lang
 import (
 	"fmt"
 	"github.com/antlr4-go/antlr/v4"
+	"path/filepath"
 	"strings"
 )
+
+type SyntaxError struct {
+	Line, Col int
+	Msg       string
+}
+
+type SyntaxErrors struct {
+	SyntaxErrors []SyntaxError
+	File         string
+}
+
+func (s SyntaxErrors) Error() string {
+	var sb strings.Builder
+
+	sep := ""
+	for _, e := range s.SyntaxErrors {
+		sb.WriteString(sep)
+		sb.WriteString(fmt.Sprintf("line %d:%d %s", e.Line, e.Col, e.Msg))
+		sep = "\n"
+	}
+
+	return fmt.Sprintf("%s: syntax error[s]:\n%s", filepath.Base(s.File), sb.String())
+}
+
+type ErrorListener struct {
+	*antlr.DefaultErrorListener
+	Errors *SyntaxErrors
+	File   string
+}
+
+func NewErrorListener(file string) *ErrorListener {
+	return &ErrorListener{DefaultErrorListener: antlr.NewDefaultErrorListener(), File: file}
+}
+
+func (d *ErrorListener) SyntaxError(_ antlr.Recognizer, _ interface{}, line, col int, msg string, _ antlr.RecognitionException) {
+	if d.Errors == nil {
+		d.Errors = &SyntaxErrors{File: d.File}
+	}
+
+	d.Errors.SyntaxErrors = append(d.Errors.SyntaxErrors, SyntaxError{Line: line, Col: col, Msg: msg})
+}
 
 var DefaultIndent = strings.Repeat(" ", 4)
 
@@ -22,29 +64,6 @@ func Unquote(s string) string {
 		return string(runes[1 : len(runes)-1])
 	}
 	return s
-}
-
-func FindParent[T any](tree antlr.Tree) (T, bool) {
-	var zero T
-
-	for ; tree != nil; tree = tree.GetParent() {
-		if expr, ok := tree.(T); ok {
-			return expr, true
-		}
-	}
-
-	return zero, false
-}
-
-func ChildrenOfType[T any](tree antlr.Tree) []T {
-	var result []T
-	for _, ch := range tree.GetChildren() {
-		if x, ok := ch.(T); ok {
-			result = append(result, x)
-		}
-	}
-
-	return result
 }
 
 func FindChild[T any](tree antlr.Tree) (T, bool) {
@@ -67,6 +86,9 @@ func HiddenTokensToLeft(stream *antlr.CommonTokenStream, tokenIndex int) string 
 	return indent
 }
 
+// ToIndentedStringTree This function is useful for debugging
+//
+// goland:noinspection GoUnusedFunction
 func ToIndentedStringTree(tree antlr.Tree, ruleNames []string, level int) string {
 	if tree == nil {
 		return ""

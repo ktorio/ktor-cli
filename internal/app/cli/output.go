@@ -7,16 +7,24 @@ import (
 	"github.com/ktorio/ktor-cli/internal/app/config"
 	"github.com/ktorio/ktor-cli/internal/app/i18n"
 	"github.com/ktorio/ktor-cli/internal/app/jdk"
+	"github.com/ktorio/ktor-cli/internal/app/lang"
 	"github.com/ktorio/ktor-cli/internal/app/utils"
 	"log"
 	"os"
+	"path/filepath"
 	"runtime"
 	"strings"
 )
 
-func ExitWithError(err error, projectDir string, hasGlobalLog bool, homeDir string) {
-	if _, err := os.Stat(projectDir); err == nil && utils.IsDirEmpty(projectDir) {
-		_ = os.Remove(projectDir)
+func ExitWithError(err error, hasGlobalLog bool, homeDir string) {
+	ExitWithProjectError(err, "", hasGlobalLog, homeDir)
+}
+
+func ExitWithProjectError(err error, projectDir string, hasGlobalLog bool, homeDir string) {
+	if projectDir != "" {
+		if _, err := os.Stat(projectDir); err == nil && utils.IsDirEmpty(projectDir) {
+			_ = os.Remove(projectDir)
+		}
 	}
 
 	reportLog := HandleAppError(projectDir, err)
@@ -107,6 +115,14 @@ func HandleAppError(projectDir string, err error) (reportLog bool) {
 			errors.As(e.Err, &pe)
 
 			fmt.Fprintf(os.Stderr, i18n.Get(i18n.UnableCreateStoreJdkDir, pe.Path))
+		case app.ArtifactSearchError:
+			// TODO: i18n
+			fmt.Fprintf(os.Stderr, "Error searching for Ktor modules. Please try again later.\n")
+		case app.ParsingSyntaxError:
+			var se *lang.SyntaxErrors
+			errors.As(e.Err, &se)
+			// TODO: i18n
+			fmt.Fprintf(os.Stderr, "Unable to parse %s file due to syntax errors.\n", filepath.Base(se.File))
 		default:
 			fmt.Fprintf(os.Stderr, i18n.Get(i18n.UnexpectedError))
 		}
@@ -126,6 +142,11 @@ func HandleArgsValidation(err error) {
 		var fe UnrecognizedFlags
 		errors.As(e.Err, &fe)
 		fmt.Fprintf(os.Stderr, i18n.Get(i18n.UnrecognizedFlagsError, strings.Join(fe, ", ")))
+	case UnrecognizedCommandFlagsError:
+		var fe UnrecognizedCommandFlags
+		errors.As(e.Err, &fe)
+		// TODO: i18n
+		fmt.Fprintf(os.Stderr, "Unrecognized flag[s] %s for command %s.\n", strings.Join(fe.Flags, ", "), fe.Command)
 	case NoCommandError:
 		fmt.Fprintln(os.Stderr, i18n.Get(i18n.NoCommandError))
 	case CommandNotFoundError:

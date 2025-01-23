@@ -124,6 +124,7 @@ func ProcessArgs(args *Args) (*Input, error) {
 	commandOpts := make(map[Flag]string)
 	i := 0
 	argsIndex := i
+	unrecognized = unrecognized[:0]
 	for i < len(args.CommandArgs) {
 		arg := args.CommandArgs[i]
 		if !strings.HasPrefix(arg, "-") {
@@ -156,9 +157,15 @@ func ProcessArgs(args *Args) (*Input, error) {
 			} else {
 				commandOpts[f] = ""
 			}
+		} else {
+			unrecognized = append(unrecognized, arg)
 		}
 
 		i++
+	}
+
+	if len(unrecognized) > 0 {
+		return nil, &Error{Err: UnrecognizedCommandFlags{Command: args.Command, Flags: unrecognized}, Kind: UnrecognizedCommandFlagsError}
 	}
 
 	if spec := AllCommandsSpec[Command(args.Command)]; !hasVararg(spec) && (requiredArgsCount(spec.args) > 0 && requiredArgsCount(spec.args) != len(args.CommandArgs[argsIndex:]) || len(args.CommandArgs[argsIndex:]) > len(spec.args)) {

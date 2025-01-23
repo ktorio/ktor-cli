@@ -13,7 +13,6 @@ import (
 	"github.com/ktorio/ktor-cli/internal/app/ktor"
 	"github.com/ktorio/ktor-cli/internal/app/network"
 	"github.com/ktorio/ktor-cli/internal/app/utils"
-	"golang.org/x/exp/slices"
 	"io"
 	"log"
 	"net"
@@ -21,6 +20,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime/debug"
+	"slices"
 	"strings"
 	"time"
 )
@@ -31,7 +31,7 @@ func main() {
 	defer func() {
 		if e := recover(); e != nil {
 			fmt.Printf("Unrecoverable error occurred: %s\n", e)
-			fmt.Println("This looks like a bug so please file an issue at https://youtrack.jetbrains.com/newIssue?project=ktor.")
+			fmt.Println("It seems to be a bug so please file an issue at https://youtrack.jetbrains.com/newIssue?project=ktor")
 			fmt.Printf("Please put the following stack trace into the issue's description: \n\n%s", string(debug.Stack()))
 		}
 	}()
@@ -83,7 +83,6 @@ func main() {
 
 	switch args.Command {
 	case cli.AddCommand:
-		log.SetOutput(os.Stderr) // TODO: Get rid of raw errors
 		modules := args.CommandArgs
 
 		projectDir := "."
@@ -91,32 +90,39 @@ func main() {
 			projectDir = dir
 		}
 
+		// TODO: Think how to parse build.gradle.kts and toml files only once
 		var ktorVersion string
 		if v, ok := command.SearchKtorVersion(projectDir); ok {
 			ktorVersion = v
-		} else if settings, err := network.FetchSettings(client); err == nil {
-			log.Print(err)
-			ktorVersion = settings.KtorVersion.DefaultId
-		}
+			verboseLogger.Printf("Detected Ktor version: %s\n", ktorVersion)
+		} else {
+			settings, err := network.FetchSettings(client)
 
-		if ktorVersion == "" {
-			// TODO: Handle if ktor version cannot be obtained
+			if err != nil {
+				cli.ExitWithError(err, hasGlobalLog, homeDir)
+			} else {
+				ktorVersion = settings.KtorVersion.DefaultId
+				verboseLogger.Printf("Using latest stable Ktor version: %s\n", ktorVersion)
+			}
 		}
 
 		artifacts, err := network.SearchArtifacts(client, ktorVersion, modules)
 
 		if err != nil {
-			log.Fatal(err)
+			cli.ExitWithError(err, hasGlobalLog, homeDir)
 		}
 
 		for _, mod := range modules {
-			verboseLogger.Printf("Processing module %s...\n", mod)
-
 			mc, modResult, candidates := ktor.FindModule(artifacts[mod])
+
+			if mc.Version == "" {
+				mc.Version = ktorVersion
+			}
 
 			switch modResult {
 			case ktor.ModuleNotFound:
-				fmt.Fprintf(os.Stderr, "Cannot recognize Ktor module '%s'\n", mod) // TODO: Return proper error
+				fmt.Fprintf(os.Stderr, "Cannot recognize Ktor module '%s'.\n", mod)
+				os.Exit(1)
 			case ktor.ModuleAmbiguity:
 				var names []string
 				for _, c := range candidates {
@@ -124,7 +130,8 @@ func main() {
 						names = append(names, c.Artifact)
 					}
 				}
-				fmt.Fprintf(os.Stderr, "Module ambiguity for %s. Candidates: %s", mod, strings.Join(names, ", "))
+				fmt.Fprintf(os.Stderr, "Ktor Module ambiguity. Applicable candidates: %s.", strings.Join(names, ", "))
+				os.Exit(1)
 			case ktor.SimilarModulesFound:
 				fmt.Fprintf(os.Stderr, "Cannot recognize module '%s'. ", mod)
 
@@ -132,6 +139,7 @@ func main() {
 					fmt.Fprintf(os.Stderr, "Did you mean '%s'?\n", candidates[0].Artifact)
 				}
 			case ktor.ModuleFound:
+				verboseLogger.Printf("Chosen module is %s.\n", mc.String())
 				depPlugins := ktor.DependentPlugins(mc)
 				var serPlugin *ktor.GradlePlugin
 				if len(depPlugins) > 0 {
@@ -141,7 +149,7 @@ func main() {
 				err = command.Add(mc, projectDir, serPlugin)
 
 				if err != nil {
-					log.Fatal(err)
+					cli.ExitWithError(err, hasGlobalLog, homeDir)
 				}
 			}
 		}
@@ -190,7 +198,7 @@ func main() {
 
 		result, err := interactive.Run(client, ctx)
 		if err != nil {
-			cli.ExitWithError(err, "", hasGlobalLog, homeDir)
+			cli.ExitWithError(err, hasGlobalLog, homeDir)
 		}
 
 		if result.Quit {
@@ -222,7 +230,7 @@ func main() {
 		err = command.OpenApi(client, specPath, projectName, projectDir, homeDir, verboseLogger)
 
 		if err != nil {
-			cli.ExitWithError(err, projectDir, hasGlobalLog, homeDir)
+			cli.ExitWithProjectError(err, projectDir, hasGlobalLog, homeDir)
 		}
 
 		fmt.Printf(i18n.Get(i18n.ProjectCreated, projectName, projectDir))

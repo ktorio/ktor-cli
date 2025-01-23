@@ -1,9 +1,8 @@
 package toml
 
 import (
-	"errors"
-	"fmt"
 	"github.com/antlr4-go/antlr/v4"
+	"github.com/ktorio/ktor-cli/internal/app"
 	"github.com/ktorio/ktor-cli/internal/app/ktor"
 	"github.com/ktorio/ktor-cli/internal/app/lang"
 	parser "github.com/ktorio/ktor-cli/internal/app/lang/parsers/toml"
@@ -52,27 +51,29 @@ func (te *TableEntry) Get(key string) (string, bool) {
 	return v, ok
 }
 
-func ParseCatalogToml(projectDir string) (*Document, error) {
-	fp, ok := FindVersionsPath(projectDir)
-
-	if !ok {
-		return nil, errors.New(fmt.Sprintf("catalog: cannot find TOML file for the project %s", projectDir))
-	}
-
-	input, err := antlr.NewFileStream(fp)
+func ParseCatalogToml(tomlPath string) (*Document, error) {
+	input, err := antlr.NewFileStream(tomlPath)
 
 	if err != nil {
 		return nil, err
 	}
 
 	lexer := parser.NewTomlLexer(&input.InputStream)
+	lexer.RemoveErrorListeners()
 	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
 	p := parser.NewTomlParser(stream)
+	p.RemoveErrorListeners()
+	errListener := lang.NewErrorListener(tomlPath)
+	p.AddErrorListener(errListener)
 
 	doc := Document{Stream: stream, Rewriter: antlr.NewTokenStreamRewriter(stream)}
 
 	table := Table{}
 	for _, ch := range p.Document().GetChildren() {
+		if errListener.Errors != nil {
+			return nil, &app.Error{Err: errListener.Errors, Kind: app.ParsingSyntaxError}
+		}
+
 		if ch.GetChildCount() == 0 {
 			continue
 		}
@@ -131,7 +132,7 @@ func parseEntry(tree antlr.Tree) TableEntry {
 	entry.Key = kv.Key().GetText()
 
 	entry.KeyValue = make(map[string]string)
-	if kv.Value().Inline_table() != nil {
+	if kv.Value() != nil && kv.Value().Inline_table() != nil {
 		entry.Kind = ValueMap
 
 		it := kv.Value().Inline_table()
@@ -149,7 +150,10 @@ func parseEntry(tree antlr.Tree) TableEntry {
 	}
 
 	entry.Kind = StringValue
-	entry.String = lang.Unquote(kv.Value().String_().GetText())
+
+	if kv.Value() != nil {
+		entry.String = lang.Unquote(kv.Value().String_().GetText())
+	}
 
 	return entry
 }

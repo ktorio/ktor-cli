@@ -3,6 +3,7 @@ package gradle
 import (
 	"bytes"
 	"github.com/antlr4-go/antlr/v4"
+	"github.com/ktorio/ktor-cli/internal/app"
 	"github.com/ktorio/ktor-cli/internal/app/lang"
 	parser "github.com/ktorio/ktor-cli/internal/app/lang/parsers/kotlin"
 	"io"
@@ -73,8 +74,12 @@ func ParseBuildFile(fp string) (*BuildRoot, error) {
 
 	input := antlr.NewIoStream(reader)
 	lexer := parser.NewKotlinLexer(input)
+	lexer.RemoveErrorListeners()
 	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
 	p := parser.NewKotlinParser(stream)
+	p.RemoveErrorListeners()
+	errListener := lang.NewErrorListener(fp)
+	p.AddErrorListener(errListener)
 	root := BuildRoot{}
 
 	root.Stream = p.GetTokenStream().(*antlr.CommonTokenStream)
@@ -82,6 +87,10 @@ func ParseBuildFile(fp string) (*BuildRoot, error) {
 	root.Rewriter = antlr.NewTokenStreamRewriter(root.Stream)
 
 	for _, st := range p.Script().AllStatement() {
+		if errListener.Errors != nil {
+			return nil, &app.Error{Err: errListener.Errors, Kind: app.ParsingSyntaxError}
+		}
+
 		if pd, ok := lang.FindChild[parser.IPropertyDeclarationContext](st); ok {
 			if vd, ok := parseVarDecl(pd); ok {
 				root.TopLevelVars = append(root.TopLevelVars, vd)
@@ -97,6 +106,10 @@ func ParseBuildFile(fp string) (*BuildRoot, error) {
 		id, ok := e.GetChild(0).GetChild(0).(parser.ISimpleIdentifierContext)
 
 		if !ok {
+			continue
+		}
+
+		if e.GetChildCount() < 2 {
 			continue
 		}
 

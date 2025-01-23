@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/ktorio/ktor-cli/internal/app/ktor"
+	"github.com/ktorio/ktor-cli/internal/app/utils"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -66,7 +67,7 @@ func TestAddProjectDependencies(t *testing.T) {
 
 		files, result, err := addDependency(mc, projDir, serPlugin)
 
-		if err != nil {
+		if err != nil && !utils.Exists(filepath.Join(projDir, "expect-error.txt")) {
 			t.Fatal(err)
 		}
 

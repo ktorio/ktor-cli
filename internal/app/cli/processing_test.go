@@ -37,6 +37,11 @@ func TestProcessArgs(t *testing.T) {
 		[]string{"ktor", "openapi", "--output="},
 		&Error{Err: FlagError{Flag: "--output"}, Kind: NoArgumentForFlag},
 	)
+	checkProcessError(
+		t,
+		[]string{"ktor", "add", "-z", "client-core"},
+		&Error{Err: UnrecognizedCommandFlags{Command: "add", Flags: []string{"-z"}}, Kind: UnrecognizedCommandFlagsError},
+	)
 
 	checkProcessing(t, []string{"ktor", "--version"}, &Input{Command: VersionCommand})
 	checkProcessing(t, []string{"ktor", "-V"}, &Input{Command: VersionCommand})

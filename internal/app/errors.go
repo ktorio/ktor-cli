@@ -28,6 +28,7 @@ const (
 	OpenApiExecuteJarError
 	ArtifactSearchError
 	ArtifactListError
+	ParsingSyntaxError
 )
 
 type ErrorKind int
