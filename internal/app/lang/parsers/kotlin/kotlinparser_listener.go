@@ -1,4 +1,4 @@
-// Code generated from KotlinParser.g4 by ANTLR 4.13.2. DO NOT EDIT.
+// Code generated from grammars/kotlin/KotlinParser.g4 by ANTLR 4.13.2. DO NOT EDIT.
 
 package parser // KotlinParser
 
@@ -239,44 +239,8 @@ type KotlinParserListener interface {
 	// EnterExpression is called when entering the expression production.
 	EnterExpression(c *ExpressionContext)
 
-	// EnterDisjunction is called when entering the disjunction production.
-	EnterDisjunction(c *DisjunctionContext)
-
-	// EnterConjunction is called when entering the conjunction production.
-	EnterConjunction(c *ConjunctionContext)
-
-	// EnterEquality is called when entering the equality production.
-	EnterEquality(c *EqualityContext)
-
-	// EnterComparison is called when entering the comparison production.
-	EnterComparison(c *ComparisonContext)
-
-	// EnterGenericCallLikeComparison is called when entering the genericCallLikeComparison production.
-	EnterGenericCallLikeComparison(c *GenericCallLikeComparisonContext)
-
-	// EnterInfixOperation is called when entering the infixOperation production.
-	EnterInfixOperation(c *InfixOperationContext)
-
-	// EnterElvisExpression is called when entering the elvisExpression production.
-	EnterElvisExpression(c *ElvisExpressionContext)
-
-	// EnterElvis is called when entering the elvis production.
-	EnterElvis(c *ElvisContext)
-
 	// EnterInfixFunctionCall is called when entering the infixFunctionCall production.
 	EnterInfixFunctionCall(c *InfixFunctionCallContext)
-
-	// EnterRangeExpression is called when entering the rangeExpression production.
-	EnterRangeExpression(c *RangeExpressionContext)
-
-	// EnterAdditiveExpression is called when entering the additiveExpression production.
-	EnterAdditiveExpression(c *AdditiveExpressionContext)
-
-	// EnterMultiplicativeExpression is called when entering the multiplicativeExpression production.
-	EnterMultiplicativeExpression(c *MultiplicativeExpressionContext)
-
-	// EnterAsExpression is called when entering the asExpression production.
-	EnterAsExpression(c *AsExpressionContext)
 
 	// EnterPrefixUnaryExpression is called when entering the prefixUnaryExpression production.
 	EnterPrefixUnaryExpression(c *PrefixUnaryExpressionContext)
@@ -761,44 +725,8 @@ type KotlinParserListener interface {
 	// ExitExpression is called when exiting the expression production.
 	ExitExpression(c *ExpressionContext)
 
-	// ExitDisjunction is called when exiting the disjunction production.
-	ExitDisjunction(c *DisjunctionContext)
-
-	// ExitConjunction is called when exiting the conjunction production.
-	ExitConjunction(c *ConjunctionContext)
-
-	// ExitEquality is called when exiting the equality production.
-	ExitEquality(c *EqualityContext)
-
-	// ExitComparison is called when exiting the comparison production.
-	ExitComparison(c *ComparisonContext)
-
-	// ExitGenericCallLikeComparison is called when exiting the genericCallLikeComparison production.
-	ExitGenericCallLikeComparison(c *GenericCallLikeComparisonContext)
-
-	// ExitInfixOperation is called when exiting the infixOperation production.
-	ExitInfixOperation(c *InfixOperationContext)
-
-	// ExitElvisExpression is called when exiting the elvisExpression production.
-	ExitElvisExpression(c *ElvisExpressionContext)
-
-	// ExitElvis is called when exiting the elvis production.
-	ExitElvis(c *ElvisContext)
-
 	// ExitInfixFunctionCall is called when exiting the infixFunctionCall production.
 	ExitInfixFunctionCall(c *InfixFunctionCallContext)
-
-	// ExitRangeExpression is called when exiting the rangeExpression production.
-	ExitRangeExpression(c *RangeExpressionContext)
-
-	// ExitAdditiveExpression is called when exiting the additiveExpression production.
-	ExitAdditiveExpression(c *AdditiveExpressionContext)
-
-	// ExitMultiplicativeExpression is called when exiting the multiplicativeExpression production.
-	ExitMultiplicativeExpression(c *MultiplicativeExpressionContext)
-
-	// ExitAsExpression is called when exiting the asExpression production.
-	ExitAsExpression(c *AsExpressionContext)
 
 	// ExitPrefixUnaryExpression is called when exiting the prefixUnaryExpression production.
 	ExitPrefixUnaryExpression(c *PrefixUnaryExpressionContext)

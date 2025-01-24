@@ -1,4 +1,4 @@
-// Code generated from KotlinParser.g4 by ANTLR 4.13.2. DO NOT EDIT.
+// Code generated from grammars/kotlin/KotlinParser.g4 by ANTLR 4.13.2. DO NOT EDIT.
 
 package parser // KotlinParser
 
@@ -500,87 +500,11 @@ func (s *BaseKotlinParserListener) EnterExpression(ctx *ExpressionContext) {}
 // ExitExpression is called when production expression is exited.
 func (s *BaseKotlinParserListener) ExitExpression(ctx *ExpressionContext) {}
 
-// EnterDisjunction is called when production disjunction is entered.
-func (s *BaseKotlinParserListener) EnterDisjunction(ctx *DisjunctionContext) {}
-
-// ExitDisjunction is called when production disjunction is exited.
-func (s *BaseKotlinParserListener) ExitDisjunction(ctx *DisjunctionContext) {}
-
-// EnterConjunction is called when production conjunction is entered.
-func (s *BaseKotlinParserListener) EnterConjunction(ctx *ConjunctionContext) {}
-
-// ExitConjunction is called when production conjunction is exited.
-func (s *BaseKotlinParserListener) ExitConjunction(ctx *ConjunctionContext) {}
-
-// EnterEquality is called when production equality is entered.
-func (s *BaseKotlinParserListener) EnterEquality(ctx *EqualityContext) {}
-
-// ExitEquality is called when production equality is exited.
-func (s *BaseKotlinParserListener) ExitEquality(ctx *EqualityContext) {}
-
-// EnterComparison is called when production comparison is entered.
-func (s *BaseKotlinParserListener) EnterComparison(ctx *ComparisonContext) {}
-
-// ExitComparison is called when production comparison is exited.
-func (s *BaseKotlinParserListener) ExitComparison(ctx *ComparisonContext) {}
-
-// EnterGenericCallLikeComparison is called when production genericCallLikeComparison is entered.
-func (s *BaseKotlinParserListener) EnterGenericCallLikeComparison(ctx *GenericCallLikeComparisonContext) {
-}
-
-// ExitGenericCallLikeComparison is called when production genericCallLikeComparison is exited.
-func (s *BaseKotlinParserListener) ExitGenericCallLikeComparison(ctx *GenericCallLikeComparisonContext) {
-}
-
-// EnterInfixOperation is called when production infixOperation is entered.
-func (s *BaseKotlinParserListener) EnterInfixOperation(ctx *InfixOperationContext) {}
-
-// ExitInfixOperation is called when production infixOperation is exited.
-func (s *BaseKotlinParserListener) ExitInfixOperation(ctx *InfixOperationContext) {}
-
-// EnterElvisExpression is called when production elvisExpression is entered.
-func (s *BaseKotlinParserListener) EnterElvisExpression(ctx *ElvisExpressionContext) {}
-
-// ExitElvisExpression is called when production elvisExpression is exited.
-func (s *BaseKotlinParserListener) ExitElvisExpression(ctx *ElvisExpressionContext) {}
-
-// EnterElvis is called when production elvis is entered.
-func (s *BaseKotlinParserListener) EnterElvis(ctx *ElvisContext) {}
-
-// ExitElvis is called when production elvis is exited.
-func (s *BaseKotlinParserListener) ExitElvis(ctx *ElvisContext) {}
-
 // EnterInfixFunctionCall is called when production infixFunctionCall is entered.
 func (s *BaseKotlinParserListener) EnterInfixFunctionCall(ctx *InfixFunctionCallContext) {}
 
 // ExitInfixFunctionCall is called when production infixFunctionCall is exited.
 func (s *BaseKotlinParserListener) ExitInfixFunctionCall(ctx *InfixFunctionCallContext) {}
-
-// EnterRangeExpression is called when production rangeExpression is entered.
-func (s *BaseKotlinParserListener) EnterRangeExpression(ctx *RangeExpressionContext) {}
-
-// ExitRangeExpression is called when production rangeExpression is exited.
-func (s *BaseKotlinParserListener) ExitRangeExpression(ctx *RangeExpressionContext) {}
-
-// EnterAdditiveExpression is called when production additiveExpression is entered.
-func (s *BaseKotlinParserListener) EnterAdditiveExpression(ctx *AdditiveExpressionContext) {}
-
-// ExitAdditiveExpression is called when production additiveExpression is exited.
-func (s *BaseKotlinParserListener) ExitAdditiveExpression(ctx *AdditiveExpressionContext) {}
-
-// EnterMultiplicativeExpression is called when production multiplicativeExpression is entered.
-func (s *BaseKotlinParserListener) EnterMultiplicativeExpression(ctx *MultiplicativeExpressionContext) {
-}
-
-// ExitMultiplicativeExpression is called when production multiplicativeExpression is exited.
-func (s *BaseKotlinParserListener) ExitMultiplicativeExpression(ctx *MultiplicativeExpressionContext) {
-}
-
-// EnterAsExpression is called when production asExpression is entered.
-func (s *BaseKotlinParserListener) EnterAsExpression(ctx *AsExpressionContext) {}
-
-// ExitAsExpression is called when production asExpression is exited.
-func (s *BaseKotlinParserListener) ExitAsExpression(ctx *AsExpressionContext) {}
 
 // EnterPrefixUnaryExpression is called when production prefixUnaryExpression is entered.
 func (s *BaseKotlinParserListener) EnterPrefixUnaryExpression(ctx *PrefixUnaryExpressionContext) {}

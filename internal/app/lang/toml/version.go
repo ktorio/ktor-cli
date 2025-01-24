@@ -2,7 +2,6 @@ package toml
 
 import (
 	"github.com/antlr4-go/antlr/v4"
-	"github.com/ktorio/ktor-cli/internal/app"
 	"github.com/ktorio/ktor-cli/internal/app/ktor"
 	"github.com/ktorio/ktor-cli/internal/app/lang"
 	parser "github.com/ktorio/ktor-cli/internal/app/lang/parsers/toml"
@@ -51,11 +50,11 @@ func (te *TableEntry) Get(key string) (string, bool) {
 	return v, ok
 }
 
-func ParseCatalogToml(tomlPath string) (*Document, error) {
+func ParseCatalogToml(tomlPath string) (*Document, error, []lang.SyntaxError) {
 	input, err := antlr.NewFileStream(tomlPath)
 
 	if err != nil {
-		return nil, err
+		return nil, err, nil
 	}
 
 	lexer := parser.NewTomlLexer(&input.InputStream)
@@ -63,16 +62,16 @@ func ParseCatalogToml(tomlPath string) (*Document, error) {
 	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
 	p := parser.NewTomlParser(stream)
 	p.RemoveErrorListeners()
-	errListener := lang.NewErrorListener(tomlPath)
+	errListener := lang.NewErrorListener()
 	p.AddErrorListener(errListener)
 
 	doc := Document{Stream: stream, Rewriter: antlr.NewTokenStreamRewriter(stream)}
 
 	table := Table{}
 	for _, ch := range p.Document().GetChildren() {
-		if errListener.Errors != nil {
-			return nil, &app.Error{Err: errListener.Errors, Kind: app.ParsingSyntaxError}
-		}
+		//if errListener.Errors != nil {
+		//	return nil, &app.Error{Err: errListener.Errors, Kind: app.ParsingSyntaxError}
+		//}
 
 		if ch.GetChildCount() == 0 {
 			continue
@@ -105,7 +104,7 @@ func ParseCatalogToml(tomlPath string) (*Document, error) {
 
 	doc.Tables.List = append(doc.Tables.List, table)
 
-	return &doc, nil
+	return &doc, nil, errListener.Errors
 }
 
 func tableName(t parser.ITableContext) string {

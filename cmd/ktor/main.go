@@ -11,6 +11,7 @@ import (
 	"github.com/ktorio/ktor-cli/internal/app/i18n"
 	"github.com/ktorio/ktor-cli/internal/app/interactive"
 	"github.com/ktorio/ktor-cli/internal/app/ktor"
+	"github.com/ktorio/ktor-cli/internal/app/lang"
 	"github.com/ktorio/ktor-cli/internal/app/lang/gradle"
 	"github.com/ktorio/ktor-cli/internal/app/lang/toml"
 	"github.com/ktorio/ktor-cli/internal/app/network"
@@ -101,13 +102,22 @@ func main() {
 		var buildRoot *gradle.BuildRoot
 
 		if buildFound {
-			buildRoot, err = gradle.ParseBuildFile(buildPath)
+			var syntaxErrors []lang.SyntaxError
+			buildRoot, err, syntaxErrors = gradle.ParseBuildFile(buildPath)
+
+			if len(syntaxErrors) > 0 {
+				log.Println(lang.StringifySyntaxErrors(syntaxErrors[:5]))
+			}
 
 			if err != nil {
 				cli.ExitWithError(err, hasGlobalLog, homeDir)
 			} else {
 				if tomlFound {
-					tomlDoc, err = toml.ParseCatalogToml(tomlPath)
+					tomlDoc, err, syntaxErrors = toml.ParseCatalogToml(tomlPath)
+
+					if len(syntaxErrors) > 0 {
+						log.Println(lang.StringifySyntaxErrors(syntaxErrors[:5]))
+					}
 
 					if err != nil {
 						log.Println(err)

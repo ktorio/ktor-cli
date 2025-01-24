@@ -3,7 +3,6 @@ package gradle
 import (
 	"bytes"
 	"github.com/antlr4-go/antlr/v4"
-	"github.com/ktorio/ktor-cli/internal/app"
 	"github.com/ktorio/ktor-cli/internal/app/lang"
 	parser "github.com/ktorio/ktor-cli/internal/app/lang/parsers/kotlin"
 	"io"
@@ -65,11 +64,11 @@ type Dep struct {
 	Statement    parser.IStatementContext
 }
 
-func ParseBuildFile(fp string) (*BuildRoot, error) {
+func ParseBuildFile(fp string) (*BuildRoot, error, []lang.SyntaxError) {
 	reader, err := fixTrailingNewLine(fp)
 
 	if err != nil {
-		return nil, err
+		return nil, err, nil
 	}
 
 	input := antlr.NewIoStream(reader)
@@ -78,7 +77,7 @@ func ParseBuildFile(fp string) (*BuildRoot, error) {
 	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
 	p := parser.NewKotlinParser(stream)
 	p.RemoveErrorListeners()
-	errListener := lang.NewErrorListener(fp)
+	errListener := lang.NewErrorListener()
 	p.AddErrorListener(errListener)
 	root := BuildRoot{}
 
@@ -87,9 +86,9 @@ func ParseBuildFile(fp string) (*BuildRoot, error) {
 	root.Rewriter = antlr.NewTokenStreamRewriter(root.Stream)
 
 	for _, st := range p.Script().AllStatement() {
-		if errListener.Errors != nil {
-			return nil, &app.Error{Err: errListener.Errors, Kind: app.ParsingSyntaxError}
-		}
+		//if errListener.Errors != nil {
+		//	return nil, &app.Error{Err: errListener.Errors, Kind: app.ParsingSyntaxError}
+		//}
 
 		if pd, ok := lang.FindChild[parser.IPropertyDeclarationContext](st); ok {
 			if vd, ok := parseVarDecl(pd); ok {
@@ -256,7 +255,7 @@ func ParseBuildFile(fp string) (*BuildRoot, error) {
 
 	}
 
-	return &root, nil
+	return &root, nil, errListener.Errors
 }
 
 func parseVarDecl(pd parser.IPropertyDeclarationContext) (VarDecl, bool) {

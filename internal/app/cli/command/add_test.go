@@ -4,16 +4,26 @@ import (
 	"errors"
 	"fmt"
 	"github.com/ktorio/ktor-cli/internal/app/ktor"
+	"github.com/ktorio/ktor-cli/internal/app/lang"
 	"github.com/ktorio/ktor-cli/internal/app/lang/gradle"
 	"github.com/ktorio/ktor-cli/internal/app/lang/toml"
 	"github.com/ktorio/ktor-cli/internal/app/utils"
 	"io/fs"
+	"log"
 	"os"
 	"path/filepath"
 	"slices"
 	"strings"
 	"testing"
 )
+
+//func TestSome(t *testing.T) {
+//	fp := "/Users/Aleksei.Tirman/IdeaProjects/ktor_sandbox/build.gradle.kts"
+//
+//	b, err := gradle.ParseBuildFile(fp)
+//
+//	fmt.Println(b, err)
+//}
 
 func TestAddProjectDependencies(t *testing.T) {
 	testDir := filepath.Join("internal", "app", "cli", "command", "testData")
@@ -41,17 +51,25 @@ func TestAddProjectDependencies(t *testing.T) {
 		}
 
 		buildPath := filepath.Join(projDir, "build.gradle.kts")
-		buildRoot, buildErr := gradle.ParseBuildFile(buildPath)
+		buildRoot, buildErr, buildSyntaxErrors := gradle.ParseBuildFile(buildPath)
 
 		tomlPath, tomlFound := toml.FindVersionsPath(projDir)
 		tomlSuccessParsed := false
 		var tomlDoc *toml.Document
 
 		if tomlFound {
-			tomlDoc, err = toml.ParseCatalogToml(tomlPath)
+			tomlDoc, err, _ = toml.ParseCatalogToml(tomlPath)
 
 			if err == nil {
 				tomlSuccessParsed = true
+			}
+		}
+
+		if e.Name() == "multi-platform-catalog-projects-not-supported" || e.Name() == "multi-platform-projects-not-supported" {
+			if IsKmpProject(buildRoot, tomlDoc, tomlSuccessParsed) {
+				continue
+			} else {
+				log.Fatalf("%s: expected multiplatform project to be unsupported", e.Name())
 			}
 		}
 
@@ -85,8 +103,8 @@ func TestAddProjectDependencies(t *testing.T) {
 		if buildErr == nil && utils.Exists(buildPath) {
 			files, err := addDependency(mc, buildRoot, tomlDoc, tomlSuccessParsed, serPlugin, buildPath, tomlPath, projDir)
 
-			if err != nil && !utils.Exists(filepath.Join(projDir, "expect-error.txt")) {
-				t.Fatal(err)
+			if len(buildSyntaxErrors) > 0 && !utils.Exists(filepath.Join(projDir, "expect-error.txt")) {
+				t.Fatalf("%s: unexpected syntax errors\n%s", e.Name(), lang.StringifySyntaxErrors(buildSyntaxErrors))
 			}
 
 			err = filepath.WalkDir(projDir, func(p string, d fs.DirEntry, err error) error {

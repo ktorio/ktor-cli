@@ -368,60 +368,62 @@ semis
 // SECTION: expressions
 
 expression
-    : disjunction
+    : infixFunctionCall
     ;
 
-disjunction
-    : conjunction (NL* DISJ NL* conjunction)*
-    ;
+// Note: The following commented intermediate types of expression are removed for perfomance reasons
 
-conjunction
-    : equality (NL* CONJ NL* equality)*
-    ;
+//disjunction
+//    : conjunction (NL* DISJ NL* conjunction)*
+//    ;
 
-equality
-    : comparison (equalityOperator NL* comparison)*
-    ;
+//conjunction
+//    : equality (NL* CONJ NL* equality)*
+//    ;
 
-comparison
-    : genericCallLikeComparison (comparisonOperator NL* genericCallLikeComparison)*
-    ;
+//equality
+//    : comparison (equalityOperator NL* comparison)*
+//    ;
 
-genericCallLikeComparison
-    : infixOperation callSuffix*
-    ;
+//comparison
+//    : genericCallLikeComparison (comparisonOperator NL* genericCallLikeComparison)*
+//    ;
 
-infixOperation
-    : elvisExpression (inOperator NL* elvisExpression | isOperator NL* type)*
-    ;
+//genericCallLikeComparison
+//    : infixOperation callSuffix*
+//    ;
 
-elvisExpression
-    : infixFunctionCall (NL* elvis NL* infixFunctionCall)*
-    ;
+//infixOperation
+//    : elvisExpression (inOperator NL* elvisExpression | isOperator NL* type)*
+//    ;
 
-elvis
-    : QUEST_NO_WS COLON
-    ;
+//elvisExpression
+//    : infixFunctionCall (NL* elvis NL* infixFunctionCall)*
+//    ;
+
+//elvis
+//    : QUEST_NO_WS COLON
+//    ;
 
 infixFunctionCall
-    : rangeExpression (simpleIdentifier NL* rangeExpression)*
+    : postfixUnaryExpression (simpleIdentifier NL* postfixUnaryExpression)*
     ;
 
-rangeExpression
-    : additiveExpression ((RANGE | RANGE_UNTIL) NL* additiveExpression)*
-    ;
+//rangeExpression
+//    : additiveExpression ((RANGE | RANGE_UNTIL) NL* additiveExpression)*
+//    ;
 
-additiveExpression
-    : multiplicativeExpression (additiveOperator NL* multiplicativeExpression)*
-    ;
+//additiveExpression
+//    : multiplicativeExpression (additiveOperator NL* multiplicativeExpression)*
+//    ;
 
-multiplicativeExpression
-    : asExpression (multiplicativeOperator NL* asExpression)*
-    ;
+//multiplicativeExpression
+//    : asExpression (multiplicativeOperator NL* asExpression)*
+//    ;
 
-asExpression
-    : prefixUnaryExpression (NL* asOperator NL* type)*
-    ;
+//asExpression
+//    : prefixUnaryExpression (NL* asOperator NL* type)*
+//    ;
 
 prefixUnaryExpression
     : unaryPrefix* postfixUnaryExpression

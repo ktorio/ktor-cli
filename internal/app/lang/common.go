@@ -3,7 +3,6 @@ package lang
 import (
 	"fmt"
 	"github.com/antlr4-go/antlr/v4"
-	"path/filepath"
 	"strings"
 )
 
@@ -12,40 +11,39 @@ type SyntaxError struct {
 	Msg       string
 }
 
-type SyntaxErrors struct {
-	SyntaxErrors []SyntaxError
-	File         string
-}
+//func PrintSyntaxErrors(errors []SyntaxError, w io.Writer) {
+//	fmt.Fprintf(w, "syntax error[s]:\n")
+//	sep := ""
+//	for _, e := range errors {
+//		fmt.Fprintf(w, "%sline %d:%d %s", sep, e.Line, e.Col, e.Msg)
+//		sep = "\n"
+//	}
+//}
 
-func (s SyntaxErrors) Error() string {
+func StringifySyntaxErrors(errors []SyntaxError) string {
 	var sb strings.Builder
 
 	sep := ""
-	for _, e := range s.SyntaxErrors {
+	for _, e := range errors {
 		sb.WriteString(sep)
 		sb.WriteString(fmt.Sprintf("line %d:%d %s", e.Line, e.Col, e.Msg))
 		sep = "\n"
 	}
 
-	return fmt.Sprintf("%s: syntax error[s]:\n%s", filepath.Base(s.File), sb.String())
+	return fmt.Sprintf("syntax error[s]:\n%s", sb.String())
 }
 
 type ErrorListener struct {
 	*antlr.DefaultErrorListener
-	Errors *SyntaxErrors
-	File   string
+	Errors []SyntaxError
 }
 
-func NewErrorListener(file string) *ErrorListener {
-	return &ErrorListener{DefaultErrorListener: antlr.NewDefaultErrorListener(), File: file}
+func NewErrorListener() *ErrorListener {
+	return &ErrorListener{DefaultErrorListener: antlr.NewDefaultErrorListener()}
 }
 
 func (d *ErrorListener) SyntaxError(_ antlr.Recognizer, _ interface{}, line, col int, msg string, _ antlr.RecognitionException) {
-	if d.Errors == nil {
-		d.Errors = &SyntaxErrors{File: d.File}
-	}
-
-	d.Errors.SyntaxErrors = append(d.Errors.SyntaxErrors, SyntaxError{Line: line, Col: col, Msg: msg})
+	d.Errors = append(d.Errors, SyntaxError{Line: line, Col: col, Msg: msg})
 }
 
 var DefaultIndent = strings.Repeat(" ", 4)
@@ -86,7 +84,7 @@ func HiddenTokensToLeft(stream *antlr.CommonTokenStream, tokenIndex int) string 
 	return indent
 }
 
-// ToIndentedStringTree This function is useful for debugging
+// ToIndentedStringTree is useful for debugging
 //
 // goland:noinspection GoUnusedFunction
 func ToIndentedStringTree(tree antlr.Tree, ruleNames []string, level int) string {

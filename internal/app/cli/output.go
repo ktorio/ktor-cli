@@ -7,11 +7,9 @@ import (
 	"github.com/ktorio/ktor-cli/internal/app/config"
 	"github.com/ktorio/ktor-cli/internal/app/i18n"
 	"github.com/ktorio/ktor-cli/internal/app/jdk"
-	"github.com/ktorio/ktor-cli/internal/app/lang"
 	"github.com/ktorio/ktor-cli/internal/app/utils"
 	"log"
 	"os"
-	"path/filepath"
 	"runtime"
 	"strings"
 )
@@ -118,11 +116,11 @@ func HandleAppError(projectDir string, err error) (reportLog bool) {
 		case app.ArtifactSearchError:
 			// TODO: i18n
 			fmt.Fprintf(os.Stderr, "Error searching for Ktor modules. Please try again later.\n")
-		case app.ParsingSyntaxError:
-			var se *lang.SyntaxErrors
-			errors.As(e.Err, &se)
-			// TODO: i18n
-			fmt.Fprintf(os.Stderr, "Unable to parse %s file due to syntax errors.\n", filepath.Base(se.File))
+		//case app.ParsingSyntaxError:
+		//	var se *lang.SyntaxErrors
+		//	errors.As(e.Err, &se)
+		//	// TODO: i18n
+		//	fmt.Fprintf(os.Stderr, "Unable to parse %s file due to syntax errors.\n", filepath.Base(se.File))
 		default:
 			fmt.Fprintf(os.Stderr, i18n.Get(i18n.UnexpectedError))
 		}
