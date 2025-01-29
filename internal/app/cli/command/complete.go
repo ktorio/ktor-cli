@@ -3,6 +3,7 @@ package command
 import (
 	"errors"
 	"fmt"
+	"github.com/ktorio/ktor-cli/internal/app"
 	"github.com/ktorio/ktor-cli/internal/app/cli"
 	"strings"
 )
@@ -19,7 +20,7 @@ func Complete(allModules []string, shell string) (string, error) {
 		err, s := completeFish(allModules)
 		return err, s
 	default:
-		return "", errors.New(fmt.Sprintf("unrecognized shell %s", shell))
+		return "", &app.Error{Err: errors.New(fmt.Sprintf("unrecognized shell %s", shell)), Kind: app.UnrecognizedShellError}
 	}
 }
 

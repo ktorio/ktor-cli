@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"context"
 	_ "embed"
 	"errors"
@@ -15,6 +16,7 @@ import (
 	"github.com/ktorio/ktor-cli/internal/app/lang/gradle"
 	"github.com/ktorio/ktor-cli/internal/app/lang/toml"
 	"github.com/ktorio/ktor-cli/internal/app/network"
+	"github.com/ktorio/ktor-cli/internal/app/project"
 	"github.com/ktorio/ktor-cli/internal/app/utils"
 	"io"
 	"log"
@@ -126,7 +128,7 @@ func main() {
 					}
 				}
 
-				if command.IsKmpProject(buildRoot, tomlDoc, tomlSuccessParsed) { // TODO: Move this code to add.go in command
+				if project.IsKmp(buildRoot, tomlDoc, tomlSuccessParsed) {
 					fmt.Fprintln(os.Stderr, "Unable to add the Ktor module to a Kotlin Multiplatform project (not supported yet).")
 					os.Exit(1)
 				}
@@ -143,7 +145,7 @@ func main() {
 		}
 
 		var ktorVersion string
-		if v, ok := command.SearchKtorVersion(projectDir, buildRoot, tomlDoc, tomlSuccessParsed); ok {
+		if v, ok := project.SearchKtorVersion(projectDir, buildRoot, tomlDoc, tomlSuccessParsed); ok {
 			ktorVersion = v
 			verboseLogger.Printf("Detected Ktor version: %s\n", ktorVersion)
 		} else {
@@ -190,17 +192,45 @@ func main() {
 					fmt.Fprintf(os.Stderr, "Did you mean '%s'?\n", candidates[0].Artifact)
 				}
 			case ktor.ModuleFound:
-				verboseLogger.Printf("Chosen module is %s.\n", mc.String())
+				verboseLogger.Printf("The chosen module is %s.\n", mc.String())
 				depPlugins := ktor.DependentPlugins(mc)
 				var serPlugin *ktor.GradlePlugin
 				if len(depPlugins) > 0 {
 					serPlugin = &depPlugins[0]
 				}
 
-				err = command.Add(mc, buildRoot, tomlDoc, tomlSuccessParsed, serPlugin, buildPath, tomlPath, projectDir)
+				files, err := project.AddKtorModule(mc, buildRoot, tomlDoc, tomlSuccessParsed, serPlugin, buildPath, tomlPath, projectDir)
 
 				if err != nil {
 					cli.ExitWithError(err, hasGlobalLog, homeDir)
+				}
+
+				if len(files) > 0 {
+					fmt.Printf("Below you can find suggested changes to add '%s' into the project.\n", mc.String())
+					fmt.Println("If you consider them incorrect, please file an issue at https://youtrack.jetbrains.com/newIssue?project=ktor.")
+					fmt.Println()
+					for _, f := range files {
+						fmt.Println(utils.GetDiff(f.Path, f.Content))
+					}
+
+					fmt.Print("Do you want to apply the changes (y/n)? ")
+					scanner := bufio.NewScanner(os.Stdin)
+					scanner.Scan()
+					answer := scanner.Text()
+
+					if answer == "y" || answer == "Y" || answer == "yes" || answer == "Yes" {
+						err = project.ApplyChanges(files)
+
+						if err == nil {
+							fmt.Println("The changes have been successfully applied.")
+						} else {
+							cli.ExitWithError(err, hasGlobalLog, homeDir)
+						}
+					} else {
+						fmt.Println("GoodBye!")
+					}
+				} else {
+					fmt.Println("Nothing to change.")
 				}
 			}
 		}
@@ -214,22 +244,20 @@ func main() {
 		settings, err := network.FetchSettings(client)
 
 		if err != nil {
-			// TODO: Handle error properly
-			log.Fatal(err)
+			cli.ExitWithError(err, hasGlobalLog, homeDir)
 		}
 
 		shell := args.CommandArgs[0]
 		modules, err := network.ListArtifacts(client, settings.KtorVersion.DefaultId)
 
 		if err != nil {
-			// TODO: Handle error properly
-			log.Fatal(err)
+			cli.ExitWithError(err, hasGlobalLog, homeDir)
 		}
 
 		s, err := command.Complete(modules, shell)
 
 		if err != nil {
-			log.Fatal(err)
+			cli.ExitWithError(err, hasGlobalLog, homeDir)
 		}
 
 		fmt.Print(s)

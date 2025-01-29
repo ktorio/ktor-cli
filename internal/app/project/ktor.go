@@ -1,11 +1,8 @@
-package command
+package project
 
 import (
-	"bufio"
 	"fmt"
-	"github.com/hexops/gotextdiff"
-	"github.com/hexops/gotextdiff/myers"
-	"github.com/hexops/gotextdiff/span"
+	"github.com/ktorio/ktor-cli/internal/app"
 	"github.com/ktorio/ktor-cli/internal/app/ktor"
 	"github.com/ktorio/ktor-cli/internal/app/lang"
 	"github.com/ktorio/ktor-cli/internal/app/lang/gradle"
@@ -32,53 +29,13 @@ func (e AddModuleError) Error() string {
 	return fmt.Sprintf("cannot add module. error #%d: %v", e.Kind, e.Err)
 }
 
-func Add(mc ktor.MavenCoords, buildRoot *gradle.BuildRoot, tomlDoc *toml.Document, tomlSuccessParsed bool, serPlugin *ktor.GradlePlugin, buildPath, tomlPath, projectDir string) error {
-	files, err := addDependency(mc, buildRoot, tomlDoc, tomlSuccessParsed, serPlugin, buildPath, tomlPath, projectDir)
-
-	if err != nil {
-		return err
-	}
-
-	if len(files) == 0 {
-		fmt.Println("Nothing to change.")
-		return nil
-	}
-
-	fmt.Printf("Below you can find suggested changes to add '%s'.\n", mc.String())
-	fmt.Println("If you consider them incorrect, please file an issue at https://youtrack.jetbrains.com/newIssue?project=ktor.")
-	fmt.Println()
-	for _, f := range files {
-		fmt.Println(getDiff(f.Path, f.Content))
-	}
-
-	fmt.Print("Do you want to apply the changes (y/n)? ")
-	scanner := bufio.NewScanner(os.Stdin)
-	scanner.Scan()
-	answer := scanner.Text()
-
-	if answer == "y" || answer == "Y" || answer == "yes" || answer == "Yes" {
-		err = applyChanges(files)
-
-		if err == nil {
-			fmt.Println("The changes have been successfully applied.")
-		} else {
-			fmt.Println("An error occurred applying the changes.")
-			// TODO: Report the error
-		}
-
-		return err
-	}
-
-	return nil
-}
-
-func applyChanges(files []FileContent) error {
+func ApplyChanges(files []FileContent) error {
 	// Load all current files content into memory
 	var savedContents [][]byte
 	for _, f := range files {
 		b, err := os.ReadFile(f.Path)
 		if err != nil {
-			return err
+			return &app.Error{Err: err, Kind: app.BackupCreationError}
 		}
 
 		savedContents = append(savedContents, b)
@@ -101,75 +58,14 @@ func applyChanges(files []FileContent) error {
 			fc := files[i]
 			_ = os.WriteFile(fc.Path, b, 0777)
 		}
+
+		return &app.Error{Err: lastErr, Kind: app.WriteChangesError}
 	}
 
-	return lastErr
+	return nil
 }
 
-func SearchKtorVersion(projectDir string, build *gradle.BuildRoot, tomlDoc *toml.Document, tomlSuccessParsed bool) (version string, found bool) {
-	found = true
-
-	for _, p := range build.Plugins.List {
-		if p.Prefix == "id" && p.Id == "io.ktor.plugin" {
-			version = p.Version
-			return
-		}
-	}
-
-	for _, d := range build.Dependencies.List {
-		if d.IsKtorBom {
-			if mc, ok := ktor.ParseMavenCoords(d.PlatformPath); ok && mc.Version != "" {
-				version = mc.Version
-				break
-			}
-		} else if d.Kind == gradle.HardcodedDep {
-			if mc, ok := ktor.ParseMavenCoords(d.Path); ok && mc.Group == ktor.MavenGroup && mc.Version != "" {
-				version = mc.Version
-				break
-			}
-		}
-	}
-
-	if version != "" && !strings.HasPrefix(version, "$") {
-		return
-	} else {
-		props := gradle.ParseProps(filepath.Join(projectDir, "gradle.properties"))
-
-		for _, v := range build.TopLevelVars {
-			if v.Id == strings.TrimPrefix(version, "$") {
-				if v.IsDelegate && v.Delegate == "project" {
-					if val, ok := props[strings.TrimPrefix(version, "$")]; ok {
-						version = val
-						break
-					}
-				} else {
-					version = v.StringVal
-					break
-				}
-			}
-		}
-
-		if version != "" {
-			return
-		}
-	}
-
-	if tomlSuccessParsed {
-		if t, ok := toml.FindTable(tomlDoc, "versions"); ok {
-			for _, te := range t.Entries {
-				if strings.HasPrefix(te.Key, "ktor") && te.Kind == toml.StringValue && te.String != "" {
-					version = te.String
-					return
-				}
-			}
-		}
-	}
-
-	found = false
-	return
-}
-
-func addDependency(mc ktor.MavenCoords, build *gradle.BuildRoot, tomlDoc *toml.Document, tomlSuccessParsed bool, serPlugin *ktor.GradlePlugin, buildPath, tomlPath, projectDir string) ([]FileContent, error) {
+func AddKtorModule(mc ktor.MavenCoords, build *gradle.BuildRoot, tomlDoc *toml.Document, tomlSuccessParsed bool, serPlugin *ktor.GradlePlugin, buildPath, tomlPath, projectDir string) ([]FileContent, error) {
 	var changes []FileContent
 
 	// Check {BOM, Hardcoded, variable as version} dependency exist
@@ -324,43 +220,4 @@ func addDependency(mc ktor.MavenCoords, build *gradle.BuildRoot, tomlDoc *toml.D
 	}
 
 	return changes, nil
-}
-
-func IsKmpProject(build *gradle.BuildRoot, tomlDoc *toml.Document, validToml bool) bool {
-	for _, p := range build.Plugins.List {
-		if (p.Prefix == "kotlin" && p.Id == "multiplatform") || (p.Prefix == "id" && p.Id == "org.jetbrains.kotlin.multiplatform") {
-			return true
-		}
-	}
-
-	if validToml {
-		plugin, ok := toml.FindPlugin(tomlDoc, ktor.KmpPluginId)
-
-		if !ok {
-			return false
-		}
-
-		for _, p := range build.Plugins.List {
-			if p.Prefix == "kotlin" && p.Id == "multiplatform" {
-				return true
-			}
-
-			if p.Prefix == "alias" && p.Id == fmt.Sprintf("libs.plugins.%s", plugin.Key) {
-				return true
-			}
-		}
-	}
-
-	return false
-}
-
-func getDiff(fp string, new string) string {
-	old, err := os.ReadFile(fp)
-
-	if err != nil {
-		old = []byte{}
-	}
-
-	edits := myers.ComputeEdits(span.URIFromPath(fp), string(old), new)
-	return fmt.Sprint(gotextdiff.ToUnified(filepath.Base(fp), filepath.Base(fp)+"~new", string(old), edits))
 }

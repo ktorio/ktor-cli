@@ -19,10 +19,6 @@ func FindKotlinPlugin(plugins []Plugin) (*Plugin, bool) {
 	for _, p := range plugins {
 		if p.Prefix == "kotlin" && p.Id == "jvm" {
 			return &p, true
-			//indent := lang.HiddenTokensToLeft(build.Stream, p.Statement.GetStart().GetTokenIndex())
-			//code := fmt.Sprintf("kotlin(\"%s\") version \"%s\"", ktor.SerPluginKotlinId, p.Version)
-			//build.Rewriter.InsertAfterDefault(p.Statement.GetStop().GetTokenIndex(), "\n"+indent+code)
-			//break
 		}
 	}
 

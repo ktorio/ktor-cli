@@ -11,15 +11,6 @@ type SyntaxError struct {
 	Msg       string
 }
 
-//func PrintSyntaxErrors(errors []SyntaxError, w io.Writer) {
-//	fmt.Fprintf(w, "syntax error[s]:\n")
-//	sep := ""
-//	for _, e := range errors {
-//		fmt.Fprintf(w, "%sline %d:%d %s", sep, e.Line, e.Col, e.Msg)
-//		sep = "\n"
-//	}
-//}
-
 func StringifySyntaxErrors(errors []SyntaxError) string {
 	var sb strings.Builder
 

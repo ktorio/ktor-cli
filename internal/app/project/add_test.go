@@ -1,4 +1,4 @@
-package command
+package project
 
 import (
 	"errors"
@@ -16,14 +16,6 @@ import (
 	"strings"
 	"testing"
 )
-
-//func TestSome(t *testing.T) {
-//	fp := "/Users/Aleksei.Tirman/IdeaProjects/ktor_sandbox/build.gradle.kts"
-//
-//	b, err := gradle.ParseBuildFile(fp)
-//
-//	fmt.Println(b, err)
-//}
 
 func TestAddProjectDependencies(t *testing.T) {
 	testDir := filepath.Join("internal", "app", "cli", "command", "testData")
@@ -66,7 +58,7 @@ func TestAddProjectDependencies(t *testing.T) {
 		}
 
 		if e.Name() == "multi-platform-catalog-projects-not-supported" || e.Name() == "multi-platform-projects-not-supported" {
-			if IsKmpProject(buildRoot, tomlDoc, tomlSuccessParsed) {
+			if IsKmp(buildRoot, tomlDoc, tomlSuccessParsed) {
 				continue
 			} else {
 				log.Fatalf("%s: expected multiplatform project to be unsupported", e.Name())
@@ -101,7 +93,7 @@ func TestAddProjectDependencies(t *testing.T) {
 		}
 
 		if buildErr == nil && utils.Exists(buildPath) {
-			files, err := addDependency(mc, buildRoot, tomlDoc, tomlSuccessParsed, serPlugin, buildPath, tomlPath, projDir)
+			files, err := AddKtorModule(mc, buildRoot, tomlDoc, tomlSuccessParsed, serPlugin, buildPath, tomlPath, projDir)
 
 			if len(buildSyntaxErrors) > 0 && !utils.Exists(filepath.Join(projDir, "expect-error.txt")) {
 				t.Fatalf("%s: unexpected syntax errors\n%s", e.Name(), lang.StringifySyntaxErrors(buildSyntaxErrors))
@@ -146,7 +138,7 @@ func TestAddProjectDependencies(t *testing.T) {
 						return err
 					}
 
-					t.Fatalf("File %s has unexpected content:\n%s", rel, getDiff(p, fc.Content))
+					t.Fatalf("File %s has unexpected content:\n%s", rel, utils.GetDiff(p, fc.Content))
 				}
 
 				return nil

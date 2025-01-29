@@ -29,6 +29,9 @@ const (
 	ArtifactSearchError
 	ArtifactListError
 	ParsingSyntaxError
+	BackupCreationError
+	WriteChangesError
+	UnrecognizedShellError
 )
 
 type ErrorKind int
