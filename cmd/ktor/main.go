@@ -206,7 +206,7 @@ func main() {
 				}
 
 				if len(files) > 0 {
-					fmt.Printf("Below you can find suggested changes to add '%s' into the project.\n", mc.String())
+					fmt.Printf("Below you can find suggested changes to add '%s' into the %s.\n", mc.String(), projectDir)
 					fmt.Println("If you consider them incorrect, please file an issue at https://youtrack.jetbrains.com/newIssue?project=ktor.")
 					fmt.Println()
 					for _, f := range files {
@@ -239,8 +239,6 @@ func main() {
 	case cli.HelpCommand:
 		cli.WriteUsage(os.Stdout)
 	case cli.CompletionCommand:
-		log.SetOutput(os.Stderr)
-
 		settings, err := network.FetchSettings(client)
 
 		if err != nil {

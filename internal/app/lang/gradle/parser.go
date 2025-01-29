@@ -2,7 +2,9 @@ package gradle
 
 import (
 	"bytes"
+	"errors"
 	"github.com/antlr4-go/antlr/v4"
+	"github.com/ktorio/ktor-cli/internal/app"
 	"github.com/ktorio/ktor-cli/internal/app/lang"
 	parser "github.com/ktorio/ktor-cli/internal/app/lang/parsers/kotlin"
 	"io"
@@ -68,6 +70,13 @@ func ParseBuildFile(fp string) (*BuildRoot, error, []lang.SyntaxError) {
 	reader, err := fixTrailingNewLine(fp)
 
 	if err != nil {
+		var pe *os.PathError
+		if errors.As(err, &pe) {
+			if errors.Is(pe.Err, os.ErrPermission) {
+				err = &app.Error{Err: err, Kind: app.NoPermsForFile}
+			}
+		}
+
 		return nil, err, nil
 	}
 

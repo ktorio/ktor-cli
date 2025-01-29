@@ -28,10 +28,10 @@ const (
 	OpenApiExecuteJarError
 	ArtifactSearchError
 	ArtifactListError
-	ParsingSyntaxError
 	BackupCreationError
 	WriteChangesError
 	UnrecognizedShellError
+	NoPermsForFile
 )
 
 type ErrorKind int

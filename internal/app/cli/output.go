@@ -114,13 +114,26 @@ func HandleAppError(projectDir string, err error) (reportLog bool) {
 
 			fmt.Fprintf(os.Stderr, i18n.Get(i18n.UnableCreateStoreJdkDir, pe.Path))
 		case app.ArtifactSearchError:
-			// TODO: i18n
 			fmt.Fprintf(os.Stderr, "Error searching for Ktor modules. Please try again later.\n")
-		//case app.ParsingSyntaxError:
-		//	var se *lang.SyntaxErrors
-		//	errors.As(e.Err, &se)
-		//	// TODO: i18n
-		//	fmt.Fprintf(os.Stderr, "Unable to parse %s file due to syntax errors.\n", filepath.Base(se.File))
+		case app.ArtifactListError:
+			fmt.Fprintf(os.Stderr, "Error getting a list of Ktor modules. Please try again later.\n")
+		case app.BackupCreationError:
+			var pe *os.PathError
+			errors.As(e.Err, &pe)
+			fmt.Fprintf(os.Stderr, "Unable to read the %s file to create a backup.\n", pe.Path)
+		case app.WriteChangesError:
+			var pe *os.PathError
+			errors.As(e.Err, &pe)
+			fmt.Fprintf(os.Stderr, "Cannot write changes to the %s file.\n", pe.Path)
+		case app.UnrecognizedShellError:
+			var se *ShellError
+			errors.As(e.Err, &se)
+			fmt.Fprintf(os.Stderr, "Cannot recognize shell %s\n", se.Shell)
+		case app.NoPermsForFile:
+			var pe *os.PathError
+			if errors.As(e.Err, &pe) {
+				fmt.Fprintf(os.Stderr, "Not enough permissions for %s file.\n", pe.Path)
+			}
 		default:
 			fmt.Fprintf(os.Stderr, i18n.Get(i18n.UnexpectedError))
 		}
