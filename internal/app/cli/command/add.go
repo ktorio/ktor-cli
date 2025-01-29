@@ -3,7 +3,6 @@ package command
 import (
 	"bufio"
 	"fmt"
-	"github.com/antlr4-go/antlr/v4"
 	"github.com/hexops/gotextdiff"
 	"github.com/hexops/gotextdiff/myers"
 	"github.com/hexops/gotextdiff/span"
@@ -266,7 +265,6 @@ func addDependency(mc ktor.MavenCoords, build *gradle.BuildRoot, tomlDoc *toml.D
 				lang.HiddenTokensToLeft(build.Stream, kDep.Statement.GetStart().GetTokenIndex()),
 				gradle.RawDependencyNoVersion(mc, gradle.PlatformSuffix(kDep.Path)),
 			)
-
 		} else if hasBom {
 			lang.InsertLnAfter(
 				build.Rewriter,
@@ -277,31 +275,6 @@ func addDependency(mc ktor.MavenCoords, build *gradle.BuildRoot, tomlDoc *toml.D
 		}
 
 		changes = append(changes, FileContent{Path: buildPath, Content: build.Rewriter.GetTextDefault()})
-		return changes, nil
-	}
-
-	// versions catalog file doesn't exist
-	if tomlPath == "" {
-		changes = append(changes, FileContent{Path: filepath.Join(projectDir, "gradle", "libs.versions.toml"), Content: toml.NewTomlWithKtor(mc)})
-
-		if build.Dependencies.Statements != nil {
-			suffix := ""
-			if len(build.Dependencies.List) == 0 {
-				suffix = "\n"
-			}
-
-			lang.InsertLnAfter(
-				build.Rewriter,
-				build.Dependencies.Statements.GetStop(),
-				lang.DefaultIndent,
-				gradle.CatalogDependency(mc.Artifact)+suffix,
-			)
-		}
-
-		if len(build.Rewriter.GetProgram(antlr.DefaultProgramName)) > 0 {
-			changes = append(changes, FileContent{Path: buildPath, Content: build.Rewriter.GetTextDefault()})
-		}
-
 		return changes, nil
 	}
 
@@ -321,6 +294,31 @@ func addDependency(mc ktor.MavenCoords, build *gradle.BuildRoot, tomlDoc *toml.D
 		}
 
 		changes = append(changes, FileContent{Path: buildPath, Content: modified})
+
+		return changes, nil
+	}
+
+	// versions catalog file doesn't exist
+	if tomlPath == "" {
+		insertedInBuild := false
+		if build.Dependencies.Statements != nil {
+			suffix := ""
+			if len(build.Dependencies.List) == 0 {
+				suffix = "\n"
+			}
+			insertedInBuild = true
+			lang.InsertLnAfter(
+				build.Rewriter,
+				build.Dependencies.Statements.GetStop(),
+				lang.DefaultIndent,
+				gradle.CatalogDependency(mc.Artifact)+suffix,
+			)
+		}
+
+		if insertedInBuild {
+			changes = append(changes, FileContent{Path: filepath.Join(projectDir, "gradle", "libs.versions.toml"), Content: toml.NewTomlWithKtor(mc)})
+			changes = append(changes, FileContent{Path: buildPath, Content: build.Rewriter.GetTextDefault()})
+		}
 
 		return changes, nil
 	}
