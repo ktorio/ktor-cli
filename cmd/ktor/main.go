@@ -35,9 +35,7 @@ var Version string
 func main() {
 	defer func() {
 		if e := recover(); e != nil {
-			fmt.Printf("Unrecoverable error occurred: %s\n", e)
-			fmt.Println("It seems to be a bug so please file an issue at https://youtrack.jetbrains.com/newIssue?project=ktor")
-			fmt.Printf("Please put the following stack trace into the issue's description: \n\n%s", string(debug.Stack()))
+			fmt.Print(i18n.Get(i18n.UnrecoverableErrorBlock, e, string(debug.Stack())))
 		}
 	}()
 
@@ -129,17 +127,17 @@ func main() {
 				}
 
 				if project.IsKmp(buildRoot, tomlDoc, tomlSuccessParsed) {
-					fmt.Fprintln(os.Stderr, "Unable to add the Ktor module to a Kotlin Multiplatform project (not supported yet).")
+					fmt.Fprintln(os.Stderr, i18n.Get(i18n.AddKtorModulesToKmpError))
 					os.Exit(1)
 				}
 			}
 		} else {
 			if utils.Exists(filepath.Join(projectDir, "pom.xml")) {
-				fmt.Fprintln(os.Stderr, "Unable to add the Ktor module to a Maven project (not supported yet).")
+				fmt.Fprintln(os.Stderr, i18n.Get(i18n.AddKtorModulesToMavenError))
 			} else if utils.Exists(filepath.Join(projectDir, "build.gradle")) {
-				fmt.Fprintln(os.Stderr, "Unable to add the Ktor module to a Gradle project with Groovy DSL (not supported yet).")
+				fmt.Fprintln(os.Stderr, i18n.Get(i18n.AddKtorModulesToGradleGroovyError))
 			} else {
-				fmt.Fprintf(os.Stderr, "Unable to find build.gradle.kts file in the project directory %s.\n", projectDir)
+				fmt.Fprintf(os.Stderr, i18n.Get(i18n.UnableToFindBuildGradleKts, projectDir))
 			}
 			os.Exit(1)
 		}
@@ -147,7 +145,7 @@ func main() {
 		var ktorVersion string
 		if v, ok := project.SearchKtorVersion(projectDir, buildRoot, tomlDoc, tomlSuccessParsed); ok {
 			ktorVersion = v
-			verboseLogger.Printf("Detected Ktor version: %s\n", ktorVersion)
+			verboseLogger.Printf(i18n.Get(i18n.DetectedKtorVersion, ktorVersion))
 		} else {
 			settings, err := network.FetchSettings(client)
 
@@ -155,7 +153,7 @@ func main() {
 				cli.ExitWithError(err, hasGlobalLog, homeDir)
 			} else {
 				ktorVersion = settings.KtorVersion.DefaultId
-				verboseLogger.Printf("Using the latest stable Ktor version: %s\n", ktorVersion)
+				verboseLogger.Printf(i18n.Get(i18n.UseLatestKtorVersion, ktorVersion))
 			}
 		}
 
@@ -174,7 +172,7 @@ func main() {
 
 			switch modResult {
 			case ktor.ModuleNotFound:
-				fmt.Fprintf(os.Stderr, "Cannot recognize Ktor module '%s'.\n", mod)
+				fmt.Fprintf(os.Stderr, i18n.Get(i18n.UnableToRecognizeKtorModule, mod))
 				os.Exit(1)
 			case ktor.ModuleAmbiguity:
 				var names []string
@@ -183,16 +181,16 @@ func main() {
 						names = append(names, c.Artifact)
 					}
 				}
-				fmt.Fprintf(os.Stderr, "Ktor Module ambiguity. Applicable candidates: %s.", strings.Join(names, ", "))
+				fmt.Fprintf(os.Stderr, i18n.Get(i18n.KtorModuleAmbiguity, strings.Join(names, ", ")))
 				os.Exit(1)
 			case ktor.SimilarModulesFound:
-				fmt.Fprintf(os.Stderr, "Cannot recognize module '%s'. ", mod)
+				fmt.Fprintf(os.Stderr, i18n.Get(i18n.UnableToRecognizeKtorModule, mod))
 
 				if len(candidates) > 0 {
-					fmt.Fprintf(os.Stderr, "Did you mean '%s'?\n", candidates[0].Artifact)
+					fmt.Fprintf(os.Stderr, i18n.Get(i18n.SimilarModuleQuestion, candidates[0].Artifact))
 				}
 			case ktor.ModuleFound:
-				verboseLogger.Printf("The chosen module is %s.\n", mc.String())
+				verboseLogger.Printf(i18n.Get(i18n.ChosenKtorModule), mc.String())
 				depPlugins := ktor.DependentPlugins(mc)
 				var serPlugin *ktor.GradlePlugin
 				if len(depPlugins) > 0 {
@@ -206,14 +204,13 @@ func main() {
 				}
 
 				if len(files) > 0 {
-					fmt.Printf("Below you can find suggested changes to add '%s' into the %s.\n", mc.String(), projectDir)
-					fmt.Println("If you consider them incorrect, please file an issue at https://youtrack.jetbrains.com/newIssue?project=ktor.")
+					fmt.Printf(i18n.Get(i18n.SuggestedChangesBlock, mc.String(), projectDir))
 					fmt.Println()
 					for _, f := range files {
 						fmt.Println(utils.GetDiff(f.Path, f.Content))
 					}
 
-					fmt.Print("Do you want to apply the changes (y/n)? ")
+					fmt.Print(i18n.Get(i18n.ApplyChangesQuestion))
 					scanner := bufio.NewScanner(os.Stdin)
 					scanner.Scan()
 					answer := scanner.Text()
@@ -222,15 +219,15 @@ func main() {
 						err = project.ApplyChanges(files)
 
 						if err == nil {
-							fmt.Println("The changes have been successfully applied.")
+							fmt.Println(i18n.Get(i18n.ChangesApplied))
 						} else {
 							cli.ExitWithError(err, hasGlobalLog, homeDir)
 						}
 					} else {
-						fmt.Println("GoodBye!")
+						fmt.Println(i18n.ByeMessage)
 					}
 				} else {
-					fmt.Println("Nothing to change.")
+					fmt.Println(i18n.Get(i18n.NoChanges))
 				}
 			}
 		}

@@ -88,4 +88,26 @@ const (
 	OutputDirOptionDescr
 	ProjectDirOptionDescr
 	ProjectCreatedIn
+	AddKtorModulesToKmpError
+	AddKtorModulesToMavenError
+	AddKtorModulesToGradleGroovyError
+	UnableToFindBuildGradleKts
+	DetectedKtorVersion
+	UseLatestKtorVersion
+	UnableToRecognizeKtorModule
+	KtorModuleAmbiguity
+	SimilarModuleQuestion
+	ChosenKtorModule
+	SuggestedChangesBlock
+	ApplyChangesQuestion
+	ChangesApplied
+	NoChanges
+	UnrecoverableErrorBlock
+	SearchKtorModulesError
+	ListKtorModulesError
+	BackupCreationError
+	WriteChangesError
+	UnrecognizedShellError
+	NoPermsForFile
+	UnrecognizedCommandFlagsError
 )

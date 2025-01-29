@@ -48,9 +48,9 @@ const (
 )
 
 var AllFlagsSpec = map[Flag]flagSpec{
-	Version: {Aliases: []string{"-V", "--version"}, Description: "print version"},
-	Help:    {Aliases: []string{"-h", "--help"}, Description: "show the help"},
-	Verbose: {Aliases: []string{"-v", "--verbose"}, Description: "enable verbose mode"},
+	Version: {Aliases: []string{"-V", "--version"}, Description: i18n.Get(i18n.VersionCommandDescr)},
+	Help:    {Aliases: []string{"-h", "--help"}, Description: i18n.Get(i18n.HelpCommandDescr)},
+	Verbose: {Aliases: []string{"-v", "--verbose"}, Description: i18n.Get(i18n.VerboseOptionDescr)},
 }
 var commandFlagSpec = map[Command]map[Flag]flagSpec{
 	OpenAPI: {

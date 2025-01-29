@@ -114,25 +114,25 @@ func HandleAppError(projectDir string, err error) (reportLog bool) {
 
 			fmt.Fprintf(os.Stderr, i18n.Get(i18n.UnableCreateStoreJdkDir, pe.Path))
 		case app.ArtifactSearchError:
-			fmt.Fprintf(os.Stderr, "Error searching for Ktor modules. Please try again later.\n")
+			fmt.Fprint(os.Stderr, i18n.Get(i18n.SearchKtorModulesError))
 		case app.ArtifactListError:
-			fmt.Fprintf(os.Stderr, "Error getting a list of Ktor modules. Please try again later.\n")
+			fmt.Fprint(os.Stderr, i18n.Get(i18n.ListKtorModulesError))
 		case app.BackupCreationError:
 			var pe *os.PathError
 			errors.As(e.Err, &pe)
-			fmt.Fprintf(os.Stderr, "Unable to read the %s file to create a backup.\n", pe.Path)
+			fmt.Fprint(os.Stderr, i18n.Get(i18n.BackupCreationError, pe.Path))
 		case app.WriteChangesError:
 			var pe *os.PathError
 			errors.As(e.Err, &pe)
-			fmt.Fprintf(os.Stderr, "Cannot write changes to the %s file.\n", pe.Path)
+			fmt.Fprint(os.Stderr, i18n.Get(i18n.WriteChangesError, pe.Path))
 		case app.UnrecognizedShellError:
 			var se *ShellError
 			errors.As(e.Err, &se)
-			fmt.Fprintf(os.Stderr, "Cannot recognize shell %s\n", se.Shell)
+			fmt.Fprint(os.Stderr, i18n.Get(i18n.UnrecognizedShellError, se.Shell))
 		case app.NoPermsForFile:
 			var pe *os.PathError
 			if errors.As(e.Err, &pe) {
-				fmt.Fprintf(os.Stderr, "Not enough permissions for %s file.\n", pe.Path)
+				fmt.Fprint(os.Stderr, i18n.Get(i18n.NoPermsForFile, pe.Path))
 			}
 		default:
 			fmt.Fprintf(os.Stderr, i18n.Get(i18n.UnexpectedError))
@@ -156,8 +156,7 @@ func HandleArgsValidation(err error) {
 	case UnrecognizedCommandFlagsError:
 		var fe UnrecognizedCommandFlags
 		errors.As(e.Err, &fe)
-		// TODO: i18n
-		fmt.Fprintf(os.Stderr, "Unrecognized flag[s] %s for command %s.\n", strings.Join(fe.Flags, ", "), fe.Command)
+		fmt.Fprint(os.Stderr, i18n.Get(i18n.UnrecognizedCommandFlagsError, strings.Join(fe.Flags, ", "), fe.Command))
 	case NoCommandError:
 		fmt.Fprintln(os.Stderr, i18n.Get(i18n.NoCommandError))
 	case CommandNotFoundError:

@@ -95,10 +95,6 @@ func ParseBuildFile(fp string) (*BuildRoot, error, []lang.SyntaxError) {
 	root.Rewriter = antlr.NewTokenStreamRewriter(root.Stream)
 
 	for _, st := range p.Script().AllStatement() {
-		//if errListener.Errors != nil {
-		//	return nil, &app.Error{Err: errListener.Errors, Kind: app.ParsingSyntaxError}
-		//}
-
 		if pd, ok := lang.FindChild[parser.IPropertyDeclarationContext](st); ok {
 			if vd, ok := parseVarDecl(pd); ok {
 				root.TopLevelVars = append(root.TopLevelVars, vd)

@@ -69,10 +69,6 @@ func ParseCatalogToml(tomlPath string) (*Document, error, []lang.SyntaxError) {
 
 	table := Table{}
 	for _, ch := range p.Document().GetChildren() {
-		//if errListener.Errors != nil {
-		//	return nil, &app.Error{Err: errListener.Errors, Kind: app.ParsingSyntaxError}
-		//}
-
 		if ch.GetChildCount() == 0 {
 			continue
 		}
