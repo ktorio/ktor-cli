@@ -92,7 +92,7 @@ var en = map[Message]string{
 	DetectedKtorVersion:                "Detected Ktor version: %s\n",
 	UseLatestKtorVersion:               "Using the latest stable Ktor version: %s\n",
 	UnableToRecognizeKtorModule:        "Unable to recognize Ktor module '%s'.\n",
-	KtorModuleAmbiguity:                "Ktor Module ambiguity. Applicable candidates: %s.\"",
+	KtorModuleAmbiguity:                "Ktor Module ambiguity. Applicable candidates: %s.",
 	SimilarModuleQuestion:              "Did you mean '%s'?\n",
 	ChosenKtorModule:                   "The chosen Ktor module is %s.\n",
 	SuggestedChangesBlock: "Below you can find suggested changes to add '%s' into the %s.\n" +

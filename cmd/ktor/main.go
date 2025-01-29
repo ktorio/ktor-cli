@@ -105,8 +105,15 @@ func main() {
 			var syntaxErrors []lang.SyntaxError
 			buildRoot, err, syntaxErrors = gradle.ParseBuildFile(buildPath)
 
-			if len(syntaxErrors) > 0 {
-				log.Println(lang.StringifySyntaxErrors(syntaxErrors[:5]))
+			var sErrors []lang.SyntaxError
+			if len(sErrors) > 0 {
+				if len(syntaxErrors) < 5 {
+					sErrors = syntaxErrors
+				} else {
+					sErrors = syntaxErrors[:5]
+				}
+
+				log.Println(lang.StringifySyntaxErrors(sErrors))
 			}
 
 			if err != nil {
@@ -116,7 +123,13 @@ func main() {
 					tomlDoc, err, syntaxErrors = toml.ParseCatalogToml(tomlPath)
 
 					if len(syntaxErrors) > 0 {
-						log.Println(lang.StringifySyntaxErrors(syntaxErrors[:5]))
+						if len(syntaxErrors) < 5 {
+							sErrors = syntaxErrors
+						} else {
+							sErrors = syntaxErrors[:5]
+						}
+
+						log.Println(lang.StringifySyntaxErrors(sErrors))
 					}
 
 					if err != nil {
@@ -190,7 +203,7 @@ func main() {
 					fmt.Fprintf(os.Stderr, i18n.Get(i18n.SimilarModuleQuestion, candidates[0].Artifact))
 				}
 			case ktor.ModuleFound:
-				verboseLogger.Printf(i18n.Get(i18n.ChosenKtorModule), mc.String())
+				verboseLogger.Printf(i18n.Get(i18n.ChosenKtorModule, mc.String()))
 				depPlugins := ktor.DependentPlugins(mc)
 				var serPlugin *ktor.GradlePlugin
 				if len(depPlugins) > 0 {
@@ -224,7 +237,7 @@ func main() {
 							cli.ExitWithError(err, hasGlobalLog, homeDir)
 						}
 					} else {
-						fmt.Println(i18n.ByeMessage)
+						fmt.Println(i18n.Get(i18n.ByeMessage))
 					}
 				} else {
 					fmt.Println(i18n.Get(i18n.NoChanges))
