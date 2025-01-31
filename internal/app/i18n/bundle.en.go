@@ -94,12 +94,12 @@ var en = map[Message]string{
 	UnableToRecognizeKtorModule:        "Unable to recognize Ktor module '%s'.\n",
 	KtorModuleAmbiguity:                "Ktor Module ambiguity. Applicable candidates: %s.",
 	SimilarModuleQuestion:              "Did you mean '%s'?\n",
-	ChosenKtorModule:                   "The chosen Ktor module is %s.\n",
-	SuggestedChangesBlock: "Below you can find suggested changes to add '%s' into the %s.\n" +
+	ChosenKtorModule:                   "\nThe chosen Ktor module is %s.\n",
+	ChangesWarningBlock: "If any changes are required to add the modules into %s, you will see them below.\n" +
 		"If you consider them incorrect, please file an issue at https://youtrack.jetbrains.com/newIssue?project=ktor.\n",
 	ApplyChangesQuestion: "Do you want to apply the changes (y/n)? ",
 	ChangesApplied:       "The changes have been successfully applied.",
-	NoChanges:            "Nothing to change.",
+	NoChanges:            "Nothing to change for %s.",
 	UnrecoverableErrorBlock: "Unrecoverable error occurred: %s\n" +
 		"It seems to be a bug so please file an issue at https://youtrack.jetbrains.com/newIssue?project=ktor\n" +
 		"Please put the following stack trace into the issue's description: \n\n%s",

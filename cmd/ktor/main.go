@@ -178,7 +178,20 @@ func main() {
 			cli.ExitWithError(err, hasGlobalLog, homeDir)
 		}
 
-		for _, mod := range modules {
+		fmt.Print(i18n.Get(i18n.ChangesWarningBlock, filepath.Base(projectDir)))
+
+		for i, mod := range modules {
+			if i > 0 {
+				buildRoot, err, _ = gradle.ParseBuildFile(buildPath)
+
+				if err != nil {
+					cli.ExitWithError(err, hasGlobalLog, homeDir)
+				}
+
+				tomlDoc, err, _ = toml.ParseCatalogToml(tomlPath)
+				tomlSuccessParsed = err == nil
+			}
+
 			mc, modResult, candidates := ktor.FindModule(artifacts[mod])
 
 			if mc.Version == "" {
@@ -219,7 +232,6 @@ func main() {
 				}
 
 				if len(files) > 0 {
-					fmt.Printf(i18n.Get(i18n.SuggestedChangesBlock, mc.String(), projectDir))
 					fmt.Println()
 					for _, f := range files {
 						fmt.Println(utils.GetDiff(f.Path, f.Content))
@@ -238,11 +250,10 @@ func main() {
 						} else {
 							cli.ExitWithError(err, hasGlobalLog, homeDir)
 						}
-					} else {
-						fmt.Println(i18n.Get(i18n.ByeMessage))
 					}
 				} else {
-					fmt.Println(i18n.Get(i18n.NoChanges))
+					fmt.Println()
+					fmt.Println(i18n.Get(i18n.NoChanges, mc.String()))
 				}
 			}
 		}

@@ -98,7 +98,7 @@ const (
 	KtorModuleAmbiguity
 	SimilarModuleQuestion
 	ChosenKtorModule
-	SuggestedChangesBlock
+	ChangesWarningBlock
 	ApplyChangesQuestion
 	ChangesApplied
 	NoChanges
