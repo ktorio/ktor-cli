@@ -2,7 +2,6 @@ package project
 
 import (
 	"errors"
-	"fmt"
 	"github.com/ktorio/ktor-cli/internal/app/ktor"
 	"github.com/ktorio/ktor-cli/internal/app/lang"
 	"github.com/ktorio/ktor-cli/internal/app/lang/gradle"
@@ -127,18 +126,19 @@ func TestAddProjectDependencies(t *testing.T) {
 					return nil
 				}
 
-				if fc == nil {
-					return errors.New(fmt.Sprintf("%s: content for file %s not found", e.Name(), filepath.Base(srcPath)))
+				expContent := ""
+				if fc != nil {
+					expContent = fc.Content
 				}
 
-				if string(expBytes) != fc.Content {
+				if string(expBytes) != expContent {
 					rel, err := filepath.Rel(filepath.Dir(projDir), srcPath)
 
 					if err != nil {
 						return err
 					}
 
-					t.Fatalf("File %s has unexpected content:\n%s", rel, utils.GetDiff(p, fc.Content))
+					t.Fatalf("File %s has unexpected content:\n%s", rel, utils.GetDiff(p, expContent))
 				}
 
 				return nil

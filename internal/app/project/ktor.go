@@ -75,6 +75,19 @@ func AddKtorModule(mc ktor.MavenCoords, build *gradle.BuildRoot, tomlDoc *toml.D
 		}
 
 		if m, ok := ktor.ParseMavenCoords(d.Path); ok && mc.RoughlySame(m) {
+			// Add serialization plugin even if the dependency exists and requires the plugin
+			if serPlugin != nil && !gradle.HasSerializationPlugin(build.Plugins.List) {
+				if kotlinPlugin, ok := gradle.FindKotlinPlugin(build.Plugins.List); ok {
+					lang.InsertLnAfter(
+						build.Rewriter,
+						kotlinPlugin.Statement.GetStop(),
+						lang.HiddenTokensToLeft(build.Stream, kotlinPlugin.Statement.GetStart().GetTokenIndex()),
+						gradle.KotlinPrefixedPlugin(ktor.SerPluginKotlinId, kotlinPlugin.Version),
+					)
+					changes = append(changes, FileContent{Path: buildPath, Content: build.Rewriter.GetTextDefault()})
+				}
+			}
+
 			return changes, nil
 		}
 	}
