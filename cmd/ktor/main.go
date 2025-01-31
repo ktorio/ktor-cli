@@ -217,6 +217,7 @@ func main() {
 				if len(candidates) > 0 {
 					fmt.Fprintf(os.Stderr, i18n.Get(i18n.SimilarModuleQuestion, candidates[0].Artifact))
 				}
+				os.Exit(1)
 			case ktor.ModuleFound:
 				verboseLogger.Printf(i18n.Get(i18n.ChosenKtorModule, mc.String()))
 				depPlugins := ktor.DependentPlugins(mc)
