@@ -93,6 +93,8 @@ func main() {
 			projectDir = dir
 		}
 
+		verboseLogger.Print(i18n.Get(i18n.ProjectAddMessage, projectDir))
+
 		tomlPath, tomlFound := toml.FindVersionsPath(projectDir)
 		var tomlDoc *toml.Document
 		var tomlSuccessParsed bool

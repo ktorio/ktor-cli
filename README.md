@@ -76,6 +76,24 @@ You can specify a different output directory with the `-o` or `--output` flag:
 ktor openapi -o path/to/project petstore.yaml
 ```
 
+## Add a Ktor dependency to an existing project
+
+To add a Ktor dependency to a Gradle project in the current working directory, use the `add` command:
+```shell
+ktor add server-core
+```
+Use `-p` or `--project` option to specify a path to the project directory:
+```shell
+ktor add -p /path/to/project server-core
+```
+
+Multiple modules can be added with a single command:
+```shell
+ktor add -p /path/to/project server-core client-core json
+```
+
+Currently, a Ktor dependency can be added only to **non**-multiplatform Gradle projects with Kotlin DSL.
+
 ## Get the version
 
 To get the version of the tool, use the `--version` flag or the `version` command:

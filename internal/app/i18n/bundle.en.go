@@ -85,9 +85,9 @@ var en = map[Message]string{
 	ProjectDirOptionDescr:              "Project directory.",
 	AddCommandDescr:                    "add Ktor modules to a project",
 	CompletionCommandDescr:             "auto completions for several shells",
-	AddKtorModulesToKmpError:           "Unable to add Ktor modules to Kotlin Multiplatform projects (not supported yet).",
-	AddKtorModulesToMavenError:         "Unable to add Ktor modules to Maven projects (not supported yet).",
-	AddKtorModulesToGradleGroovyError:  "Unable to add Ktor modules to Gradle projects with Groovy DSL (not supported yet).",
+	AddKtorModulesToKmpError:           "Unable to add Ktor modules to Kotlin Multiplatform projects (not supported).",
+	AddKtorModulesToMavenError:         "Unable to add Ktor modules to Maven projects (not supported).",
+	AddKtorModulesToGradleGroovyError:  "Unable to add Ktor modules to Gradle projects with Groovy DSL (not supported).",
 	UnableToFindBuildGradleKts:         "Unable to find build.gradle.kts file in the project directory %s.\n",
 	DetectedKtorVersion:                "Detected Ktor version: %s\n",
 	UseLatestKtorVersion:               "Using the latest stable Ktor version: %s\n",
@@ -110,4 +110,5 @@ var en = map[Message]string{
 	UnrecognizedShellError:        "Unable to recognize shell %s\n",
 	NoPermsForFile:                "Not enough permissions for %s file.\n",
 	UnrecognizedCommandFlagsError: "Unrecognized flag[s] %s for command %s.\n",
+	ProjectAddMessage:             "Project: %s\n",
 }

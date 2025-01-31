@@ -110,4 +110,5 @@ const (
 	UnrecognizedShellError
 	NoPermsForFile
 	UnrecognizedCommandFlagsError
+	ProjectAddMessage
 )
