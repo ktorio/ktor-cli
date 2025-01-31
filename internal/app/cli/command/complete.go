@@ -37,7 +37,7 @@ func completeFish(allModules []string) (string, error) {
 
 	var modules []string
 	for _, m := range allModules {
-		modules = append(modules, fmt.Sprintf("complete -c ktor -n \"__fish_seen_subcommand_from add\" -f -a \"%s\"", m))
+		modules = append(modules, fmt.Sprintf("complete -c ktor -n \"__fish_seen_subcommand_from add\" -f -a \"%s\"", stripKtorPrefix(m)))
 	}
 
 	s := fmt.Sprintf(`
@@ -67,7 +67,7 @@ func completeBash(allModules []string) (string, error) {
 
 	var modules []string
 	for _, m := range allModules {
-		modules = append(modules, m)
+		modules = append(modules, stripKtorPrefix(m))
 	}
 
 	s := fmt.Sprintf(`
@@ -122,7 +122,7 @@ func completeZsh(allModules []string) (string, error) {
 
 	var modules []string
 	for _, m := range allModules {
-		modules = append(modules, `"`+m+`"`)
+		modules = append(modules, `"`+stripKtorPrefix(m)+`"`)
 	}
 
 	s := fmt.Sprintf(`
@@ -162,4 +162,8 @@ compdef _ktor ktor
 `, strings.Join(commands, "\n"), strings.Join(modules, "\n"))
 
 	return s, nil
+}
+
+func stripKtorPrefix(module string) string {
+	return strings.TrimPrefix(module, "ktor-")
 }
