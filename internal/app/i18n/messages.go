@@ -111,4 +111,5 @@ const (
 	NoPermsForFile
 	UnrecognizedCommandFlagsError
 	ProjectAddMessage
+	UnsupportedKtorVersionError
 )

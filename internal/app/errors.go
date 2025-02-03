@@ -27,6 +27,7 @@ const (
 	OpenApiDownloadJarError
 	OpenApiExecuteJarError
 	ArtifactSearchError
+	ArtifactSearchVersionNotSupportedError
 	ArtifactListError
 	BackupCreationError
 	WriteChangesError

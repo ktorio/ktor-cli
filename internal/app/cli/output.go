@@ -7,6 +7,7 @@ import (
 	"github.com/ktorio/ktor-cli/internal/app/config"
 	"github.com/ktorio/ktor-cli/internal/app/i18n"
 	"github.com/ktorio/ktor-cli/internal/app/jdk"
+	"github.com/ktorio/ktor-cli/internal/app/network"
 	"github.com/ktorio/ktor-cli/internal/app/utils"
 	"log"
 	"os"
@@ -115,6 +116,11 @@ func HandleAppError(projectDir string, err error) (reportLog bool) {
 			fmt.Fprintf(os.Stderr, i18n.Get(i18n.UnableCreateStoreJdkDir, pe.Path))
 		case app.ArtifactSearchError:
 			fmt.Fprint(os.Stderr, i18n.Get(i18n.SearchKtorModulesError))
+		case app.ArtifactSearchVersionNotSupportedError:
+			var ve *network.NotSupportedKtorVersion
+			errors.As(e.Err, &ve)
+			fmt.Fprintf(os.Stderr, i18n.Get(i18n.UnsupportedKtorVersionError, ve.Version))
+			reportLog = false
 		case app.ArtifactListError:
 			fmt.Fprint(os.Stderr, i18n.Get(i18n.ListKtorModulesError))
 		case app.BackupCreationError:

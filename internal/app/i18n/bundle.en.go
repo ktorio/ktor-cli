@@ -111,4 +111,5 @@ var en = map[Message]string{
 	NoPermsForFile:                "Not enough permissions for %s file.\n",
 	UnrecognizedCommandFlagsError: "Unrecognized flag[s] %s for command %s.\n",
 	ProjectAddMessage:             "Project: %s\n",
+	UnsupportedKtorVersionError:   "Unable to find Ktor modules of version %s\n",
 }

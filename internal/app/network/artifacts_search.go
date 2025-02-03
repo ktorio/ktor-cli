@@ -16,6 +16,14 @@ type Artifact struct {
 	Distance int    `json:"distance"`
 }
 
+type NotSupportedKtorVersion struct {
+	Version string
+}
+
+func (e NotSupportedKtorVersion) Error() string {
+	return fmt.Sprintf("unsupported Ktor version %s", e.Version)
+}
+
 func SearchArtifacts(client *http.Client, ktorVersion string, searches []string) (map[string][]Artifact, error) {
 	req, err := http.NewRequest("GET", fmt.Sprintf("%s/artifacts/%s/search", config.GenBaseUrl(), ktorVersion), nil)
 
@@ -41,6 +49,10 @@ func SearchArtifacts(client *http.Client, ktorVersion string, searches []string)
 
 	tag := fmt.Sprintf("search artifacts for %s", ktorVersion)
 	if err = CheckResponseStatus(resp, tag, app.ArtifactSearchError); err != nil {
+		if resp.StatusCode == http.StatusNotImplemented {
+			return nil, &app.Error{Err: &NotSupportedKtorVersion{Version: ktorVersion}, Kind: app.ArtifactSearchVersionNotSupportedError}
+		}
+
 		return nil, err
 	}
 
