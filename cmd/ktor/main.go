@@ -93,6 +93,13 @@ func main() {
 			projectDir = dir
 		}
 
+		projectDir, err = filepath.Abs(projectDir)
+
+		if err != nil {
+			fmt.Fprintf(os.Stderr, i18n.Get(i18n.CannotDetermineProjectDir, projectDir))
+			os.Exit(1)
+		}
+
 		verboseLogger.Print(i18n.Get(i18n.ProjectAddMessage, projectDir))
 
 		tomlPath, tomlFound := toml.FindVersionsPath(projectDir)
