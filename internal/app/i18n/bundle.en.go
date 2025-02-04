@@ -88,23 +88,23 @@ var en = map[Message]string{
 	AddKtorModulesToKmpError:           "Unable to add Ktor modules to Kotlin Multiplatform projects (not supported).",
 	AddKtorModulesToMavenError:         "Unable to add Ktor modules to Maven projects (not supported).",
 	AddKtorModulesToGradleGroovyError:  "Unable to add Ktor modules to Gradle projects with Groovy DSL (not supported).",
-	UnableToFindBuildGradleKts:         "Unable to find build.gradle.kts file in the project directory %s.\n",
+	UnableToFindBuildGradleKts:         "Unable to find a build.gradle.kts file in the project directory %s.\n",
 	DetectedKtorVersion:                "Detected Ktor version: %s\n",
 	UseLatestKtorVersion:               "Using the latest stable Ktor version: %s\n",
 	UnableToRecognizeKtorModule:        "Unable to recognize Ktor module '%s'.\n",
-	KtorModuleAmbiguity:                "Ktor Module ambiguity. Applicable candidates: %s.",
+	KtorModuleAmbiguity:                "Ktor module ambiguity. Applicable candidates: %s.",
 	SimilarModuleQuestion:              "Did you mean '%s'?\n",
 	ChosenKtorModule:                   "\nThe chosen Ktor module is %s.\n",
-	ChangesWarningBlock: "If any changes are required to add the modules into %s, you will see them below.\n" +
-		"If you consider them incorrect, please file an issue at https://youtrack.jetbrains.com/newIssue?project=ktor.\n",
+	ChangesWarningBlock: "If any changes are needed to add the modules to %s, you will see them below.\n" +
+		"If you find these changes to be incorrect, please report an issue at https://youtrack.jetbrains.com/newIssue?project=ktor.\n",
 	ApplyChangesQuestion: "Do you want to apply the changes (y/n)? ",
 	ChangesApplied:       "The changes have been successfully applied.",
 	NoChanges:            "Nothing to change for %s.",
-	UnrecoverableErrorBlock: "Unrecoverable error occurred: %s\n" +
-		"It seems to be a bug so please file an issue at https://youtrack.jetbrains.com/newIssue?project=ktor\n" +
-		"Please put the following stack trace into the issue's description: \n\n%s",
+	UnrecoverableErrorBlock: "An unrecoverable error occurred: %s\n" +
+		"This appears to be a bug. Please report an issue for it at https://youtrack.jetbrains.com/newIssue?project=ktor\n" +
+		"Include the following stack trace in the issue's description: \n\n%s",
 	SearchKtorModulesError:        "Error while searching for Ktor modules. Please try again later.\n",
-	ListKtorModulesError:          "Error getting a list of Ktor modules. Please try again later.\n",
+	ListKtorModulesError:          "Failed to retrieve the list of Ktor modules. Please try again later.\n",
 	BackupCreationError:           "Unable to read the %s file to create a backup.\n",
 	WriteChangesError:             "Cannot write changes to the file %s\n",
 	UnrecognizedShellError:        "Unable to recognize shell %s\n",

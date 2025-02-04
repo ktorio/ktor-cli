@@ -82,17 +82,17 @@ To add a Ktor dependency to a Gradle project in the current working directory, u
 ```shell
 ktor add server-core
 ```
-Use `-p` or `--project` option to specify a path to the project directory:
+Use the `-p` or `--project` option to specify a path to the project directory:
 ```shell
 ktor add -p /path/to/project server-core
 ```
 
-Multiple modules can be added with a single command:
+You can add multiple modules with a single command:
 ```shell
 ktor add -p /path/to/project server-core client-core json
 ```
 
-Currently, a Ktor dependency can be added only to **non**-multiplatform Gradle projects with Kotlin DSL.
+Currently, Ktor dependencies can only be added to **non-multiplatform** Gradle projects using Kotlin DSL.
 
 ## Get the version
 
