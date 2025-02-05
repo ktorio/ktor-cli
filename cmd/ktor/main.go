@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"context"
 	_ "embed"
 	"errors"
@@ -10,6 +11,12 @@ import (
 	"github.com/ktorio/ktor-cli/internal/app/config"
 	"github.com/ktorio/ktor-cli/internal/app/i18n"
 	"github.com/ktorio/ktor-cli/internal/app/interactive"
+	"github.com/ktorio/ktor-cli/internal/app/ktor"
+	"github.com/ktorio/ktor-cli/internal/app/lang"
+	"github.com/ktorio/ktor-cli/internal/app/lang/gradle"
+	"github.com/ktorio/ktor-cli/internal/app/lang/toml"
+	"github.com/ktorio/ktor-cli/internal/app/network"
+	"github.com/ktorio/ktor-cli/internal/app/project"
 	"github.com/ktorio/ktor-cli/internal/app/utils"
 	"io"
 	"log"
@@ -18,6 +25,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime/debug"
+	"slices"
 	"strings"
 	"time"
 )
@@ -25,6 +33,12 @@ import (
 var Version string
 
 func main() {
+	defer func() {
+		if e := recover(); e != nil {
+			fmt.Print(i18n.Get(i18n.UnrecoverableErrorBlock, e, string(debug.Stack())))
+		}
+	}()
+
 	args, err := cli.ProcessArgs(cli.ParseArgs(os.Args))
 
 	if err != nil {
@@ -71,10 +85,211 @@ func main() {
 	}
 
 	switch args.Command {
+	case cli.AddCommand:
+		modules := args.CommandArgs
+
+		projectDir := "."
+		if dir, ok := args.CommandOptions[cli.ProjectDir]; ok {
+			projectDir = dir
+		}
+
+		projectDir, err = filepath.Abs(projectDir)
+
+		if err != nil {
+			fmt.Fprintf(os.Stderr, i18n.Get(i18n.CannotDetermineProjectDir, projectDir))
+			os.Exit(1)
+		}
+
+		verboseLogger.Print(i18n.Get(i18n.ProjectAddMessage, projectDir))
+
+		tomlPath, tomlFound := toml.FindVersionsPath(projectDir)
+		var tomlDoc *toml.Document
+		var tomlSuccessParsed bool
+
+		buildPath := filepath.Join(projectDir, "build.gradle.kts")
+		buildFound := utils.Exists(buildPath)
+		var buildRoot *gradle.BuildRoot
+
+		if buildFound {
+			var syntaxErrors []lang.SyntaxError
+			buildRoot, err, syntaxErrors = gradle.ParseBuildFile(buildPath)
+
+			var sErrors []lang.SyntaxError
+			if len(sErrors) > 0 {
+				if len(syntaxErrors) < 5 {
+					sErrors = syntaxErrors
+				} else {
+					sErrors = syntaxErrors[:5]
+				}
+
+				log.Println(lang.StringifySyntaxErrors(sErrors))
+			}
+
+			if err != nil {
+				cli.ExitWithError(err, hasGlobalLog, homeDir)
+			} else {
+				if tomlFound {
+					tomlDoc, err, syntaxErrors = toml.ParseCatalogToml(tomlPath)
+
+					if len(syntaxErrors) > 0 {
+						if len(syntaxErrors) < 5 {
+							sErrors = syntaxErrors
+						} else {
+							sErrors = syntaxErrors[:5]
+						}
+
+						log.Println(lang.StringifySyntaxErrors(sErrors))
+					}
+
+					if err != nil {
+						log.Println(err)
+					} else {
+						tomlSuccessParsed = true
+					}
+				}
+
+				if project.IsKmp(buildRoot, tomlDoc, tomlSuccessParsed) {
+					fmt.Fprintln(os.Stderr, i18n.Get(i18n.AddKtorModulesToKmpError))
+					os.Exit(1)
+				}
+			}
+		} else {
+			if utils.Exists(filepath.Join(projectDir, "pom.xml")) {
+				fmt.Fprintln(os.Stderr, i18n.Get(i18n.AddKtorModulesToMavenError))
+			} else if utils.Exists(filepath.Join(projectDir, "build.gradle")) {
+				fmt.Fprintln(os.Stderr, i18n.Get(i18n.AddKtorModulesToGradleGroovyError))
+			} else {
+				fmt.Fprintf(os.Stderr, i18n.Get(i18n.UnableToFindBuildGradleKts, projectDir))
+			}
+			os.Exit(1)
+		}
+
+		var ktorVersion string
+		if v, ok := project.SearchKtorVersion(projectDir, buildRoot, tomlDoc, tomlSuccessParsed); ok {
+			ktorVersion = v
+			verboseLogger.Printf(i18n.Get(i18n.DetectedKtorVersion, ktorVersion))
+		} else {
+			settings, err := network.FetchSettings(client)
+
+			if err != nil {
+				cli.ExitWithError(err, hasGlobalLog, homeDir)
+			} else {
+				ktorVersion = settings.KtorVersion.DefaultId
+				verboseLogger.Printf(i18n.Get(i18n.UseLatestKtorVersion, ktorVersion))
+			}
+		}
+
+		artifacts, err := network.SearchArtifacts(client, ktorVersion, modules)
+
+		if err != nil {
+			cli.ExitWithError(err, hasGlobalLog, homeDir)
+		}
+
+		fmt.Print(i18n.Get(i18n.ChangesWarningBlock, filepath.Base(projectDir)))
+
+		for i, mod := range modules {
+			if i > 0 {
+				buildRoot, err, _ = gradle.ParseBuildFile(buildPath)
+
+				if err != nil {
+					cli.ExitWithError(err, hasGlobalLog, homeDir)
+				}
+
+				tomlDoc, err, _ = toml.ParseCatalogToml(tomlPath)
+				tomlSuccessParsed = err == nil
+			}
+
+			mc, modResult, candidates := ktor.FindModule(artifacts[mod])
+
+			if mc.Version == "" {
+				mc.Version = ktorVersion
+			}
+
+			switch modResult {
+			case ktor.ModuleNotFound:
+				fmt.Fprintf(os.Stderr, i18n.Get(i18n.UnableToRecognizeKtorModule, mod))
+				os.Exit(1)
+			case ktor.ModuleAmbiguity:
+				var names []string
+				for _, c := range candidates {
+					if !slices.Contains(names, c.Artifact) {
+						names = append(names, c.Artifact)
+					}
+				}
+				fmt.Fprintf(os.Stderr, i18n.Get(i18n.KtorModuleAmbiguity, strings.Join(names, ", ")))
+				os.Exit(1)
+			case ktor.SimilarModulesFound:
+				fmt.Fprintf(os.Stderr, i18n.Get(i18n.UnableToRecognizeKtorModule, mod))
+
+				if len(candidates) > 0 {
+					fmt.Fprintf(os.Stderr, i18n.Get(i18n.SimilarModuleQuestion, candidates[0].Artifact))
+				}
+				os.Exit(1)
+			case ktor.ModuleFound:
+				verboseLogger.Printf(i18n.Get(i18n.ChosenKtorModule, mc.String()))
+				depPlugins := ktor.DependentPlugins(mc)
+				var serPlugin *ktor.GradlePlugin
+				if len(depPlugins) > 0 {
+					serPlugin = &depPlugins[0]
+				}
+
+				files, err := project.AddKtorModule(mc, buildRoot, tomlDoc, tomlSuccessParsed, serPlugin, buildPath, tomlPath, projectDir)
+
+				if err != nil {
+					cli.ExitWithError(err, hasGlobalLog, homeDir)
+				}
+
+				if len(files) > 0 {
+					fmt.Println()
+					for _, f := range files {
+						fmt.Println(utils.GetDiff(f.Path, f.Content))
+					}
+
+					fmt.Print(i18n.Get(i18n.ApplyChangesQuestion))
+					scanner := bufio.NewScanner(os.Stdin)
+					scanner.Scan()
+					answer := scanner.Text()
+
+					if answer == "y" || answer == "Y" || answer == "yes" || answer == "Yes" {
+						err = project.ApplyChanges(files)
+
+						if err == nil {
+							fmt.Println(i18n.Get(i18n.ChangesApplied))
+						} else {
+							cli.ExitWithError(err, hasGlobalLog, homeDir)
+						}
+					}
+				} else {
+					fmt.Println()
+					fmt.Println(i18n.Get(i18n.NoChanges, mc.String()))
+				}
+			}
+		}
 	case cli.VersionCommand:
 		fmt.Printf(i18n.Get(i18n.VersionInfo, getVersion()))
 	case cli.HelpCommand:
 		cli.WriteUsage(os.Stdout)
+	case cli.CompletionCommand:
+		settings, err := network.FetchSettings(client)
+
+		if err != nil {
+			cli.ExitWithError(err, hasGlobalLog, homeDir)
+		}
+
+		shell := args.CommandArgs[0]
+		modules, err := network.ListArtifacts(client, settings.KtorVersion.DefaultId)
+
+		if err != nil {
+			cli.ExitWithError(err, hasGlobalLog, homeDir)
+		}
+
+		s, err := command.Complete(modules, shell)
+
+		if err != nil {
+			cli.ExitWithError(err, hasGlobalLog, homeDir)
+		}
+
+		fmt.Print(s)
 	case cli.NewCommand:
 		if len(args.CommandArgs) > 0 {
 			projectName := utils.CleanProjectName(filepath.Base(args.CommandArgs[0]))
@@ -91,7 +306,7 @@ func main() {
 
 		result, err := interactive.Run(client, ctx)
 		if err != nil {
-			cli.ExitWithError(err, "", hasGlobalLog, homeDir)
+			cli.ExitWithError(err, hasGlobalLog, homeDir)
 		}
 
 		if result.Quit {
@@ -123,7 +338,7 @@ func main() {
 		err = command.OpenApi(client, specPath, projectName, projectDir, homeDir, verboseLogger)
 
 		if err != nil {
-			cli.ExitWithError(err, projectDir, hasGlobalLog, homeDir)
+			cli.ExitWithProjectError(err, projectDir, hasGlobalLog, homeDir)
 		}
 
 		fmt.Printf(i18n.Get(i18n.ProjectCreated, projectName, projectDir))

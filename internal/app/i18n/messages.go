@@ -82,7 +82,34 @@ const (
 	VersionCommandDescr
 	HelpCommandDescr
 	OpenApiCommandDescr
+	AddCommandDescr
+	CompletionCommandDescr
 	VerboseOptionDescr
 	OutputDirOptionDescr
+	ProjectDirOptionDescr
 	ProjectCreatedIn
+	AddKtorModulesToKmpError
+	AddKtorModulesToMavenError
+	AddKtorModulesToGradleGroovyError
+	UnableToFindBuildGradleKts
+	DetectedKtorVersion
+	UseLatestKtorVersion
+	UnableToRecognizeKtorModule
+	KtorModuleAmbiguity
+	SimilarModuleQuestion
+	ChosenKtorModule
+	ChangesWarningBlock
+	ApplyChangesQuestion
+	ChangesApplied
+	NoChanges
+	UnrecoverableErrorBlock
+	SearchKtorModulesError
+	ListKtorModulesError
+	BackupCreationError
+	WriteChangesError
+	UnrecognizedShellError
+	NoPermsForFile
+	UnrecognizedCommandFlagsError
+	ProjectAddMessage
+	UnsupportedKtorVersionError
 )

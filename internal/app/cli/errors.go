@@ -18,6 +18,7 @@ const (
 	CommandNotFoundError
 	WrongNumberOfArgumentsError
 	UnrecognizedFlagsError
+	UnrecognizedCommandFlagsError
 	NoArgumentForFlag
 )
 
@@ -25,6 +26,15 @@ type UnrecognizedFlags []string
 
 func (f UnrecognizedFlags) Error() string {
 	return fmt.Sprintf("unrecognized flags: %sv", []string(f))
+}
+
+type UnrecognizedCommandFlags struct {
+	Command string
+	Flags   []string
+}
+
+func (e UnrecognizedCommandFlags) Error() string {
+	return fmt.Sprintf("command %s unrecognized flags: %v", e.Command, e.Flags)
 }
 
 type CommandError struct {

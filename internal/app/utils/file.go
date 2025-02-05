@@ -17,3 +17,8 @@ func IsDirEmpty(dir string) bool {
 	names, err := f.Readdirnames(1)
 	return err == io.EOF && len(names) == 0
 }
+
+func Exists(path string) bool {
+	_, err := os.Stat(path)
+	return err == nil
+}

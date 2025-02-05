@@ -22,7 +22,7 @@ func Generate(client *http.Client, projectDir, projectName string, plugins []str
 	err = generate.Project(client, verboseLogger, projectDir, projectName, plugins, ctx)
 
 	if err != nil {
-		cli.ExitWithError(err, projectDir, hasGlobalLog, homeDir)
+		cli.ExitWithProjectError(err, projectDir, hasGlobalLog, homeDir)
 	}
 
 	fmt.Printf(i18n.Get(i18n.ProjectCreated, projectName, projectDir))
@@ -41,7 +41,7 @@ func Generate(client *http.Client, projectDir, projectName string, plugins []str
 		cli.PrintCommands(projectDir, false, jdkPath)
 	case jdk.Downloaded:
 		if err != nil {
-			cli.ExitWithError(err, projectDir, hasGlobalLog, homeDir)
+			cli.ExitWithProjectError(err, projectDir, hasGlobalLog, homeDir)
 		}
 		fmt.Printf(i18n.Get(i18n.JdkDownloaded, jdkPath))
 		cli.PrintCommands(projectDir, false, jdkPath)

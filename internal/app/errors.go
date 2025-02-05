@@ -26,6 +26,13 @@ const (
 	ExternalCommandError
 	OpenApiDownloadJarError
 	OpenApiExecuteJarError
+	ArtifactSearchError
+	ArtifactSearchVersionNotSupportedError
+	ArtifactListError
+	BackupCreationError
+	WriteChangesError
+	UnrecognizedShellError
+	NoPermsForFile
 )
 
 type ErrorKind int

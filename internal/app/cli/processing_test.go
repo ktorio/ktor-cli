@@ -37,6 +37,11 @@ func TestProcessArgs(t *testing.T) {
 		[]string{"ktor", "openapi", "--output="},
 		&Error{Err: FlagError{Flag: "--output"}, Kind: NoArgumentForFlag},
 	)
+	checkProcessError(
+		t,
+		[]string{"ktor", "add", "-z", "client-core"},
+		&Error{Err: UnrecognizedCommandFlags{Command: "add", Flags: []string{"-z"}}, Kind: UnrecognizedCommandFlagsError},
+	)
 
 	checkProcessing(t, []string{"ktor", "--version"}, &Input{Command: VersionCommand})
 	checkProcessing(t, []string{"ktor", "-V"}, &Input{Command: VersionCommand})
@@ -46,6 +51,7 @@ func TestProcessArgs(t *testing.T) {
 	checkProcessing(t, []string{"ktor", "--help", "--version"}, &Input{Command: HelpCommand})
 	checkProcessing(t, []string{"ktor", "--version", "new"}, &Input{Command: VersionCommand})
 	checkProcessing(t, []string{"ktor", "--help", "new", "some"}, &Input{Command: HelpCommand})
+	checkProcessing(t, []string{"ktor", "add", "mod1", "mod2"}, &Input{Command: AddCommand, CommandArgs: []string{"mod1", "mod2"}, CommandOptions: map[Flag]string{}})
 	checkProcessing(t, []string{"ktor", "new", "some"}, &Input{Command: NewCommand, CommandArgs: []string{"some"}, CommandOptions: map[Flag]string{}})
 	checkProcessing(t, []string{"ktor", "-v", "new", "some"}, &Input{Command: NewCommand, CommandArgs: []string{"some"}, Verbose: true, CommandOptions: map[Flag]string{}})
 	checkProcessing(

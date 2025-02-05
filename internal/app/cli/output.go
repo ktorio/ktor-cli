@@ -7,6 +7,7 @@ import (
 	"github.com/ktorio/ktor-cli/internal/app/config"
 	"github.com/ktorio/ktor-cli/internal/app/i18n"
 	"github.com/ktorio/ktor-cli/internal/app/jdk"
+	"github.com/ktorio/ktor-cli/internal/app/network"
 	"github.com/ktorio/ktor-cli/internal/app/utils"
 	"log"
 	"os"
@@ -14,9 +15,15 @@ import (
 	"strings"
 )
 
-func ExitWithError(err error, projectDir string, hasGlobalLog bool, homeDir string) {
-	if _, err := os.Stat(projectDir); err == nil && utils.IsDirEmpty(projectDir) {
-		_ = os.Remove(projectDir)
+func ExitWithError(err error, hasGlobalLog bool, homeDir string) {
+	ExitWithProjectError(err, "", hasGlobalLog, homeDir)
+}
+
+func ExitWithProjectError(err error, projectDir string, hasGlobalLog bool, homeDir string) {
+	if projectDir != "" {
+		if _, err := os.Stat(projectDir); err == nil && utils.IsDirEmpty(projectDir) {
+			_ = os.Remove(projectDir)
+		}
 	}
 
 	reportLog := HandleAppError(projectDir, err)
@@ -107,6 +114,32 @@ func HandleAppError(projectDir string, err error) (reportLog bool) {
 			errors.As(e.Err, &pe)
 
 			fmt.Fprintf(os.Stderr, i18n.Get(i18n.UnableCreateStoreJdkDir, pe.Path))
+		case app.ArtifactSearchError:
+			fmt.Fprint(os.Stderr, i18n.Get(i18n.SearchKtorModulesError))
+		case app.ArtifactSearchVersionNotSupportedError:
+			var ve *network.NotSupportedKtorVersion
+			errors.As(e.Err, &ve)
+			fmt.Fprintf(os.Stderr, i18n.Get(i18n.UnsupportedKtorVersionError, ve.Version))
+			reportLog = false
+		case app.ArtifactListError:
+			fmt.Fprint(os.Stderr, i18n.Get(i18n.ListKtorModulesError))
+		case app.BackupCreationError:
+			var pe *os.PathError
+			errors.As(e.Err, &pe)
+			fmt.Fprint(os.Stderr, i18n.Get(i18n.BackupCreationError, pe.Path))
+		case app.WriteChangesError:
+			var pe *os.PathError
+			errors.As(e.Err, &pe)
+			fmt.Fprint(os.Stderr, i18n.Get(i18n.WriteChangesError, pe.Path))
+		case app.UnrecognizedShellError:
+			var se *ShellError
+			errors.As(e.Err, &se)
+			fmt.Fprint(os.Stderr, i18n.Get(i18n.UnrecognizedShellError, se.Shell))
+		case app.NoPermsForFile:
+			var pe *os.PathError
+			if errors.As(e.Err, &pe) {
+				fmt.Fprint(os.Stderr, i18n.Get(i18n.NoPermsForFile, pe.Path))
+			}
 		default:
 			fmt.Fprintf(os.Stderr, i18n.Get(i18n.UnexpectedError))
 		}
@@ -126,6 +159,10 @@ func HandleArgsValidation(err error) {
 		var fe UnrecognizedFlags
 		errors.As(e.Err, &fe)
 		fmt.Fprintf(os.Stderr, i18n.Get(i18n.UnrecognizedFlagsError, strings.Join(fe, ", ")))
+	case UnrecognizedCommandFlagsError:
+		var fe UnrecognizedCommandFlags
+		errors.As(e.Err, &fe)
+		fmt.Fprint(os.Stderr, i18n.Get(i18n.UnrecognizedCommandFlagsError, strings.Join(fe.Flags, ", "), fe.Command))
 	case NoCommandError:
 		fmt.Fprintln(os.Stderr, i18n.Get(i18n.NoCommandError))
 	case CommandNotFoundError:
@@ -136,7 +173,7 @@ func HandleArgsValidation(err error) {
 		var ce CommandError
 		errors.As(e.Err, &ce)
 
-		if spec, ok := allCommandsSpec[ce.Command]; ok {
+		if spec, ok := AllCommandsSpec[ce.Command]; ok {
 			fmt.Fprintf(os.Stderr, i18n.Get(i18n.CommandArgumentsError, ce.Command, len(spec.args), formatArgs(spec.args)))
 		}
 	case NoArgumentForFlag:
