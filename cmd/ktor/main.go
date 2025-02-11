@@ -23,7 +23,9 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"runtime"
 	"runtime/debug"
 	"slices"
 	"strings"
@@ -86,6 +88,7 @@ func main() {
 
 	switch args.Command {
 	case cli.DevCommand:
+		log.SetOutput(os.Stderr)
 		projectDir := "."
 
 		if dir, ok := args.CommandOptions[cli.ProjectDir]; ok {
@@ -94,7 +97,46 @@ func main() {
 			projectDir = dir
 		}
 
-		fmt.Println(projectDir)
+		wrapper := "./gradlew"
+		if runtime.GOOS == "windows" {
+			wrapper = ".\\gradlew.bat"
+		}
+
+		wrapperPath := filepath.Join(projectDir, wrapper)
+
+		if !utils.Exists(wrapperPath) {
+			cli.ExitWithError(errors.New(""), hasGlobalLog, homeDir) // TODO: Handle error
+		}
+
+		runTask, buildTask, err := project.GuessGradleTasks(projectDir)
+
+		if err != nil {
+			log.Fatal(err) // TODO: Handle error
+		}
+
+		buildCmd := exec.Command(wrapper, buildTask, "--continuous")
+		buildCmd.Dir = projectDir
+		buildCmd.Stdout = os.Stdout
+		buildCmd.Stderr = os.Stderr
+
+		err = buildCmd.Start()
+		if err != nil {
+			log.Fatal(err) // TODO: Handle error
+		}
+
+		runCmd := exec.Command(wrapper, runTask, "-Pdevelopment") // TODO: Fix after the Gradle plugin update
+		runCmd.Dir = projectDir
+		runCmd.Stdout = os.Stdout
+		runCmd.Stderr = os.Stderr
+
+		err = runCmd.Start()
+		if err != nil {
+			log.Fatal(err) // TODO: Handle error
+		}
+		err = runCmd.Wait()
+		if err != nil {
+			log.Fatal(err) // TODO: Handle error
+		}
 	case cli.AddCommand:
 		modules := args.CommandArgs
 
