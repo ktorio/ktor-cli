@@ -85,6 +85,16 @@ func main() {
 	}
 
 	switch args.Command {
+	case cli.DevCommand:
+		projectDir := "."
+
+		if dir, ok := args.CommandOptions[cli.ProjectDir]; ok {
+			projectDir = dir
+		} else if dir, err = filepath.Abs(projectDir); err == nil {
+			projectDir = dir
+		}
+
+		fmt.Println(projectDir)
 	case cli.AddCommand:
 		modules := args.CommandArgs
 

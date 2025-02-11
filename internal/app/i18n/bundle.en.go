@@ -112,4 +112,5 @@ var en = map[Message]string{
 	UnrecognizedCommandFlagsError: "Unrecognized flag[s] %s for command %s.\n",
 	ProjectAddMessage:             "Project: %s\n",
 	UnsupportedKtorVersionError:   "Unable to find Ktor modules of version %s\n",
+	DevCommandDescr:               "Runs Ktor project in the development mode with continuous recompilation",
 }

@@ -112,4 +112,5 @@ const (
 	UnrecognizedCommandFlagsError
 	ProjectAddMessage
 	UnsupportedKtorVersionError
+	DevCommandDescr
 )
