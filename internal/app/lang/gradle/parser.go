@@ -50,6 +50,7 @@ type Plugin struct {
 	Id        string
 	IsCatalog bool
 	Version   string
+	Applied   bool
 }
 
 type Dependencies struct {
@@ -203,11 +204,20 @@ func ParseBuildFile(fp string) (*BuildRoot, error, []lang.SyntaxError) {
 			for _, depSt := range lit.Statements().AllStatement() {
 				ifc, ok := lang.FindChild[parser.IInfixFunctionCallContext](depSt)
 
-				plugin := Plugin{Statement: depSt}
+				plugin := Plugin{Statement: depSt, Applied: true}
 				if ok && ifc.GetChildCount() > 2 {
-					if id, ok := ifc.GetChild(1).(parser.ISimpleIdentifierContext); ok && id.GetText() == "version" {
-						if lit, ok := lang.FindChild[parser.IStringLiteralContext](ifc.GetChild(2)); ok {
-							plugin.Version = lang.Unquote(lit.GetText())
+					callId, ok := ifc.GetChild(1).(parser.ISimpleIdentifierContext)
+
+					if ok {
+						switch callId.GetText() {
+						case "version":
+							if lit, ok := lang.FindChild[parser.IStringLiteralContext](ifc.GetChild(2)); ok {
+								plugin.Version = lang.Unquote(lit.GetText())
+							}
+						case "apply":
+							if lit, ok := lang.FindChild[parser.ILiteralConstantContext](ifc.GetChild(2)); ok {
+								plugin.Applied = lit.GetText() != "false"
+							}
 						}
 					}
 				}

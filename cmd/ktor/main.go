@@ -108,10 +108,11 @@ func main() {
 			cli.ExitWithError(errors.New(""), hasGlobalLog, homeDir) // TODO: Handle error
 		}
 
-		runTask, buildTask, err := project.GuessGradleTasks(projectDir)
+		runTask, buildTask, guessed := project.GuessGradleTasks(projectDir)
 
-		if err != nil {
-			log.Fatal(err) // TODO: Handle error
+		if !guessed {
+			fmt.Println("Cannot guess Gradle Tasks") // TODO: Fix error message
+			os.Exit(1)
 		}
 
 		buildCmd := exec.Command(wrapper, buildTask, "--continuous")
