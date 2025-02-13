@@ -111,10 +111,10 @@ func main() {
 		runTask, buildTask, guessed := project.GuessGradleTasks(projectDir)
 
 		if !guessed {
-			fmt.Println("Cannot guess Gradle Tasks") // TODO: Fix error message
+			fmt.Println("Cannot find the Ktor gradle plugin with appropriate version") // TODO: i18n
 			os.Exit(1)
 		}
-
+		// TODO: Add JAVA_HOME for the Gradle wrapper
 		buildCmd := exec.Command(wrapper, buildTask, "--continuous")
 		buildCmd.Dir = projectDir
 		buildCmd.Stdout = os.Stdout
@@ -122,6 +122,7 @@ func main() {
 
 		err = buildCmd.Start()
 		if err != nil {
+			// TODO: Handle permissions error
 			log.Fatal(err) // TODO: Handle error
 		}
 
@@ -132,10 +133,20 @@ func main() {
 
 		err = runCmd.Start()
 		if err != nil {
+			var exitErr *exec.ExitError
+			if errors.As(err, &exitErr) {
+				os.Exit(exitErr.ExitCode())
+			}
+
 			log.Fatal(err) // TODO: Handle error
 		}
 		err = runCmd.Wait()
 		if err != nil {
+			var exitErr *exec.ExitError
+			if errors.As(err, &exitErr) {
+				os.Exit(exitErr.ExitCode())
+			}
+
 			log.Fatal(err) // TODO: Handle error
 		}
 	case cli.AddCommand:

@@ -19,6 +19,12 @@ type semver struct {
 
 var minPluginVersion = &semver{major: 3, minor: 0, patch: 3} // Subject to change
 
+type searchResult struct {
+	found   bool
+	dirName string
+	version semver
+}
+
 func GuessGradleTasks(projectDir string) (runTask, buildTask string, guessed bool) {
 	buildPath := filepath.Join(projectDir, "build.gradle.kts")
 	if !utils.Exists(buildPath) {
@@ -38,20 +44,34 @@ func GuessGradleTasks(projectDir string) (runTask, buildTask string, guessed boo
 		var candidateDirs []string
 		for _, e := range entries {
 			if e.IsDir() && !strings.HasPrefix(e.Name(), ".") && e.Name() != "gradle" {
-				candidateDirs = append(candidateDirs, e.Name())
+				if utils.Exists(filepath.Join(projectDir, e.Name(), "build.gradle.kts")) {
+					candidateDirs = append(candidateDirs, e.Name())
+				}
 			}
 		}
 
-		// TODO: Check dirs concurrently
+		searchChan := make(chan searchResult)
+
 		for _, dirName := range candidateDirs {
 			candidateDir := filepath.Join(projectDir, dirName)
-			if utils.Exists(filepath.Join(candidateDir, "build.gradle.kts")) {
-				if pVersion, found = searchKtorPlugin(candidateDir); found && pVersion.valid && pVersion.aboveOrEqual(minPluginVersion) {
-					runTask = fmt.Sprintf(":%s:run", dirName)
-					buildTask = fmt.Sprintf(":%s:classes", dirName)
-					guessed = true
-					break
-				}
+			go func(dirPath, dirName string) {
+				pVersion, found = searchKtorPlugin(dirPath)
+				searchChan <- searchResult{found: found, version: pVersion, dirName: dirName}
+			}(candidateDir, dirName)
+		}
+
+		numResults := 0
+		for {
+			result := <-searchChan
+			numResults++
+
+			if result.found && pVersion.valid && pVersion.aboveOrEqual(minPluginVersion) {
+				runTask = fmt.Sprintf(":%s:run", result.dirName)
+				buildTask = fmt.Sprintf(":%s:classes", result.dirName)
+				guessed = true
+				break
+			} else if numResults == len(candidateDirs) {
+				break
 			}
 		}
 	}
