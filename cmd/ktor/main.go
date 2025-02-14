@@ -105,7 +105,8 @@ func main() {
 		wrapperPath := filepath.Join(projectDir, wrapper)
 
 		if !utils.Exists(wrapperPath) {
-			cli.ExitWithError(errors.New(""), hasGlobalLog, homeDir) // TODO: Handle error
+			fmt.Printf("Gradle wrapper %s doesn't exist in the project directory %s.\n", wrapper, projectDir) // TODO: i18n
+			os.Exit(1)
 		}
 
 		runTask, buildTask, guessed := project.GuessGradleTasks(projectDir)
@@ -114,11 +115,23 @@ func main() {
 			fmt.Println("Cannot find the Ktor gradle plugin with appropriate version") // TODO: i18n
 			os.Exit(1)
 		}
-		// TODO: Add JAVA_HOME for the Gradle wrapper
+
+		_, jdkPath, err := cli.ObtainJdk(client, verboseLogger, homeDir)
+
+		if err != nil {
+			cli.ExitWithError(err, hasGlobalLog, homeDir)
+		}
+
+		env := os.Environ()
+		env = append(env, fmt.Sprintf("JAVA_HOME=%s", jdkPath))
+
 		buildCmd := exec.Command(wrapper, buildTask, "--continuous")
+		buildCmd.Env = env
 		buildCmd.Dir = projectDir
 		buildCmd.Stdout = os.Stdout
 		buildCmd.Stderr = os.Stderr
+
+		verboseLogger.Printf("Starting build command: %s (JAVA_HOME=%s)\n", buildCmd.String(), jdkPath) // TODO: i18n
 
 		err = buildCmd.Start()
 		if err != nil {
@@ -127,9 +140,12 @@ func main() {
 		}
 
 		runCmd := exec.Command(wrapper, runTask, "-Pdevelopment") // TODO: Fix after the Gradle plugin update
+		runCmd.Env = env
 		runCmd.Dir = projectDir
 		runCmd.Stdout = os.Stdout
 		runCmd.Stderr = os.Stderr
+
+		verboseLogger.Printf("Starting run command: %s (JAVA_HOME=%s)\n", runCmd.String(), jdkPath) // TODO: i18n
 
 		err = runCmd.Start()
 		if err != nil {
