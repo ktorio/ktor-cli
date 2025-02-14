@@ -133,7 +133,7 @@ func main() {
 
 		verboseLogger.Printf("Starting build command: %s (JAVA_HOME=%s)\n", buildCmd.String(), jdkPath) // TODO: i18n
 
-		err = buildCmd.Start()
+		err = buildCmd.Start() // TODO: Handle when build exits with error
 		if err != nil {
 			// TODO: Handle permissions error
 			log.Fatal(err) // TODO: Handle error
