@@ -113,4 +113,8 @@ const (
 	ProjectAddMessage
 	UnsupportedKtorVersionError
 	DevCommandDescr
+	GradleWrapperNotExistErr
+	KtorGradlePluginNotFound
+	StartingCommandMsg
+	ErrorExecutingCommandMsg
 )

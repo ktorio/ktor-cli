@@ -17,7 +17,11 @@ type semver struct {
 	major, minor, patch int
 }
 
-var minPluginVersion = &semver{major: 3, minor: 0, patch: 3} // Subject to change
+func (v *semver) String() string {
+	return fmt.Sprintf("%d.%d.%d", v.major, v.minor, v.patch)
+}
+
+var DevModeSincePluginVersion = &semver{major: 3, minor: 2, patch: 0}
 
 type searchResult struct {
 	found   bool
@@ -31,7 +35,7 @@ func GuessGradleTasks(projectDir string) (runTask, buildTask string, guessed boo
 		return
 	}
 
-	if pVersion, found := searchKtorPlugin(projectDir); found && pVersion.valid && pVersion.aboveOrEqual(minPluginVersion) {
+	if pVersion, found := searchKtorPlugin(projectDir); found && pVersion.valid && pVersion.aboveOrEqual(DevModeSincePluginVersion) {
 		runTask = "run"
 		buildTask = "classes"
 		guessed = true
@@ -50,28 +54,31 @@ func GuessGradleTasks(projectDir string) (runTask, buildTask string, guessed boo
 			}
 		}
 
-		searchChan := make(chan searchResult)
+		if len(candidateDirs) > 0 {
+			searchChan := make(chan searchResult)
 
-		for _, dirName := range candidateDirs {
-			candidateDir := filepath.Join(projectDir, dirName)
-			go func(dirPath, dirName string) {
-				pVersion, found = searchKtorPlugin(dirPath)
-				searchChan <- searchResult{found: found, version: pVersion, dirName: dirName}
-			}(candidateDir, dirName)
-		}
+			for _, dirName := range candidateDirs {
+				candidateDir := filepath.Join(projectDir, dirName)
+				go func(dirPath, dirName string) {
+					pVersion, found = searchKtorPlugin(dirPath)
+					searchChan <- searchResult{found: found, version: pVersion, dirName: dirName}
+				}(candidateDir, dirName)
+			}
 
-		numResults := 0
-		for {
-			result := <-searchChan
-			numResults++
+			numResults := 0
+			running := true
+			for running {
+				result := <-searchChan
+				numResults++
 
-			if result.found && pVersion.valid && pVersion.aboveOrEqual(minPluginVersion) {
-				runTask = fmt.Sprintf(":%s:run", result.dirName)
-				buildTask = fmt.Sprintf(":%s:classes", result.dirName)
-				guessed = true
-				break
-			} else if numResults == len(candidateDirs) {
-				break
+				if result.found && pVersion.valid && pVersion.aboveOrEqual(DevModeSincePluginVersion) {
+					runTask = fmt.Sprintf(":%s:run", result.dirName)
+					buildTask = fmt.Sprintf(":%s:classes", result.dirName)
+					guessed = true
+					running = false
+				} else if numResults == len(candidateDirs) {
+					running = false
+				}
 			}
 		}
 	}

@@ -23,9 +23,7 @@ import (
 	"net"
 	"net/http"
 	"os"
-	"os/exec"
 	"path/filepath"
-	"runtime"
 	"runtime/debug"
 	"slices"
 	"strings"
@@ -88,7 +86,6 @@ func main() {
 
 	switch args.Command {
 	case cli.DevCommand:
-		log.SetOutput(os.Stderr)
 		projectDir := "."
 
 		if dir, ok := args.CommandOptions[cli.ProjectDir]; ok {
@@ -97,74 +94,7 @@ func main() {
 			projectDir = dir
 		}
 
-		wrapper := "./gradlew"
-		if runtime.GOOS == "windows" {
-			wrapper = ".\\gradlew.bat"
-		}
-
-		wrapperPath := filepath.Join(projectDir, wrapper)
-
-		if !utils.Exists(wrapperPath) {
-			fmt.Printf("Gradle wrapper %s doesn't exist in the project directory %s.\n", wrapper, projectDir) // TODO: i18n
-			os.Exit(1)
-		}
-
-		runTask, buildTask, guessed := project.GuessGradleTasks(projectDir)
-
-		if !guessed {
-			fmt.Println("Cannot find the Ktor gradle plugin with appropriate version") // TODO: i18n
-			os.Exit(1)
-		}
-
-		_, jdkPath, err := cli.ObtainJdk(client, verboseLogger, homeDir)
-
-		if err != nil {
-			cli.ExitWithError(err, hasGlobalLog, homeDir)
-		}
-
-		env := os.Environ()
-		env = append(env, fmt.Sprintf("JAVA_HOME=%s", jdkPath))
-
-		buildCmd := exec.Command(wrapper, buildTask, "--continuous")
-		buildCmd.Env = env
-		buildCmd.Dir = projectDir
-		buildCmd.Stdout = os.Stdout
-		buildCmd.Stderr = os.Stderr
-
-		verboseLogger.Printf("Starting build command: %s (JAVA_HOME=%s)\n", buildCmd.String(), jdkPath) // TODO: i18n
-
-		err = buildCmd.Start() // TODO: Handle when build exits with error
-		if err != nil {
-			// TODO: Handle permissions error
-			log.Fatal(err) // TODO: Handle error
-		}
-
-		runCmd := exec.Command(wrapper, runTask, "-Pdevelopment") // TODO: Fix after the Gradle plugin update
-		runCmd.Env = env
-		runCmd.Dir = projectDir
-		runCmd.Stdout = os.Stdout
-		runCmd.Stderr = os.Stderr
-
-		verboseLogger.Printf("Starting run command: %s (JAVA_HOME=%s)\n", runCmd.String(), jdkPath) // TODO: i18n
-
-		err = runCmd.Start()
-		if err != nil {
-			var exitErr *exec.ExitError
-			if errors.As(err, &exitErr) {
-				os.Exit(exitErr.ExitCode())
-			}
-
-			log.Fatal(err) // TODO: Handle error
-		}
-		err = runCmd.Wait()
-		if err != nil {
-			var exitErr *exec.ExitError
-			if errors.As(err, &exitErr) {
-				os.Exit(exitErr.ExitCode())
-			}
-
-			log.Fatal(err) // TODO: Handle error
-		}
+		command.Dev(projectDir, client, verboseLogger, hasGlobalLog, homeDir)
 	case cli.AddCommand:
 		modules := args.CommandArgs
 
