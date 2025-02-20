@@ -21,7 +21,7 @@ func (v *semver) String() string {
 	return fmt.Sprintf("%d.%d.%d", v.major, v.minor, v.patch)
 }
 
-var DevModeSincePluginVersion = &semver{major: 3, minor: 2, patch: 0}
+var DevModeSincePluginVersion = &semver{major: 3, minor: 1, patch: 1}
 
 type searchResult struct {
 	found   bool

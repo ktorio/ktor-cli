@@ -96,7 +96,7 @@ Currently, Ktor dependencies can only be added to **non-multiplatform** Gradle p
 
 ## "Run" a Ktor project in the development mode
 
-The `dev` command executes the `run` Gradle task while continuously rebuilding the source files on changes.
+The `dev` command executes the `run` Gradle task of a project while continuously rebuilding the source files on changes.
 So, the command allows, for example, uninterrupted development of a Ktor server application (without restarting it to observe the recent changes).
 For the `dev` command to work, the project must have the Ktor Gradle plugin applied.
 
