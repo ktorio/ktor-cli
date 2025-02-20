@@ -94,6 +94,22 @@ ktor add -p /path/to/project server-core client-core json
 
 Currently, Ktor dependencies can only be added to **non-multiplatform** Gradle projects using Kotlin DSL.
 
+## "Run" a Ktor project in the development mode
+
+The `dev` command executes the `run` Gradle task while continuously rebuilding the source files on changes.
+So, the command allows, for example, uninterrupted development of a Ktor server application (without restarting it to observe the recent changes).
+For the `dev` command to work, the project must have the Ktor Gradle plugin applied.
+
+To run the application in the development mode from a project in the current working directory, use the following command:
+```shell
+ktor dev
+```
+
+Use the `-p` or `--project` option to specify a path to the project directory:
+```shell
+ktor dev --project /path/to/project
+```
+
 ## Get the version
 
 To get the version of the tool, use the `--version` flag or the `version` command:
