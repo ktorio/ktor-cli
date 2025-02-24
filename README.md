@@ -3,7 +3,7 @@ The `ktor` tool allows generating [Ktor](https://ktor.io/) applications through 
 
 For a web interface, visit https://start.ktor.io.
 
-## Installing
+## Install
 
 ### Linux and macOS
 
@@ -22,7 +22,7 @@ winget install JetBrains.KtorCLI
 To build the tool, the `go` compiler needs to be installed first. You can find the [installation guide](https://go.dev/doc/install) on the official website.
 
 
-## Building
+## Build
 To build an executable, issue the following command in the root directory of the repository:
 ```shell
 go build github.com/ktorio/ktor-cli/cmd/ktor
@@ -34,7 +34,7 @@ Also, the `go` command can be issued through Docker using an [official Go image]
 docker run --rm -v "$PWD":/usr/src/build -w /usr/src/build golang:1.21 git config --global --add safe.directory . && go build -v github.com/ktorio/ktor-cli/cmd/ktor
 ```
 
-## Running
+## Run
 To run the tool without making an intermediate build, execute the following command:
 ```shell
 go run github.com/ktorio/ktor-cli/cmd/ktor # followed by CLI args
@@ -93,6 +93,22 @@ ktor add -p /path/to/project server-core client-core json
 ```
 
 Currently, Ktor dependencies can only be added to **non-multiplatform** Gradle projects using Kotlin DSL.
+
+## Run a Ktor project in development mode
+
+The `dev` command executes the `run` Gradle task while continuously rebuilding source files upon changes.
+This allows uninterrupted development of a Ktor server application without requiring a restart to observe recent changes.
+For the `dev` command to function correctly, ensure the Ktor Gradle plugin is applied to your project.
+
+To run the application in development mode from a project in the current working directory, use the following command:
+```shell
+ktor dev
+```
+
+To specify a path to the project directory, use the `-p` or `--project` option:
+```shell
+ktor dev --project /path/to/project
+```
 
 ## Get the version
 

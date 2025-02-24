@@ -17,9 +17,11 @@ const (
 	CompletionCommand Command = "completions"
 	AddCommand        Command = "add"
 	OpenAPI           Command = "openapi"
+	DevCommand        Command = "dev"
 )
 
 var AllCommandsSpec = map[Command]commandSpec{
+	DevCommand:        {args: map[string]Arg{}, Description: i18n.Get(i18n.DevCommandDescr)},
 	OpenAPI:           {args: map[string]Arg{"spec.yml": {required: true}}, Description: i18n.Get(i18n.OpenApiCommandDescr)},
 	NewCommand:        {args: map[string]Arg{"project-name": {required: false}}, Description: i18n.Get(i18n.NewCommandDescr)},
 	AddCommand:        {args: map[string]Arg{"...module": {required: true}}, Description: i18n.Get(i18n.AddCommandDescr)},
@@ -57,7 +59,10 @@ var commandFlagSpec = map[Command]map[Flag]flagSpec{
 		OutDir: {Aliases: []string{"-o", "--output"}, Description: i18n.Get(i18n.OutputDirOptionDescr), hasArg: true},
 	},
 	AddCommand: {
-		ProjectDir: {Aliases: []string{"-p", "--project"}, Description: i18n.Get(i18n.OutputDirOptionDescr), hasArg: true},
+		ProjectDir: {Aliases: []string{"-p", "--project"}, Description: i18n.Get(i18n.ProjectDirOptionDescr), hasArg: true},
+	},
+	DevCommand: {
+		ProjectDir: {Aliases: []string{"-p", "--project"}, Description: i18n.Get(i18n.ProjectDirOptionDescr), hasArg: true},
 	},
 }
 
@@ -128,7 +133,6 @@ func ProcessArgs(args *Args) (*Input, error) {
 	for i < len(args.CommandArgs) {
 		arg := args.CommandArgs[i]
 		if !strings.HasPrefix(arg, "-") {
-			argsIndex = i
 			break
 		}
 
@@ -162,13 +166,17 @@ func ProcessArgs(args *Args) (*Input, error) {
 		}
 
 		i++
+		argsIndex = i
 	}
 
 	if len(unrecognized) > 0 {
 		return nil, &Error{Err: UnrecognizedCommandFlags{Command: args.Command, Flags: unrecognized}, Kind: UnrecognizedCommandFlagsError}
 	}
 
-	if spec := AllCommandsSpec[Command(args.Command)]; !hasVararg(spec) && (requiredArgsCount(spec.args) > 0 && requiredArgsCount(spec.args) != len(args.CommandArgs[argsIndex:]) || len(args.CommandArgs[argsIndex:]) > len(spec.args)) {
+	spec := AllCommandsSpec[Command(args.Command)]
+	actualArgs := args.CommandArgs[argsIndex:]
+
+	if !hasVararg(spec) && (requiredArgsCount(spec.args) > 0 && requiredArgsCount(spec.args) != len(actualArgs) || len(actualArgs) > len(spec.args)) {
 		return nil, &Error{
 			Err:  CommandError{Command: Command(args.Command)},
 			Kind: WrongNumberOfArgumentsError,

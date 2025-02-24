@@ -69,6 +69,11 @@ func TestProcessArgs(t *testing.T) {
 		[]string{"ktor", "openapi", "--output=dir", "file.yml"},
 		&Input{Command: OpenAPI, CommandArgs: []string{"file.yml"}, CommandOptions: map[Flag]string{OutDir: "dir"}},
 	)
+	checkProcessing(
+		t,
+		[]string{"ktor", "dev", "-p", "path/to/project"},
+		&Input{Command: DevCommand, CommandArgs: []string{}, CommandOptions: map[Flag]string{ProjectDir: "path/to/project"}},
+	)
 }
 
 func checkProcessing(t *testing.T, args []string, expected *Input) {

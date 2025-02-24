@@ -112,4 +112,9 @@ var en = map[Message]string{
 	UnrecognizedCommandFlagsError: "Unrecognized flag[s] %s for command %s.\n",
 	ProjectAddMessage:             "Project: %s\n",
 	UnsupportedKtorVersionError:   "Unable to find Ktor modules of version %s\n",
+	DevCommandDescr:               "Runs a Ktor project in development mode with continuous recompilation",
+	GradleWrapperNotExistErr:      "Gradle wrapper %s doesn't exist in the project directory %s.\n",
+	KtorGradlePluginNotFound:      "Ktor Gradle plugin of version %s or above cannot be found in the project %s.\n",
+	StartingCommandMsg:            "Starting %s command: JAVA_HOME=%s %s\n",
+	ErrorExecutingCommandMsg:      "Error while executing %s command: %s\n",
 }

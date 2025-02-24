@@ -112,4 +112,9 @@ const (
 	UnrecognizedCommandFlagsError
 	ProjectAddMessage
 	UnsupportedKtorVersionError
+	DevCommandDescr
+	GradleWrapperNotExistErr
+	KtorGradlePluginNotFound
+	StartingCommandMsg
+	ErrorExecutingCommandMsg
 )
