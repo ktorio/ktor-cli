@@ -18,7 +18,7 @@ import (
 )
 
 // Project Returns *app.Error on error
-func Project(client *http.Client, logger *log.Logger, projectDir, project string, plugins []string, ctx context.Context) error {
+func Project(client *http.Client, logger *log.Logger, projectDir, project string, plugins []string, versionCatalog bool, ctx context.Context) error {
 	err := os.MkdirAll(projectDir, 0755)
 	logger.Printf(i18n.Get(i18n.CreatingDir, projectDir))
 
@@ -46,6 +46,12 @@ func Project(client *http.Client, logger *log.Logger, projectDir, project string
 	}
 
 	logger.Println(i18n.Get(i18n.RequestGenServer))
+
+	versionCatalogValue := "false"
+	if versionCatalog {
+		versionCatalogValue = "true"
+	}
+
 	projectPayload := network.ProjectPayload{
 		Settings: network.ProjectSettings{
 			Name:           project,
@@ -55,7 +61,7 @@ func Project(client *http.Client, logger *log.Logger, projectDir, project string
 			KtorVersion:    settings.KtorVersion.DefaultId,
 			KotlinVersion:  settings.KotlinVersion.DefaultId,
 			BuildSystemArgs: map[network.BuildSystemArgs]string{
-				network.VersionCatalogBuildArg: "",
+				network.VersionCatalogBuildArg: versionCatalogValue,
 			},
 		},
 		Plugins:       plugins,

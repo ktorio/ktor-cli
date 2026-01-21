@@ -52,6 +52,7 @@ var en = map[Message]string{
 	SelectedPluginsCount:               "%d plugins added.",
 	ProjectNameCaption:                 "Project name:",
 	LocationCaption:                    "Location:",
+	VersionCatalogCaption:              "Use Gradle version catalog:",
 	SearchPluginsCaption:               "Search for plugins:",
 	CreateProjectButton:                "CREATE PROJECT (CTRL+G)",
 	NoPluginsFound:                     "No plugins found for the search query.",
@@ -117,4 +118,5 @@ var en = map[Message]string{
 	KtorGradlePluginNotFound:      "Ktor Gradle plugin of version %s or above cannot be found in the project %s.\n",
 	StartingCommandMsg:            "Starting %s command: JAVA_HOME=%s %s\n",
 	ErrorExecutingCommandMsg:      "Error while executing %s command: %s\n",
+	VersionCatalogOptionDescr:     "Use Gradle version catalog for dependency management.",
 }
