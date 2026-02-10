@@ -42,11 +42,12 @@ type commandSpec struct {
 type Flag string
 
 const (
-	Version    Flag = "version"
-	Help            = "help"
-	Verbose         = "verbose"
-	OutDir          = "outDir"
-	ProjectDir      = "projectDir"
+	Version        Flag = "version"
+	Help                = "help"
+	Verbose             = "verbose"
+	OutDir              = "outDir"
+	ProjectDir          = "projectDir"
+	VersionCatalog      = "versionCatalog"
 )
 
 var AllFlagsSpec = map[Flag]flagSpec{
@@ -64,6 +65,9 @@ var commandFlagSpec = map[Command]map[Flag]flagSpec{
 	DevCommand: {
 		ProjectDir: {Aliases: []string{"-p", "--project"}, Description: i18n.Get(i18n.ProjectDirOptionDescr), hasArg: true},
 	},
+	NewCommand: {
+		VersionCatalog: {Aliases: []string{"--version-catalog"}, Description: i18n.Get(i18n.VersionCatalogOptionDescr), hasArg: false},
+	},
 }
 
 type flagSpec struct {
@@ -77,6 +81,7 @@ type Input struct {
 	CommandArgs    []string
 	CommandOptions map[Flag]string
 	Verbose        bool
+	VersionCatalog bool
 }
 
 func ProcessArgs(args *Args) (*Input, error) {
@@ -183,7 +188,8 @@ func ProcessArgs(args *Args) (*Input, error) {
 		}
 	}
 
-	return &Input{Command: Command(args.Command), CommandArgs: args.CommandArgs[argsIndex:], CommandOptions: commandOpts, Verbose: flags[Verbose]}, nil
+	_, versionCatalog := commandOpts[VersionCatalog]
+	return &Input{Command: Command(args.Command), CommandArgs: args.CommandArgs[argsIndex:], CommandOptions: commandOpts, Verbose: flags[Verbose], VersionCatalog: versionCatalog}, nil
 }
 
 func hasVararg(spec commandSpec) bool {

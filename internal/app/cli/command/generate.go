@@ -12,14 +12,14 @@ import (
 	"os"
 )
 
-func Generate(client *http.Client, projectDir, projectName string, plugins []string, verboseLogger *log.Logger, hasGlobalLog bool, ctx context.Context) {
+func Generate(client *http.Client, projectDir, projectName string, plugins []string, versionCatalog bool, verboseLogger *log.Logger, hasGlobalLog bool, ctx context.Context) {
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
 		fmt.Fprintln(os.Stderr, i18n.Get(i18n.CannotDetermineHomeDir))
 		os.Exit(1)
 	}
 
-	err = generate.Project(client, verboseLogger, projectDir, projectName, plugins, ctx)
+	err = generate.Project(client, verboseLogger, projectDir, projectName, plugins, versionCatalog, ctx)
 
 	if err != nil {
 		cli.ExitWithProjectError(err, projectDir, hasGlobalLog, homeDir)

@@ -60,6 +60,31 @@ func Tui(scr tcell.Screen, st *State, mdl *model.State) {
 		posY++
 	}
 
+	posY += 2
+	posX = padding
+
+	// Draw version catalog checkbox with text first
+	checkboxStyle := buttonStyle
+	textStyleForCheckbox := strongStyle
+	if st.ActiveElement == VersionCatalogCheckbox {
+		checkboxStyle = activeTabStyle
+		textStyleForCheckbox = activeTabStyle
+	}
+
+	checkboxVal := ' '
+	if mdl.VersionCatalog {
+		checkboxVal = 'x'
+	}
+
+	// Draw label first, then [x] or [ ] checkbox
+	posX, posY = drawInlineText(scr, posX, posY, strongStyle, i18n.Get(i18n.VersionCatalogCaption))
+	posX++
+	scr.SetContent(posX, posY, '[', nil, textStyleForCheckbox)
+	posX++
+	scr.SetContent(posX, posY, checkboxVal, nil, checkboxStyle)
+	posX++
+	scr.SetContent(posX, posY, ']', nil, textStyleForCheckbox)
+
 	if !st.PluginsShown {
 		return
 	}
