@@ -54,6 +54,7 @@ const (
 	SelectedPluginsCount
 	ProjectNameCaption
 	LocationCaption
+	VersionCatalogCaption
 	SearchPluginsCaption
 	CreateProjectButton
 	NoPluginsFound
@@ -117,4 +118,5 @@ const (
 	KtorGradlePluginNotFound
 	StartingCommandMsg
 	ErrorExecutingCommandMsg
+	VersionCatalogOptionDescr
 )

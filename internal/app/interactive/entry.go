@@ -72,14 +72,14 @@ func Run(client *http.Client, ctx context.Context) (result model.Result, err err
 			processEvent(event, drawState, mdl, &result, &mdl.ProjectName)
 		case draw.LocationInput:
 			processEvent(event, drawState, mdl, &result, &mdl.ProjectDir)
+		case draw.VersionCatalogCheckbox:
+			processEvent(event, drawState, mdl, &result, nil)
 		case draw.SearchInput:
 			processEvent(event, drawState, mdl, &result, &mdl.Search)
 		case draw.Tabs:
 			processEvent(event, drawState, mdl, &result, nil)
 		case draw.CreateButton:
 			processEvent(event, drawState, mdl, &result, nil)
-		default:
-			panic("unhandled default case")
 		}
 
 		draw.HideCursorIfNeeded(drawState, scr)
@@ -163,6 +163,11 @@ func processEvent(ev tcell.Event, drawState *draw.State, mdl *model.State, resul
 				return
 			}
 
+			if draw.IsElementActive(drawState, draw.VersionCatalogCheckbox) && ev.Rune() == ' ' {
+				mdl.VersionCatalog = !mdl.VersionCatalog
+				return
+			}
+
 			if draw.IsElementActive(drawState, draw.Tabs) && ev.Rune() == ' ' {
 				toggleSelectedPlugin(drawState, mdl)
 				mdl.StatusLine = fmt.Sprint(i18n.Get(i18n.SelectedPluginsCount, len(mdl.AddedPlugins)))
@@ -238,7 +243,9 @@ func processEvent(ev tcell.Event, drawState *draw.State, mdl *model.State, resul
 			switch {
 			case drawState.ActiveElement == draw.ProjectNameInput:
 				draw.SwitchElement(drawState, 1)
-			case drawState.ActiveElement == draw.LocationInput && drawState.PluginsShown:
+			case drawState.ActiveElement == draw.LocationInput:
+				draw.SwitchElement(drawState, 1)
+			case drawState.ActiveElement == draw.VersionCatalogCheckbox && drawState.PluginsShown:
 				draw.SwitchElement(drawState, 1)
 			case drawState.PluginsShown:
 				draw.SwitchElement(drawState, 1)
@@ -264,11 +271,15 @@ func processEvent(ev tcell.Event, drawState *draw.State, mdl *model.State, resul
 				onInputChanged(drawState, mdl, *input)
 			}
 		case key == tcell.KeyEnter && mod == tcell.ModNone:
-			if drawState.ActiveElement == draw.Tabs {
+			switch drawState.ActiveElement {
+			case draw.VersionCatalogCheckbox:
+				mdl.VersionCatalog = !mdl.VersionCatalog
+				return
+			case draw.Tabs:
 				toggleSelectedPlugin(drawState, mdl)
 				mdl.StatusLine = fmt.Sprint(i18n.Get(i18n.SelectedPluginsCount, len(mdl.AddedPlugins)))
 				return
-			} else if drawState.ActiveElement == draw.CreateButton {
+			case draw.CreateButton:
 				if generateProject(result, mdl) {
 					return
 				}
@@ -279,6 +290,8 @@ func processEvent(ev tcell.Event, drawState *draw.State, mdl *model.State, resul
 				model.InitProjectDir(mdl)
 				model.CheckProjectSettings(mdl)
 			case draw.LocationInput:
+				// Just move to version catalog checkbox, don't show plugins yet
+			case draw.VersionCatalogCheckbox:
 				drawState.PluginsShown = true
 			default:
 				// do nothing yet
@@ -291,6 +304,8 @@ func processEvent(ev tcell.Event, drawState *draw.State, mdl *model.State, resul
 				model.InitProjectDir(mdl)
 				model.CheckProjectSettings(mdl)
 			case draw.LocationInput:
+				// Just move to version catalog checkbox, don't show plugins yet
+			case draw.VersionCatalogCheckbox:
 				drawState.PluginsShown = true
 			default:
 				// do nothing yet
@@ -306,6 +321,7 @@ func processEvent(ev tcell.Event, drawState *draw.State, mdl *model.State, resul
 func generateProject(result *model.Result, mdl *model.State) bool {
 	result.ProjectName = mdl.ProjectName
 	result.ProjectDir = mdl.GetProjectPath()
+	result.VersionCatalog = mdl.VersionCatalog
 
 	result.Plugins = []string{}
 	for id := range mdl.AddedPlugins {

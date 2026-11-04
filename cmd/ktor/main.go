@@ -311,7 +311,7 @@ func main() {
 				os.Exit(1)
 			}
 
-			command.Generate(client, projectDir, projectName, []string{}, verboseLogger, hasGlobalLog, ctx)
+			command.Generate(client, projectDir, projectName, []string{}, args.VersionCatalog, verboseLogger, hasGlobalLog, ctx)
 			return
 		}
 
@@ -325,7 +325,7 @@ func main() {
 			return
 		}
 
-		command.Generate(client, result.ProjectDir, result.ProjectName, result.Plugins, verboseLogger, hasGlobalLog, ctx)
+		command.Generate(client, result.ProjectDir, result.ProjectName, result.Plugins, result.VersionCatalog, verboseLogger, hasGlobalLog, ctx)
 	case cli.OpenAPI:
 		specPath := args.CommandArgs[0]
 		projectDir, err := filepath.Abs(".")

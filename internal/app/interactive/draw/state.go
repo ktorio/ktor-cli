@@ -28,6 +28,7 @@ type Element int
 const (
 	ProjectNameInput Element = iota
 	LocationInput
+	VersionCatalogCheckbox
 	SearchInput
 	Tabs
 	CreateButton

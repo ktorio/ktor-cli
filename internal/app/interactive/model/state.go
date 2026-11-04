@@ -34,10 +34,11 @@ type State struct {
 }
 
 type Result struct {
-	ProjectName string
-	ProjectDir  string
-	Plugins     []string
-	Quit        bool
+	ProjectName    string
+	ProjectDir     string
+	Plugins        []string
+	VersionCatalog bool
+	Quit           bool
 }
 
 func NewState() *State {
